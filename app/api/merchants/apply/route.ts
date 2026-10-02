@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getServerSession } from '@/lib/auth/session';
+import { resolveSession } from '@/lib/auth/resolve-session';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const bodySchema = z.object({
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const session = await getServerSession();
+  const session = await resolveSession(req);
   if (!session?.profileId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

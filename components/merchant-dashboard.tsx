@@ -3,7 +3,11 @@
 import { usePollar } from '@pollar/react';
 import { useCallback, useEffect, useState } from 'react';
 import { PollarRequired } from '@/components/pollar-required';
-import { exchangePollarSession, readStoredSession } from '@/lib/upeer-api';
+import {
+  exchangePollarSessionFromClient,
+  readStoredSession,
+  upeerAuthedFetch,
+} from '@/lib/upeer-api';
 
 type Merchant = {
   id: string;
@@ -51,14 +55,14 @@ function MerchantDashboardInner() {
       if (auth.step !== 'authenticated') {
         throw new Error('Sign in with Pollar first');
       }
-      session = await exchangePollarSession(auth.session.token.accessToken);
+      session = await exchangePollarSessionFromClient(getClient());
     }
     return session;
   }, [getClient]);
 
   const refresh = useCallback(async () => {
     await ensureSession();
-    const meRes = await fetch('/api/merchants/me', { credentials: 'include' });
+    const meRes = await upeerAuthedFetch('/api/merchants/me');
     const meData = await meRes.json();
     if (!meRes.ok) {
       throw new Error(meData.error ?? 'Could not load merchant');
@@ -68,7 +72,7 @@ function MerchantDashboardInner() {
       setPayoutAddress(meData.merchant.payout_address);
     }
 
-    const offersRes = await fetch('/api/offers', { credentials: 'include' });
+    const offersRes = await upeerAuthedFetch('/api/offers');
     const offersData = await offersRes.json();
     if (offersRes.ok) {
       setOffers(offersData.offers ?? []);
@@ -87,9 +91,8 @@ function MerchantDashboardInner() {
     setStatus(null);
     try {
       await ensureSession();
-      const res = await fetch('/api/merchants/payout-address', {
+      const res = await upeerAuthedFetch('/api/merchants/payout-address', {
         method: 'PATCH',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payoutAddress }),
       });
@@ -108,9 +111,8 @@ function MerchantDashboardInner() {
     setStatus(null);
     try {
       await ensureSession();
-      const res = await fetch('/api/offers', {
+      const res = await upeerAuthedFetch('/api/offers', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           side: offerForm.side,

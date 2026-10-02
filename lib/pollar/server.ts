@@ -1,3 +1,10 @@
+import {
+  isStellarAddress,
+  mapPollarCustody,
+  resolveStellarWalletFromVerify,
+  type PollarWalletPayload,
+} from '@/lib/pollar/resolve-stellar-wallet';
+
 export type PollarVerifiedSession = {
   userId: string;
   applicationId: string;
@@ -13,7 +20,8 @@ type VerifyContent = {
   applicationId: string;
   expiresAt: string;
   network: string;
-  wallet: { publicKey: string; custody: string };
+  wallet: PollarWalletPayload;
+  wallets?: PollarWalletPayload[] | null;
   authProvider: string;
   profile?: { displayName?: string; email?: string };
 };
@@ -56,22 +64,46 @@ export async function verifyPollarAccessToken(
   }
 
   const body = envelope.content;
-  const custody = body.wallet.custody;
-  const mappedCustody =
-    custody === 'internal' || custody === 'smart' || custody === 'external'
-      ? custody
-      : 'external';
+  let wallet: { publicKey: string; custody: 'internal' | 'external' | 'smart' };
+  try {
+    wallet = resolveStellarWalletFromVerify(body.wallet, body.wallets);
+  } catch {
+    wallet = {
+      publicKey: '',
+      custody: mapPollarCustody(body.wallet),
+    };
+  }
 
   return {
     userId: body.userId,
     applicationId: body.applicationId,
     expiresAt: body.expiresAt,
     network: body.network === 'mainnet' ? 'mainnet' : 'testnet',
-    wallet: {
-      publicKey: body.wallet.publicKey,
-      custody: mappedCustody,
-    },
+    wallet,
     authProvider: body.authProvider,
     profile: body.profile,
+  };
+}
+
+export function mergeStellarWalletHint(
+  verified: PollarVerifiedSession,
+  hint?: { stellarAddress?: string | null; custody?: string | null },
+): PollarVerifiedSession {
+  if (isStellarAddress(verified.wallet.publicKey)) {
+    return verified;
+  }
+  if (!hint?.stellarAddress || !isStellarAddress(hint.stellarAddress)) {
+    return verified;
+  }
+  const custody =
+    hint.custody === 'smart' ||
+    hint.custody === 'external' ||
+    hint.custody === 'internal'
+      ? hint.custody
+      : verified.wallet.custody;
+
+  return {
+    ...verified,
+    wallet: { publicKey: hint.stellarAddress, custody },
   };
 }

@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getServerSession, type SessionPayload } from '@/lib/auth/session';
+import { resolveSession } from '@/lib/auth/resolve-session';
+import type { SessionPayload } from '@/lib/auth/session';
 
-export async function requireSession(): Promise<
-  SessionPayload | NextResponse
-> {
-  const session = await getServerSession();
-  if (!session?.profileId) {
+export async function requireSession(
+  request?: Request,
+): Promise<SessionPayload | NextResponse> {
+  const session = await resolveSession(request);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!session.profileId) {
     return NextResponse.json(
       {
         error:
-          'Unauthorized — sign in with Pollar and complete onboarding.',
+          'Profile missing — sign in with Pollar again to link your account.',
       },
       { status: 401 },
     );

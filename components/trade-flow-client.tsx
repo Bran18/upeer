@@ -7,7 +7,11 @@ import { TradeStepper } from '@/components/trade-stepper';
 import { QuoteCard } from '@/components/quote-card';
 import { EscrowStatus } from '@/components/escrow-status';
 import { PollarRequired } from '@/components/pollar-required';
-import { exchangePollarSession, readStoredSession } from '@/lib/upeer-api';
+import {
+  exchangePollarSessionFromClient,
+  readStoredSession,
+  upeerAuthedFetch,
+} from '@/lib/upeer-api';
 
 type Props = {
   offer: MarketOffer;
@@ -48,7 +52,7 @@ function TradeFlowClientInner({ offer }: Props) {
       if (auth.step !== 'authenticated') {
         throw new Error('Sign in with Pollar first');
       }
-      session = await exchangePollarSession(auth.session.token.accessToken);
+      session = await exchangePollarSessionFromClient(getClient());
     }
     return session;
   };
@@ -56,9 +60,8 @@ function TradeFlowClientInner({ offer }: Props) {
   const fetchQuote = async () => {
     if (isRealOffer) {
       await ensureSession();
-      const res = await fetch('/api/quotes', {
+      const res = await upeerAuthedFetch('/api/quotes', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ offerId: offer.id, usdcAmount }),
       });
@@ -102,9 +105,8 @@ function TradeFlowClientInner({ offer }: Props) {
       return;
     }
     await ensureSession();
-    const res = await fetch('/api/orders', {
+    const res = await upeerAuthedFetch('/api/orders', {
       method: 'POST',
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ quoteId: preview.quoteId }),
     });
@@ -123,7 +125,7 @@ function TradeFlowClientInner({ offer }: Props) {
       return;
     }
     const eid = engagementId ?? crypto.randomUUID();
-    const res = await fetch('/api/escrow/deploy', {
+    const res = await upeerAuthedFetch('/api/escrow/deploy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

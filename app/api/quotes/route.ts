@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
   }
 
-  const session = await requireSession();
+  const session = await requireSession(req);
   if (isSessionError(session)) {
     return session;
   }

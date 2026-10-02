@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth/session';
+import { resolveSession } from '@/lib/auth/resolve-session';
 import { getMeProfile } from '@/lib/db/profiles';
 import { isSupabaseConfigured } from '@/lib/supabase/server';
 
-export async function GET() {
-  const session = await getServerSession();
+export async function GET(request: Request) {
+  const session = await resolveSession(request);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

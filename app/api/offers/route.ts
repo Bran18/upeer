@@ -15,12 +15,12 @@ const createSchema = z.object({
   availableUsdc: z.string(),
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ offers: [] });
   }
 
-  const session = await requireSession();
+  const session = await requireSession(request);
   if (isSessionError(session)) {
     return session;
   }
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
   }
 
-  const session = await requireSession();
+  const session = await requireSession(req);
   if (isSessionError(session)) {
     return session;
   }

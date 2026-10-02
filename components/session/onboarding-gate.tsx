@@ -10,7 +10,8 @@ export function OnboardingGate() {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, verified } = usePollar();
-  const { status, isOnboarded, error, profile } = useUpeerSession();
+  const { status, isOnboarded, error, profile, syncWithPollar } =
+    useUpeerSession();
 
   useEffect(() => {
     if (!isAuthenticated || !verified || status !== 'ready') {
@@ -37,14 +38,39 @@ export function OnboardingGate() {
     router,
   ]);
 
-  if (error && isAuthenticated && pathname !== '/onboarding') {
+  if (status === 'syncing' && isAuthenticated && pathname !== '/onboarding') {
+    return (
+      <div
+        className="border-b border-zinc-200 bg-zinc-50 px-4 py-2 text-center text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/80 dark:text-zinc-300"
+        role="status"
+        aria-live="polite"
+      >
+        Connecting your Pollar wallet to UPEER…
+      </div>
+    );
+  }
+
+  if (
+    error &&
+    status === 'error' &&
+    isAuthenticated &&
+    pathname !== '/onboarding'
+  ) {
     return (
       <div
         className="border-b border-red-500/30 bg-red-500/10 px-4 py-2 text-center text-sm text-red-900 dark:text-red-100"
         role="status"
         aria-live="polite"
       >
-        {error} — try signing out and back in, or finish setup on{' '}
+        {error}.{' '}
+        <button
+          type="button"
+          className="font-medium underline"
+          onClick={() => void syncWithPollar()}
+        >
+          Retry connection
+        </button>{' '}
+        or sign out and back in. Finish setup on{' '}
         <a href="/onboarding" className="font-medium underline">
           onboarding
         </a>

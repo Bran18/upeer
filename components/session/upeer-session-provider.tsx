@@ -11,7 +11,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { readPollarAccessToken } from '@/lib/pollar/access-token';
+import {
+  readPollarAccessToken,
+  readPollarWalletHint,
+} from '@/lib/pollar/access-token';
 import type { MeProfile } from '@/lib/profile/types';
 import { onboardingComplete } from '@/lib/profile/types';
 import {
@@ -56,8 +59,13 @@ export function useOptionalUpeerSession(): UpeerSessionContextValue | null {
 }
 
 export function UpeerSessionProvider({ children }: { children: ReactNode }) {
-  const { getClient, isAuthenticated, verified, logout: pollarLogout } =
-    usePollar();
+  const {
+    getClient,
+    isAuthenticated,
+    verified,
+    wallet,
+    logout: pollarLogout,
+  } = usePollar();
   const [upeerSession, setUpeerSession] = useState<UpeerSessionResponse | null>(
     () => readStoredSession(),
   );
@@ -67,9 +75,11 @@ export function UpeerSessionProvider({ children }: { children: ReactNode }) {
   const syncInFlight = useRef(false);
 
   const refreshProfile = useCallback(async () => {
-    const me = await fetchMeProfile();
+    const me = await fetchMeProfile(
+      upeerSession?.accessToken ?? readStoredSession()?.accessToken,
+    );
     setProfile(me);
-  }, []);
+  }, [upeerSession?.accessToken]);
 
   const syncWithPollar = useCallback(async () => {
     if (syncInFlight.current) {
@@ -86,9 +96,13 @@ export function UpeerSessionProvider({ children }: { children: ReactNode }) {
     setStatus('syncing');
     setError(null);
     try {
-      const session = await exchangePollarSession(token);
+      const hint = readPollarWalletHint(getClient());
+      const session = await exchangePollarSession(token, {
+        stellarAddress: wallet?.address ?? hint.stellarAddress,
+        custody: wallet?.custody ?? hint.custody,
+      });
       setUpeerSession(session);
-      const me = await fetchMeProfile();
+      const me = await fetchMeProfile(session.accessToken);
       setProfile(me);
       setStatus('ready');
     } catch (err) {
@@ -97,19 +111,48 @@ export function UpeerSessionProvider({ children }: { children: ReactNode }) {
     } finally {
       syncInFlight.current = false;
     }
-  }, [getClient]);
+  }, [getClient, wallet?.address, wallet?.custody]);
 
   useEffect(() => {
-    if (!isAuthenticated || !verified) {
-      setStatus('anonymous');
-      setProfile(null);
-      if (!isAuthenticated) {
+    if (!isAuthenticated) {
+      if (verified) {
+        setStatus('anonymous');
+        setProfile(null);
         setUpeerSession(null);
+        setError(null);
       }
       return;
     }
-    void syncWithPollar();
-  }, [isAuthenticated, verified, syncWithPollar]);
+
+    if (!verified) {
+      setStatus('syncing');
+      return;
+    }
+
+    const address =
+      wallet?.address ?? readPollarWalletHint(getClient()).stellarAddress;
+    if (!address) {
+      setStatus('syncing');
+      return;
+    }
+
+    void (async () => {
+      const stored = readStoredSession();
+      if (stored) {
+        try {
+          const me = await fetchMeProfile(stored.accessToken);
+          setUpeerSession(stored);
+          setProfile(me);
+          setStatus('ready');
+          setError(null);
+          return;
+        } catch {
+          // Stale or invalid cookie/JWT — exchange with Pollar below.
+        }
+      }
+      await syncWithPollar();
+    })();
+  }, [isAuthenticated, verified, wallet?.address, getClient, syncWithPollar]);
 
   const signOut = useCallback(async () => {
     await logoutUpeerSession();

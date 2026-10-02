@@ -1,4 +1,5 @@
 import type { PollarVerifiedSession } from '@/lib/pollar/server';
+import { isStellarAddress } from '@/lib/pollar/resolve-stellar-wallet';
 import type {
   MeProfile,
   MerchantStatus,
@@ -17,6 +18,9 @@ type ProfileRow = {
 export async function upsertProfileFromPollar(
   session: PollarVerifiedSession,
 ): Promise<string> {
+  if (!isStellarAddress(session.wallet.publicKey)) {
+    throw new Error('Stellar wallet address is missing from the Pollar session');
+  }
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from('profiles')

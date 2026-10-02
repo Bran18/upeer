@@ -3,7 +3,11 @@
 import { usePollar } from '@pollar/react';
 import { useState } from 'react';
 import { PollarRequired } from '@/components/pollar-required';
-import { exchangePollarSession, readStoredSession } from '@/lib/upeer-api';
+import {
+  exchangePollarSessionFromClient,
+  readStoredSession,
+  upeerAuthedFetch,
+} from '@/lib/upeer-api';
 
 export function MerchantApplyForm() {
   return (
@@ -29,13 +33,12 @@ function MerchantApplyFormInner() {
         if (auth.step !== 'authenticated') {
           throw new Error('Sign in with Pollar first');
         }
-        session = await exchangePollarSession(auth.session.token.accessToken);
+        session = await exchangePollarSessionFromClient(getClient());
       }
 
-      const res = await fetch('/api/merchants/apply', {
+      const res = await upeerAuthedFetch('/api/merchants/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ displayName }),
       });
       const data = await res.json();

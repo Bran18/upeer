@@ -7,18 +7,43 @@ import {
 } from '@/lib/auth/session';
 import { getMeProfile, upsertProfileFromPollar } from '@/lib/db/profiles';
 import type { PlatformIntent } from '@/lib/profile/types';
-import { verifyPollarAccessToken } from '@/lib/pollar/server';
+import {
+  mergeStellarWalletHint,
+  verifyPollarAccessToken,
+} from '@/lib/pollar/server';
+import { isStellarAddress } from '@/lib/pollar/resolve-stellar-wallet';
 import { isSupabaseConfigured } from '@/lib/supabase/server';
+import { parseExpiresAt } from '@/lib/auth/parse-expires-at';
 import { getStellarNetwork } from '@/lib/config/network';
 
 const bodySchema = z.object({
   token: z.string().min(1),
+  stellarAddress: z
+    .string()
+    .refine((v) => isStellarAddress(v), 'Invalid Stellar address')
+    .optional(),
+  custody: z.enum(['internal', 'external', 'smart']).optional(),
 });
 
 export async function POST(req: Request) {
   try {
-    const { token } = bodySchema.parse(await req.json());
-    const pollar = await verifyPollarAccessToken(token);
+    const { token, stellarAddress, custody } = bodySchema.parse(
+      await req.json(),
+    );
+    const pollar = mergeStellarWalletHint(
+      await verifyPollarAccessToken(token),
+      { stellarAddress, custody },
+    );
+
+    if (!isStellarAddress(pollar.wallet.publicKey)) {
+      return NextResponse.json(
+        {
+          error:
+            'Wallet address is not ready yet. Wait a moment after login and try again.',
+        },
+        { status: 409 },
+      );
+    }
     const expectedNetwork = getStellarNetwork();
     if (pollar.network !== expectedNetwork) {
       return NextResponse.json(
@@ -45,7 +70,11 @@ export async function POST(req: Request) {
       }
     }
 
-    const expiresAt = new Date(pollar.expiresAt);
+    const expiresAt = parseExpiresAt(pollar.expiresAt);
+    const maxAgeSeconds = Math.max(
+      60,
+      Math.floor((expiresAt.getTime() - Date.now()) / 1000),
+    );
     const payload: SessionPayload = {
       sub: pollar.userId,
       pollarUserId: pollar.userId,
@@ -57,7 +86,7 @@ export async function POST(req: Request) {
 
     const response = NextResponse.json({
       accessToken,
-      expiresAt: pollar.expiresAt,
+      expiresAt: expiresAt.toISOString(),
       stellarAddress: pollar.wallet.publicKey,
       profileId,
       onboardingComplete: Boolean(
@@ -73,6 +102,7 @@ export async function POST(req: Request) {
       sameSite: 'lax',
       path: '/',
       expires: expiresAt,
+      maxAge: maxAgeSeconds,
     });
     return response;
   } catch (error) {

@@ -5,12 +5,12 @@ import {
 } from '@/lib/auth/require-session';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
   }
 
-  const session = await requireSession();
+  const session = await requireSession(request);
   if (isSessionError(session)) {
     return session;
   }

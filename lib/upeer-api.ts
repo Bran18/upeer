@@ -1,5 +1,7 @@
 'use client';
 
+import type { PollarClient } from '@pollar/core';
+import { readPollarWalletHint } from '@/lib/pollar/access-token';
 import type { MeProfile, PlatformIntent } from '@/lib/profile/types';
 
 export type UpeerSessionResponse = {
@@ -12,6 +14,33 @@ export type UpeerSessionResponse = {
 };
 
 const STORAGE_KEY = 'upeer.session';
+
+export function getUpeerAuthHeaders(
+  accessToken?: string | null,
+): Record<string, string> {
+  const token = accessToken ?? readStoredSession()?.accessToken;
+  if (!token) {
+    return {};
+  }
+  return { Authorization: `Bearer ${token}` };
+}
+
+/** Same-origin API calls with cookie + Bearer fallback. */
+export function upeerAuthedFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  const headers = new Headers(init.headers);
+  const auth = getUpeerAuthHeaders();
+  if (auth.Authorization) {
+    headers.set('Authorization', auth.Authorization);
+  }
+  return fetch(input, {
+    ...init,
+    credentials: 'include',
+    headers,
+  });
+}
 
 export function readStoredSession(): UpeerSessionResponse | null {
   if (typeof window === 'undefined') {
@@ -45,14 +74,36 @@ export function clearStoredSession(): void {
   window.localStorage.removeItem(STORAGE_KEY);
 }
 
+export type PollarSessionHint = {
+  stellarAddress?: string;
+  custody?: 'internal' | 'external' | 'smart';
+};
+
+export async function exchangePollarSessionFromClient(
+  client: PollarClient,
+): Promise<UpeerSessionResponse> {
+  const auth = client.getAuthState();
+  if (auth.step !== 'authenticated') {
+    throw new Error('Sign in with Pollar first');
+  }
+  return exchangePollarSession(
+    auth.session.token.accessToken,
+    readPollarWalletHint(client),
+  );
+}
+
 export async function exchangePollarSession(
   pollarAccessToken: string,
+  hint?: PollarSessionHint,
 ): Promise<UpeerSessionResponse> {
   const res = await fetch('/api/auth/pollar', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ token: pollarAccessToken }),
+    body: JSON.stringify({
+      token: pollarAccessToken,
+      ...hint,
+    }),
   });
   const data = (await res.json()) as UpeerSessionResponse & {
     error?: string;
@@ -64,8 +115,11 @@ export async function exchangePollarSession(
   return data;
 }
 
-export async function fetchMeProfile(): Promise<MeProfile> {
-  const res = await fetch('/api/me', { credentials: 'include' });
+export async function fetchMeProfile(accessToken?: string): Promise<MeProfile> {
+  const res = await fetch('/api/me', {
+    credentials: 'include',
+    headers: getUpeerAuthHeaders(accessToken),
+  });
   const data = (await res.json()) as { profile?: MeProfile; error?: string };
   if (!res.ok) {
     throw new Error(data.error ?? 'Failed to load profile');
@@ -86,7 +140,10 @@ export async function completeOnboarding(
 ): Promise<{ profile: MeProfile; redirectTo: string }> {
   const res = await fetch('/api/onboarding', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...getUpeerAuthHeaders(),
+    },
     credentials: 'include',
     body: JSON.stringify(input),
   });

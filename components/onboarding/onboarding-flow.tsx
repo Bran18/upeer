@@ -98,6 +98,15 @@ export function OnboardingFlow() {
     );
   }
 
+  if (sessionStatus === 'error') {
+    return (
+      <p className="text-sm text-red-700 dark:text-red-300" role="alert">
+        We could not link your account. Use <strong>Retry connection</strong> in
+        the banner above, or sign out and sign in again.
+      </p>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <fieldset>
