@@ -20,7 +20,7 @@ export function ProfileBadge() {
   return (
     <Link
       href="/onboarding"
-      className="hidden rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-700 hover:border-zinc-300 sm:inline-block dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+      className="hidden rounded-full border border-[var(--line)] bg-white/5 px-3 py-1 text-xs font-medium text-[var(--muted)] hover:border-[var(--accent)]/40 sm:inline-block"
       title="Review your marketplace role"
     >
       {label}

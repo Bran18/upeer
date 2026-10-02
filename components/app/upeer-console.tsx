@@ -28,11 +28,16 @@ function UpeerConsoleInner() {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+      <section className="glass-panel p-6 sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-semibold">Developer console</h1>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+              Console
+            </p>
+            <h1 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-bold">
+              Developer console
+            </h1>
+            <p className="mt-2 text-sm text-[var(--muted)]">
               Pollar wallet, Reflector references, Trustless Work escrow, and
               Soroswap swaps (testnet).
             </p>
@@ -41,7 +46,7 @@ function UpeerConsoleInner() {
         </div>
         <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-zinc-500">Pollar</dt>
+            <dt className="text-[var(--muted)]">Pollar</dt>
             <dd>
               {isAuthenticated
                 ? verified
@@ -51,13 +56,13 @@ function UpeerConsoleInner() {
             </dd>
           </div>
           <div>
-            <dt className="text-zinc-500">Wallet</dt>
+            <dt className="text-[var(--muted)]">Wallet</dt>
             <dd className="font-mono text-xs">
               {wallet?.address ?? '—'}
             </dd>
           </div>
           <div>
-            <dt className="text-zinc-500">UPEER profile</dt>
+            <dt className="text-[var(--muted)]">UPEER profile</dt>
             <dd>
               {profile?.platformIntent
                 ? `${profile.platformIntent} · synced`
@@ -67,7 +72,7 @@ function UpeerConsoleInner() {
             </dd>
           </div>
           <div>
-            <dt className="text-zinc-500">Server session</dt>
+            <dt className="text-[var(--muted)]">Server session</dt>
             <dd>
               {upeerStatus === 'syncing'
                 ? 'Syncing…'
@@ -82,7 +87,7 @@ function UpeerConsoleInner() {
             type="button"
             disabled={!isAuthenticated || !verified || upeerStatus === 'syncing'}
             onClick={() => void syncWithPollar()}
-            className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+            className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-ink)] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
           >
             Refresh session
           </button>
@@ -90,7 +95,7 @@ function UpeerConsoleInner() {
             type="button"
             disabled={!isAuthenticated}
             onClick={() => openEnabledAssetsModal()}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+            className="rounded-full border border-[var(--line)] px-4 py-2 text-sm hover:border-[var(--accent)]/40"
           >
             USDC trustline
           </button>
@@ -98,7 +103,7 @@ function UpeerConsoleInner() {
             type="button"
             disabled={!isAuthenticated}
             onClick={() => void signOut()}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+            className="rounded-full border border-[var(--line)] px-4 py-2 text-sm hover:border-[var(--accent)]/40"
           >
             Sign out
           </button>

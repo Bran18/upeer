@@ -66,7 +66,7 @@ export function SwapPanel({ disabled }: Props) {
   };
 
   return (
-    <section className="rounded-xl border border-zinc-200 p-6 dark:border-zinc-800">
+    <section className="glass-panel p-6">
       <h2 className="font-semibold">Soroswap (adjacent)</h2>
       <p className="mt-1 text-sm text-zinc-500">
         Fund your wallet with USDC via Soroswap. This does not complete an OTC

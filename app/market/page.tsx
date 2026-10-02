@@ -1,4 +1,6 @@
-import { OfferCard } from '@/components/offer-card';
+import { OfferList } from '@/components/market/offer-list';
+import { DirectionalTransition } from '@/components/transition/directional-transition';
+import { PageHeader } from '@/components/ui/page-header';
 import { getNetworkConfig } from '@/lib/config/network';
 import { listMarketOffers } from '@/lib/data/offers';
 import { fetchAssetRating } from '@/lib/stellar-expert/asset';
@@ -18,22 +20,19 @@ export default async function MarketPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <h1 className="text-2xl font-semibold">Market</h1>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        Verified merchant liquidity. Quotes use Reflector FX references on
-        testnet.
-      </p>
-      <div className="mt-8 space-y-4">
-        {offers.map((offer) => (
-          <OfferCard
-            key={offer.id}
-            offer={offer}
-            usdcIssuer={network.usdcIssuer}
-            usdcRating={usdcRatingAverage}
-          />
-        ))}
+    <DirectionalTransition>
+      <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
+        <PageHeader
+          eyebrow="Liquidity"
+          title="Live OTC offers"
+          description="Verified merchants on testnet. Quotes lock Reflector references plus spread before you fund escrow."
+        />
+        <OfferList
+          offers={offers}
+          usdcIssuer={network.usdcIssuer}
+          usdcRating={usdcRatingAverage}
+        />
       </div>
-    </div>
+    </DirectionalTransition>
   );
 }

@@ -16,7 +16,7 @@ export function QuoteCard({
   expiresAt,
 }: Props) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="glass-panel p-5">
       <h3 className="text-sm font-medium text-zinc-500">Executable quote</h3>
       <p className="mt-2 text-2xl font-semibold tabular-nums">
         {usdcAmount} USDC → {fiatAmount} {fiatCurrency}

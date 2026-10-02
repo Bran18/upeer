@@ -5,7 +5,7 @@ type Props = {
 
 export function EscrowStatus({ state, contractId }: Props) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+    <div className="glass-panel p-4">
       <p className="text-sm text-zinc-500">Trustless Work escrow</p>
       <p className="mt-1 font-medium capitalize">{state.replaceAll('_', ' ')}</p>
       {contractId ? (

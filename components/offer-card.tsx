@@ -1,6 +1,9 @@
-import Link from 'next/link';
+'use client';
+
+import { ViewTransition } from 'react';
 import type { MarketOffer } from '@/lib/data/offers';
 import { AssetBadge } from '@/components/asset-badge';
+import { NavLink } from '@/components/transition/nav-link';
 
 type Props = {
   offer: MarketOffer;
@@ -10,36 +13,43 @@ type Props = {
 
 export function OfferCard({ offer, usdcRating, usdcIssuer }: Props) {
   const sideLabel =
-    offer.side === 'sell_usdc' ? 'Merchant sells USDC' : 'Merchant buys USDC';
+    offer.side === 'sell_usdc' ? 'Sells USDC' : 'Buys USDC';
 
   return (
-    <article className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:border-emerald-500/40 dark:border-zinc-800 dark:bg-zinc-900">
+    <article className="glass-panel group p-6 transition hover:border-[var(--accent)]/35 hover:shadow-[0_0_48px_-24px_var(--accent-glow)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold">{offer.merchantName}</h2>
-          <p className="text-sm text-zinc-500">{sideLabel}</p>
+          <ViewTransition name={`merchant-${offer.id}`} share="morph" default="none">
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold">
+              {offer.merchantName}
+            </h2>
+          </ViewTransition>
+          <p className="mt-1 font-mono text-xs uppercase tracking-wider text-[var(--muted)]">
+            {sideLabel}
+          </p>
         </div>
         {offer.verified ? (
-          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200">
+          <span className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--accent)]">
             Verified
           </span>
         ) : null}
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+      <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
         <AssetBadge code="USDC" issuer={usdcIssuer} ratingAverage={usdcRating} />
-        <span className="text-zinc-600 dark:text-zinc-400">
-          Fiat: {offer.fiatCurrency} · spread {offer.spreadBps} bps
+        <span className="text-[var(--muted)]">
+          {offer.fiatCurrency} · {offer.spreadBps} bps
         </span>
       </div>
-      <p className="mt-3 text-sm tabular-nums text-zinc-600 dark:text-zinc-400">
+      <p className="mt-4 text-sm tabular-nums text-[var(--muted)]">
         {offer.minUsdc} – {offer.maxUsdc} USDC · {offer.availableUsdc} available
       </p>
-      <Link
+      <NavLink
         href={`/trade/${offer.id}`}
-        className="mt-4 inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+        direction="forward"
+        className="mt-5 inline-flex rounded-full bg-[var(--accent)] px-5 py-2 text-sm font-semibold text-[var(--accent-ink)] transition hover:brightness-110"
       >
         Start trade
-      </Link>
+      </NavLink>
     </article>
   );
 }

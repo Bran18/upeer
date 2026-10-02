@@ -1,30 +1,33 @@
 import { OnboardingFlow } from '@/components/onboarding/onboarding-flow';
 import { PollarRequired } from '@/components/pollar-required';
+import { DirectionalTransition } from '@/components/transition/directional-transition';
 
 export default function OnboardingPage() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-      <PollarRequired
-        fallback={
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Sign in with Pollar from the header to continue onboarding.
+    <DirectionalTransition>
+      <div className="mx-auto max-w-2xl px-4 py-14 sm:px-6">
+        <PollarRequired
+          fallback={
+            <p className="text-sm text-[var(--muted)]">
+              Sign in with Pollar from the header to continue onboarding.
+            </p>
+          }
+        >
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-[var(--accent)]">
+            Welcome
           </p>
-        }
-      >
-        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-          Welcome to UPEER
-        </p>
-        <h1 className="mt-2 text-balance text-3xl font-semibold tracking-tight">
-          Choose your role on the marketplace
-        </h1>
-        <p className="mt-3 text-pretty text-zinc-600 dark:text-zinc-400">
-          Your Stellar wallet is connected. Tell us how you plan to trade so we
-          can route you to the right tools—buyers, merchants, or both.
-        </p>
-        <div className="mt-10">
-          <OnboardingFlow />
-        </div>
-      </PollarRequired>
-    </div>
+          <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+            How will you use UPEER?
+          </h1>
+          <p className="mt-4 text-pretty text-[var(--muted)]">
+            One wallet, one profile—pick buyer, merchant, or both and we&apos;ll
+            route you to the right tools.
+          </p>
+          <div className="mt-10">
+            <OnboardingFlow />
+          </div>
+        </PollarRequired>
+      </div>
+    </DirectionalTransition>
   );
 }
