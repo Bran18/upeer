@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# UPEER
 
-## Getting Started
+P2P commercial infrastructure: a **USDC OTC marketplace** on Stellar. Buyers meet verified merchants, receive executable quotes (Reflector reference + spread), and settle the digital-asset leg through **Trustless Work V1 single-release** escrow. Optional **Soroswap** swaps fund wallets without replacing OTC flow.
 
-First, run the development server:
+**Login:** [Pollar](https://docs.pollar.xyz) embedded wallets (`@pollar/react`).
+
+## Stack
+
+- Next.js App Router (BFF route handlers for secrets)
+- Supabase Postgres (RLS on; server uses service role)
+- Reflector Pulse (`@reflector/contract-client`)
+- Trustless Work V1 (`x-api-key`, testnet: `https://dev.api.trustlesswork.com`)
+- Soroswap API (`Authorization: Bearer sk_…`)
+
+## Quick start
 
 ```bash
+cp .env.example .env.local
+# Fill Pollar, UPEER_SESSION_SECRET, SUPABASE_SERVICE_ROLE_KEY (+ URL/publishable), optional TW/Soroswap
+# Then visit http://localhost:3000/api/health to see what is still missing
+
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Route | Purpose |
+| --- | --- |
+| `/` | Product overview |
+| `/market` | Offer browse |
+| `/trade/[offerId]` | Quote + escrow flow |
+| `/merchant` | Merchant application |
+| `/app` | Integration console |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Trustless Work roles (sell USDC)
 
-## Learn More
+For `sell_usdc`, the merchant is `serviceProvider` and funds escrow; the buyer is `receiver`. UPEER platform addresses (`UPEER_PLATFORM_ADDRESS`) act as `approver`, `releaseSigner`, `disputeResolver`, and `platformAddress`. Platform keys must **not** be loaded into Pollar.
 
-To learn more about Next.js, take a look at the following resources:
+## Merchant → market flow
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Sign in (Pollar) → **Console** → **Sync server session** (requires `SUPABASE_SERVICE_ROLE_KEY`).
+2. **Merchants** → apply → operator approves:
+   ```bash
+   curl -X POST "http://localhost:3000/api/admin/merchants/<merchant-uuid>/decision" \
+     -H "Content-Type: application/json" \
+     -H "x-upeer-operator-key: $UPEER_OPERATOR_API_KEY" \
+     -d '{"decision":"approved"}'
+   ```
+3. Set **payout address**, publish offer → appears on **Market** (real UUID trade links).
+4. Buyer: quote → reserve → deploy escrow (`UPEER_PLATFORM_ADDRESS` required).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Testnet disclaimer
 
-## Deploy on Vercel
+Fiat is off-chain. User payment declarations do not confirm fiat on testnet.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Supabase
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Migrations live in `supabase/migrations/`. Link your project:
+
+```bash
+npx supabase link --project-ref cbxlmgvwcfcnopvvggmx
+```
