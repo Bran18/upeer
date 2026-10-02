@@ -16,11 +16,11 @@ const STACK = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-[var(--line)] bg-[var(--background-secondary)] px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-12 sm:px-8">
-      <div className="mx-auto grid max-w-[1120px] gap-10 sm:grid-cols-3">
-        <div>
+    <footer className="border-t border-[var(--line)] bg-[var(--background-secondary)] pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-10 sm:pt-12">
+      <div className="page-shell grid gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-3">
+        <div className="sm:col-span-2 lg:col-span-1">
           <p className="font-mono text-[0.75rem] tracking-[0.2em]">UPEER</p>
-          <p className="mt-3 max-w-xs text-sm leading-relaxed text-[var(--foreground-secondary)]">
+          <p className="mt-3 max-w-sm text-sm leading-relaxed text-[var(--foreground-secondary)]">
             USDC OTC on Stellar. Quotes you can lock. Escrow you can verify.
           </p>
         </div>
@@ -32,7 +32,7 @@ export function SiteFooter() {
                 <NavLink
                   href={link.href}
                   direction="none"
-                  className="text-sm text-[var(--foreground-secondary)] hover:text-[var(--foreground)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+                  className="inline-flex min-h-[40px] items-center text-sm text-[var(--foreground-secondary)] hover:text-[var(--foreground)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
                 >
                   {link.label}
                 </NavLink>
@@ -46,11 +46,11 @@ export function SiteFooter() {
             {STACK.map((item) => (
               <li
                 key={item.name}
-                className="flex justify-between gap-4 text-sm"
+                className="flex flex-col gap-0.5 text-sm sm:flex-row sm:justify-between sm:gap-4"
                 translate="no"
               >
                 <span>{item.name}</span>
-                <span className="text-[var(--foreground-tertiary)]">
+                <span className="text-[var(--foreground-tertiary)] sm:text-right">
                   {item.role}
                 </span>
               </li>
@@ -58,7 +58,7 @@ export function SiteFooter() {
           </ul>
         </div>
       </div>
-      <p className="mx-auto mt-12 max-w-[1120px] text-caption">
+      <p className="page-shell mt-10 text-caption sm:mt-12">
         Testnet only. Fiat settles off-chain. A declaration is not a payment.
       </p>
     </footer>

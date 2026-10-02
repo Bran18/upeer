@@ -44,7 +44,7 @@ function PollarWalletControlInner() {
               logout();
             }
           }}
-          className="inline-flex min-h-9 items-center px-1 text-[0.75rem] text-[var(--foreground-secondary)] hover:text-[var(--foreground)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+          className="inline-flex min-h-9 items-center px-1 text-[0.75rem] text-[var(--foreground-secondary)] hover:text-[var(--foreground)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] max-[380px]:sr-only"
         >
           Sign out
         </button>

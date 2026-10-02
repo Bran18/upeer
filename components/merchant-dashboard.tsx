@@ -136,47 +136,56 @@ function MerchantDashboardInner() {
 
   if (!merchant) {
     return (
-      <p className="text-sm text-zinc-500">
-        No merchant record yet — submit an application below.
+      <p className="text-sm text-subtle">
+        No merchant record yet—submit an application above.
       </p>
     );
   }
 
   return (
-    <div className="mt-10 space-y-8 border-t border-zinc-200 pt-10 dark:border-zinc-800">
-      <section>
-        <h2 className="font-semibold">Merchant status</h2>
-        <p className="mt-1 text-sm capitalize text-zinc-600 dark:text-zinc-400">
+    <div className="space-y-6 border-t border-[var(--line)] pt-10">
+      <section className="panel-card">
+        <h2 className="text-headline">Merchant Status</h2>
+        <p className="mt-2 text-sm capitalize text-muted">
           {merchant.status} · {merchant.display_name}
         </p>
       </section>
 
       {merchant.status === 'approved' ? (
         <>
-          <section className="space-y-3">
-            <h3 className="text-sm font-medium">Escrow payout address (G…)</h3>
+          <section className="panel-card space-y-4">
+            <h3 className="text-headline text-sm">Escrow Payout Address</h3>
+            <label className="field-label" htmlFor="merchant-payout">
+              Stellar address (G…)
+            </label>
             <input
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 font-mono text-sm dark:border-zinc-700 dark:bg-zinc-950"
+              id="merchant-payout"
+              name="payoutAddress"
+              className="field-input font-mono text-sm"
               value={payoutAddress}
               onChange={(e) => setPayoutAddress(e.target.value)}
-              placeholder="G..."
+              placeholder="G…"
+              spellCheck={false}
+              autoComplete="off"
             />
             <button
               type="button"
               onClick={() => void savePayout()}
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+              className="btn-secondary"
             >
-              Save payout address
+              Save Payout Address
             </button>
           </section>
 
-          <section className="space-y-3">
-            <h3 className="text-sm font-medium">Publish offer</h3>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <label className="text-sm">
-                Side
+          <section className="panel-card space-y-4">
+            <h3 className="text-headline text-sm">Publish Offer</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="field-label" htmlFor="offer-side">Side</label>
                 <select
-                  className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+                  id="offer-side"
+                  name="side"
+                  className="field-input"
                   value={offerForm.side}
                   onChange={(e) =>
                     setOfferForm((f) => ({
@@ -188,38 +197,47 @@ function MerchantDashboardInner() {
                   <option value="sell_usdc">Merchant sells USDC</option>
                   <option value="buy_usdc">Merchant buys USDC</option>
                 </select>
-              </label>
-              <label className="text-sm">
-                Fiat
+              </div>
+              <div>
+                <label className="field-label" htmlFor="offer-fiat">Fiat</label>
                 <input
-                  className="mt-1 w-full rounded-lg border border-zinc-300 px-2 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+                  id="offer-fiat"
+                  name="fiatCurrency"
+                  className="field-input"
                   value={offerForm.fiatCurrency}
                   onChange={(e) =>
                     setOfferForm((f) => ({ ...f, fiatCurrency: e.target.value }))
                   }
+                  spellCheck={false}
+                  autoComplete="off"
                 />
-              </label>
+              </div>
             </div>
             <button
               type="button"
               onClick={() => void publishOffer()}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white"
+              className="btn-primary"
             >
-              Publish to market
+              Publish to Market
             </button>
           </section>
 
           {offers.length > 0 ? (
-            <section>
-              <h3 className="text-sm font-medium">Your offers</h3>
-              <ul className="mt-2 space-y-2 text-sm">
+            <section className="panel-card">
+              <h3 className="text-headline text-sm">Your Offers</h3>
+              <ul className="mt-3 space-y-2 text-sm">
                 {offers.map((o) => (
-                  <li key={o.id} className="font-mono text-xs">
-                    <a href={`/trade/${o.id}`} className="text-emerald-700 hover:underline">
+                  <li key={o.id} className="font-mono text-xs break-all">
+                    <a
+                      href={`/trade/${o.id}`}
+                      className="text-[var(--accent)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+                    >
                       {o.id.slice(0, 8)}…
                     </a>
                     {' '}
-                    {o.side} · {o.fiat_currency} · {o.available_usdc} USDC left
+                    <span className="text-muted">
+                      {o.side} · {o.fiat_currency} · {o.available_usdc} USDC left
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -227,13 +245,15 @@ function MerchantDashboardInner() {
           ) : null}
         </>
       ) : (
-        <p className="text-sm text-amber-700 dark:text-amber-300">
+        <p className="text-sm text-amber-700 dark:text-amber-300" role="status">
           Waiting for operator approval before you can publish offers.
         </p>
       )}
 
       {status ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">{status}</p>
+        <p className="text-sm text-muted" role="status" aria-live="polite">
+          {status}
+        </p>
       ) : null}
     </div>
   );

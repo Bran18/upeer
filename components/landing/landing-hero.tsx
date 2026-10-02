@@ -1,39 +1,40 @@
 'use client';
 
-import { ViewTransition } from 'react';
 import { HeroVisual } from '@/components/visual/hero-background';
 import { GlowButton } from '@/components/ui/glow-button';
 
 export function LandingHero() {
   return (
-    <section className="relative apple-aurora">
-      <div className="mx-auto grid max-w-[1080px] items-center gap-8 px-6 pb-16 pt-12 sm:pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-8 lg:pb-20 lg:pt-16">
-        <ViewTransition enter="fade-in" exit="fade-out" default="none">
-          <div className="relative z-10 min-w-0 max-w-xl">
-            <p className="hero-fade-in text-caption font-medium uppercase tracking-[0.22em]">
-              USDC on Stellar
-            </p>
-            <h1 className="hero-fade-in-delay text-large-title mt-4 text-balance">
-              OTC trading,
-              <br />
-              designed to feel
-              <span className="text-accent-word"> effortless.</span>
-            </h1>
-            <p className="hero-fade-in-delay-2 text-body mt-5 max-w-md text-pretty">
-              Clear quotes. Escrow you can verify. Sign in, then trade.
-            </p>
-            <div className="hero-fade-in-delay-3 mt-8 flex flex-wrap items-center gap-3">
-              <GlowButton href="/market">Browse Market</GlowButton>
-              <GlowButton href="/app" variant="secondary">
-                Open Console
-              </GlowButton>
-            </div>
+    <section className="relative overflow-hidden">
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 top-[38%] sm:top-0 sm:h-full"
+        aria-hidden
+      >
+        <HeroVisual fill />
+      </div>
+      <div
+        className="page-shell relative z-10 flex flex-col justify-center pb-[min(46vh,22rem)] pt-10 sm:min-h-[calc(100svh-3.5rem)] sm:pb-16 sm:pt-16 lg:pt-20"
+      >
+        <div className="max-w-xl bg-transparent">
+          <p className="hero-fade-in text-caption font-medium uppercase tracking-[0.18em] sm:tracking-[0.22em]">
+            USDC on Stellar
+          </p>
+          <h1
+            className="hero-fade-in-delay mt-4 text-[clamp(2.125rem,8.5vw,4.25rem)] font-semibold leading-[0.98] tracking-[-0.04em] text-balance"
+          >
+            OTC trading, designed to feel
+            <br />
+            <span className="hero-liquid">effortless.</span>
+          </h1>
+          <p className="hero-fade-in-delay-2 text-body mt-4 max-w-md bg-transparent text-pretty sm:mt-5">
+            Clear quotes. Escrow you can verify. Sign in, then trade.
+          </p>
+          <div className="hero-fade-in-delay-3 mt-7 sm:mt-8">
+            <GlowButton href="/market" className="w-full sm:w-auto">
+              Browse the Market
+            </GlowButton>
           </div>
-        </ViewTransition>
-
-        <ViewTransition enter="slide-up" default="none">
-          <HeroVisual />
-        </ViewTransition>
+        </div>
       </div>
     </section>
   );

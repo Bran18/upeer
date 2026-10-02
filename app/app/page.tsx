@@ -1,12 +1,13 @@
 import { UpeerConsole } from '@/components/app/upeer-console';
 import { DirectionalTransition } from '@/components/transition/directional-transition';
+import { AppPage } from '@/components/ui/app-page';
 
 export default function AppConsolePage() {
   return (
     <DirectionalTransition>
-      <div className="mx-auto max-w-[980px] px-6 py-16 sm:py-20">
+      <AppPage width="content">
         <UpeerConsole />
-      </div>
+      </AppPage>
     </DirectionalTransition>
   );
 }

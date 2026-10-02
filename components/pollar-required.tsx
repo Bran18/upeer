@@ -16,7 +16,7 @@ export function PollarRequired({
   if (!hasPollarPublishableKey()) {
     return (
       fallback ?? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm text-muted">
           Set <code className="font-mono text-xs">NEXT_PUBLIC_POLLAR_PUBLISHABLE_KEY</code>{' '}
           to use wallet features.
         </p>

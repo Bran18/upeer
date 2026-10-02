@@ -12,7 +12,7 @@ export function AssetBadge({ code, issuer, ratingAverage }: Props) {
     >
       {code}
       {ratingAverage !== undefined ? (
-        <span className="rounded bg-emerald-600/15 px-1.5 py-0.5 text-emerald-800 dark:text-emerald-200">
+        <span className="rounded bg-[var(--accent-muted)] px-1.5 py-0.5 text-[var(--accent)]">
           SE {ratingAverage.toFixed(1)}
         </span>
       ) : null}

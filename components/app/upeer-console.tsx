@@ -1,6 +1,7 @@
 'use client';
 
-import { WalletButton, usePollar } from '@pollar/react';
+import { usePollar } from '@pollar/react';
+import { PollarWalletControl } from '@/components/pollar-wallet-control';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
 import { IntegrationsPanel } from '@/components/app/integrations-panel';
 import { SwapPanel } from '@/components/app/swap-panel';
@@ -28,19 +29,21 @@ function UpeerConsoleInner() {
 
   return (
     <div className="space-y-8">
-      <section className="surface-card p-6 sm:p-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
+      <section className="panel-card sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <p className="text-caption font-medium uppercase tracking-widest">
               Console
             </p>
-            <h1 className="text-title-2 mt-2 text-[1.75rem]">Developer console</h1>
-            <p className="text-body mt-2 text-sm">
+            <h1 className="text-title-2 mt-2">Developer console</h1>
+            <p className="text-body mt-2 text-sm text-pretty">
               Pollar wallet, Reflector references, Trustless Work escrow, and
               Soroswap swaps (testnet).
             </p>
           </div>
-          <WalletButton />
+          <div className="shrink-0 self-start">
+            <PollarWalletControl />
+          </div>
         </div>
         <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
           <div>
@@ -55,7 +58,7 @@ function UpeerConsoleInner() {
           </div>
           <div>
             <dt className="text-[var(--foreground-secondary)]">Wallet</dt>
-            <dd className="font-mono text-xs">
+            <dd className="break-all font-mono text-xs">
               {wallet?.address ?? '—'}
             </dd>
           </div>
@@ -85,25 +88,25 @@ function UpeerConsoleInner() {
             type="button"
             disabled={!isAuthenticated || !verified || upeerStatus === 'syncing'}
             onClick={() => void syncWithPollar()}
-            className="rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-ink)] disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+            className="btn-primary"
           >
-            Refresh session
+            Refresh Session
           </button>
           <button
             type="button"
             disabled={!isAuthenticated}
             onClick={() => openEnabledAssetsModal()}
-            className="rounded-full border border-[var(--line)] px-4 py-2 text-sm hover:border-[var(--accent)]/40"
+            className="btn-secondary"
           >
-            USDC trustline
+            USDC Trustline
           </button>
           <button
             type="button"
             disabled={!isAuthenticated}
             onClick={() => void signOut()}
-            className="rounded-full border border-[var(--line)] px-4 py-2 text-sm hover:border-[var(--accent)]/40"
+            className="btn-secondary"
           >
-            Sign out
+            Sign Out
           </button>
         </div>
         {error ? (

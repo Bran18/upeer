@@ -66,30 +66,38 @@ export function SwapPanel({ disabled }: Props) {
   };
 
   return (
-    <section className="surface-card p-6">
-      <h2 className="font-semibold">Soroswap (adjacent)</h2>
-      <p className="mt-1 text-sm text-zinc-500">
+    <section className="panel-card">
+      <h2 className="text-headline">Soroswap (Adjacent)</h2>
+      <p className="text-body mt-2 text-sm">
         Fund your wallet with USDC via Soroswap. This does not complete an OTC
         order or move escrow state.
       </p>
-      <label className="mt-4 block text-sm">
+      <label className="field-label mt-5" htmlFor="swap-xlm-amount">
         XLM amount (stroops)
-        <input
-          className="mt-1 w-full max-w-xs rounded-lg border border-zinc-300 px-3 py-2 font-mono text-sm dark:border-zinc-700 dark:bg-zinc-950"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
       </label>
+      <input
+        id="swap-xlm-amount"
+        name="amount"
+        type="text"
+        inputMode="numeric"
+        spellCheck={false}
+        autoComplete="off"
+        className="field-input max-w-xs font-mono text-sm tabular-nums"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+      />
       <button
         type="button"
         disabled={disabled || busy}
         onClick={() => void runSwap()}
-        className="mt-4 min-h-[44px] rounded-full bg-[var(--accent)] px-5 text-sm font-medium text-[var(--accent-ink)] hover:bg-[var(--accent-hover)] disabled:opacity-40"
+        className="btn-primary mt-4"
       >
-        Quote & swap XLM → USDC
+        {busy ? 'Swapping…' : 'Quote & Swap XLM → USDC'}
       </button>
       {status ? (
-        <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">{status}</p>
+        <p className="mt-3 text-sm text-muted" role="status" aria-live="polite">
+          {status}
+        </p>
       ) : null}
     </section>
   );

@@ -42,16 +42,16 @@ export function IntegrationsPanel() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <section className="surface-card p-5">
-        <h2 className="font-semibold">Reflector Pulse (FX)</h2>
-        <p className="mt-1 text-xs text-zinc-500">
+      <section className="panel-card">
+        <h2 className="text-headline">Reflector Pulse (FX)</h2>
+        <p className="mt-2 text-xs text-subtle">
           Reference prices for LATAM fiat. Executable quotes apply merchant spread
           on top.
           {reflector?.feedHint === 'dex_or_cex' ? (
-            <span className="mt-1 block text-amber-700 dark:text-amber-300">
-              This oracle is not the FX feed — LATAM symbols may be empty. For
+            <span className="mt-2 block text-amber-700 dark:text-amber-300">
+              This oracle is not the FX feed—LATAM symbols may be empty. For
               COP/MXN, set{' '}
-              <code className="font-mono text-[10px]">
+              <code className="font-mono text-[10px]" translate="no">
                 REFLECTOR_PULSE_CONTRACT_ID
               </code>{' '}
               to the testnet FX oracle (
@@ -60,51 +60,57 @@ export function IntegrationsPanel() {
           ) : null}
         </p>
         {error ? (
-          <p className="mt-3 text-sm text-red-600">{error}</p>
+          <p className="mt-3 text-sm text-red-600 dark:text-red-300" role="alert">
+            {error}
+          </p>
         ) : null}
         {reflector ? (
           <ul className="mt-4 space-y-2 text-sm">
             {reflector.quotes.map((quote) => (
               <li
                 key={quote.symbol}
-                className="flex justify-between border-b border-zinc-100 py-2 dark:border-zinc-800"
+                className="flex flex-col gap-1 border-b border-[var(--line)] py-2 sm:flex-row sm:justify-between"
               >
-                <span className="font-medium">{quote.symbol}</span>
-                <span className="font-mono">
+                <span className="font-medium" translate="no">{quote.symbol}</span>
+                <span className="font-mono tabular-nums break-all sm:text-right">
                   {quote.price}
                   {quote.stale ? (
-                    <span className="ml-2 text-amber-600">stale</span>
+                    <span className="ml-2 text-amber-600 dark:text-amber-400">
+                      stale
+                    </span>
                   ) : null}
                 </span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-3 text-sm text-zinc-500">Loading…</p>
+          <p className="mt-3 text-sm text-subtle">Loading…</p>
         )}
       </section>
 
-      <section className="surface-card p-5">
-        <h2 className="font-semibold">Trustless Work V1</h2>
-        <p className="mt-1 text-xs text-zinc-500">
+      <section className="panel-card">
+        <h2 className="text-headline">Trustless Work V1</h2>
+        <p className="mt-2 text-xs text-subtle">
           Single-release escrow API (server-side keys only).
         </p>
         {tw ? (
           <dl className="mt-4 space-y-2 text-sm">
-            <div className="flex justify-between">
-              <dt>API key</dt>
-              <dd className="font-mono">{tw.apiKeyStatus}</dd>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted">API key</dt>
+              <dd className="font-mono" translate="no">{tw.apiKeyStatus}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt>Base URL</dt>
-              <dd className="truncate font-mono text-xs">{tw.baseUrl}</dd>
+              <dt className="text-muted">Base URL</dt>
+              <dd className="min-w-0 truncate font-mono text-xs" translate="no">
+                {tw.baseUrl}
+              </dd>
             </div>
             {tw.message ? (
-              <p className="text-zinc-600 dark:text-zinc-400">{tw.message}</p>
+              <p className="text-muted">{tw.message}</p>
             ) : null}
           </dl>
         ) : (
-          <p className="mt-3 text-sm text-zinc-500">Loading…</p>
+          <p className="mt-3 text-sm text-subtle">Loading…</p>
         )}
       </section>
     </div>

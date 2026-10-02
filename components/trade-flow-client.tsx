@@ -170,20 +170,26 @@ function TradeFlowClientInner({ offer }: Props) {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">
-          <label className="block text-sm">
+          <label className="field-label" htmlFor="trade-usdc-amount">
             USDC amount
-            <input
-              className="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
-              value={usdcAmount}
-              onChange={(e) => setUsdcAmount(e.target.value)}
-            />
           </label>
+          <input
+            id="trade-usdc-amount"
+            name="usdcAmount"
+            type="text"
+            inputMode="decimal"
+            spellCheck={false}
+            autoComplete="off"
+            className="field-input tabular-nums"
+            value={usdcAmount}
+            onChange={(e) => setUsdcAmount(e.target.value)}
+          />
           {!canTrade ? (
             <p className="text-sm text-amber-700 dark:text-amber-300">
               Sign in with Pollar and wait for session verification to continue.
             </p>
           ) : null}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <button
               type="button"
               disabled={!canTrade}
@@ -192,9 +198,9 @@ function TradeFlowClientInner({ offer }: Props) {
                   setStatus(e instanceof Error ? e.message : 'Quote failed'),
                 )
               }
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="btn-primary w-full sm:w-auto"
             >
-              Get executable quote
+              Get Executable Quote
             </button>
             {isRealOffer ? (
               <button
@@ -205,9 +211,9 @@ function TradeFlowClientInner({ offer }: Props) {
                     setStatus(e instanceof Error ? e.message : 'Reserve failed'),
                   )
                 }
-                className="rounded-lg border border-zinc-300 px-4 py-2 text-sm disabled:opacity-50 dark:border-zinc-700"
+                className="btn-secondary w-full sm:w-auto"
               >
-                Reserve liquidity
+                Reserve Liquidity
               </button>
             ) : null}
             <button
@@ -218,13 +224,15 @@ function TradeFlowClientInner({ offer }: Props) {
                   setStatus(e instanceof Error ? e.message : 'Escrow failed'),
                 )
               }
-              className="rounded-lg border border-zinc-300 px-4 py-2 text-sm disabled:opacity-50 dark:border-zinc-700"
+              className="btn-secondary w-full sm:w-auto"
             >
-              Deploy escrow
+              Deploy Escrow
             </button>
           </div>
           {status ? (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">{status}</p>
+            <p className="text-sm text-muted" role="status" aria-live="polite">
+              {status}
+            </p>
           ) : null}
         </div>
 
@@ -245,7 +253,7 @@ function TradeFlowClientInner({ offer }: Props) {
         contractId={escrowContract}
       />
 
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-subtle">
         Fiat leg is off-chain. On testnet, a payment declaration does not confirm
         fiat settlement.
       </p>

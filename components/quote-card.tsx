@@ -16,23 +16,25 @@ export function QuoteCard({
   expiresAt,
 }: Props) {
   return (
-    <div className="glass-panel p-5">
-      <h3 className="text-sm font-medium text-zinc-500">Executable quote</h3>
-      <p className="mt-2 text-2xl font-semibold tabular-nums">
+    <div className="gradient-border-card p-4 sm:p-5">
+      <h3 className="text-sm font-medium text-subtle">Executable Quote</h3>
+      <p className="mt-2 text-xl font-semibold tabular-nums break-words sm:text-2xl">
         {usdcAmount} USDC → {fiatAmount} {fiatCurrency}
       </p>
-      <dl className="mt-4 grid gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-        <div className="flex justify-between">
+      <dl className="mt-4 grid gap-2 text-sm text-muted">
+        <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">
           <dt>Reflector reference</dt>
-          <dd className="font-mono">{referencePrice}</dd>
+          <dd className="font-mono break-all sm:text-right">{referencePrice}</dd>
         </div>
-        <div className="flex justify-between">
+        <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">
           <dt>Merchant spread</dt>
-          <dd>{spreadBps} bps</dd>
+          <dd className="tabular-nums sm:text-right">{spreadBps} bps</dd>
         </div>
-        <div className="flex justify-between">
+        <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-4">
           <dt>Expires</dt>
-          <dd>{new Date(expiresAt).toLocaleString()}</dd>
+          <dd className="sm:text-right">
+            {new Date(expiresAt).toLocaleString()}
+          </dd>
         </div>
       </dl>
     </div>

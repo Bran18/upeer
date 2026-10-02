@@ -8,7 +8,7 @@ export function PageHeader({ eyebrow, title, description }: PageHeaderProps) {
   return (
     <header className="mb-12 max-w-2xl">
       {eyebrow ? (
-        <p className="text-caption font-medium uppercase tracking-widest">
+        <p className="text-caption font-medium uppercase tracking-[0.22em]">
           {eyebrow}
         </p>
       ) : null}
