@@ -7,7 +7,7 @@ type Props = {
 export function AssetBadge({ code, issuer, ratingAverage }: Props) {
   return (
     <span
-      className="inline-flex items-center gap-2 rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium dark:bg-zinc-800"
+      className="inline-flex items-center gap-2 rounded-md bg-[var(--fill)] px-2 py-1 text-xs font-medium"
       title={issuer}
     >
       {code}

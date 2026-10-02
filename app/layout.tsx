@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { Syne } from 'next/font/google';
 import '@pollar/react/styles.css';
 import { AppProviders } from '@/components/providers/app-providers';
 import { SiteHeader } from '@/components/site-header';
@@ -17,12 +16,6 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-const syne = Syne({
-  variable: '--font-display',
-  subsets: ['latin'],
-  weight: ['600', '700', '800'],
-});
-
 export const metadata: Metadata = {
   title: 'UPEER — USDC OTC on Stellar',
   description:
@@ -37,12 +30,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${syne.variable} h-full dark`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-[var(--surface)] focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:shadow"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-[var(--surface)] focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:shadow"
         >
           Skip to content
         </a>

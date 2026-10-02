@@ -41,7 +41,7 @@ export function OnboardingGate() {
   if (status === 'syncing' && isAuthenticated && pathname !== '/onboarding') {
     return (
       <div
-        className="border-b border-[var(--line)] bg-[var(--surface)]/90 px-4 py-2 text-center text-sm text-[var(--muted)]"
+        className="material-bar border-b px-4 py-2 text-center text-sm text-[var(--foreground-secondary)]"
         role="status"
         aria-live="polite"
       >

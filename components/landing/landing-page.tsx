@@ -1,103 +1,118 @@
 'use client';
 
 import { ViewTransition } from 'react';
-import { HeroBackground } from '@/components/visual/hero-background';
+import { HeroVisual } from '@/components/visual/hero-background';
 import { GlowButton } from '@/components/ui/glow-button';
 import { NavLink } from '@/components/transition/nav-link';
 
 const PILLARS = [
   {
-    title: 'Verified liquidity',
-    body: 'Trade with merchants you can trust—OTC USDC on Stellar testnet.',
+    title: 'Verified merchants',
+    body: 'OTC liquidity from vetted desks on Stellar testnet.',
+    glyph: '✓',
   },
   {
-    title: 'Executable quotes',
-    body: 'Reflector references plus spread, locked before you fund escrow.',
+    title: 'Locked quotes',
+    body: 'Reflector reference and spread, fixed before you commit.',
+    glyph: '◎',
   },
   {
-    title: 'Escrow you can verify',
-    body: 'Trustless Work single-release milestones for the digital leg.',
+    title: 'Escrow on-chain',
+    body: 'Trustless Work milestones for the USDC leg.',
+    glyph: '⬡',
   },
 ] as const;
 
 export function LandingPage() {
   return (
-    <div className="relative min-h-[calc(100vh-8rem)] overflow-hidden">
-      <HeroBackground />
-
-      <div className="relative mx-auto flex max-w-6xl flex-col px-4 pb-24 pt-16 sm:px-6 lg:pt-24">
-        <ViewTransition enter="slide-up" exit="fade-out" default="none">
-          <div className="max-w-3xl">
-            <p className="hero-fade-in font-mono text-xs uppercase tracking-[0.28em] text-[var(--accent)]">
-              Stellar · USDC · OTC
-            </p>
-            <h1 className="hero-fade-in-delay mt-5 font-[family-name:var(--font-display)] text-5xl font-bold leading-[1.05] tracking-tight text-balance sm:text-6xl lg:text-7xl">
-              Move USDC
-              <span className="block bg-gradient-to-r from-[var(--accent)] via-emerald-200 to-violet-300 bg-clip-text text-transparent">
-                peer to peer.
-              </span>
-            </h1>
-            <p className="hero-fade-in-delay-2 mt-6 max-w-xl text-lg leading-relaxed text-[var(--muted)]">
-              UPEER is the marketplace layer—minimal friction, maximum clarity.
-              Connect with Pollar, pick a role, trade with escrow-backed
-              settlement.
-            </p>
-            <div className="hero-fade-in-delay-3 mt-10 flex flex-wrap items-center gap-4">
-              <GlowButton href="/market">Explore market</GlowButton>
-              <GlowButton href="/app" variant="ghost">
-                Open console
-              </GlowButton>
+    <div className="overflow-hidden">
+      <section className="relative apple-aurora">
+        <div className="mx-auto grid max-w-[980px] gap-10 px-6 pb-20 pt-14 sm:pt-20 lg:grid-cols-[1fr_1fr] lg:items-center lg:gap-6 lg:pb-28 lg:pt-24">
+          <ViewTransition enter="fade-in" exit="fade-out" default="none">
+            <div className="max-w-xl">
+              <p className="hero-fade-in text-caption font-medium uppercase tracking-widest">
+                USDC on Stellar
+              </p>
+              <h1 className="hero-fade-in-delay text-large-title mt-3 text-balance">
+                OTC trading,
+                <span className="text-[var(--foreground-secondary)]">
+                  {' '}
+                  designed to feel effortless.
+                </span>
+              </h1>
+              <p className="hero-fade-in-delay-2 text-body mt-5 max-w-md">
+                UPEER connects buyers and merchants with clear quotes and
+                escrow you can verify. Sign in with Pollar—then trade.
+              </p>
+              <div className="hero-fade-in-delay-3 mt-8 flex flex-wrap items-center gap-3">
+                <GlowButton href="/market">Browse market</GlowButton>
+                <GlowButton href="/app" variant="secondary">
+                  Console
+                </GlowButton>
+              </div>
             </div>
-          </div>
-        </ViewTransition>
+          </ViewTransition>
 
-        <section className="mt-24 grid gap-4 sm:grid-cols-3">
-          {PILLARS.map((item, index) => (
-            <ViewTransition key={item.title} enter="slide-up" default="none">
-              <article
-                className="glass-panel p-6 transition hover:border-[var(--accent)]/30"
-                style={{ animationDelay: `${index * 80}ms` }}
-              >
-                <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold">
-                  {item.title}
-                </h2>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
-                  {item.body}
-                </p>
-              </article>
-            </ViewTransition>
-          ))}
-        </section>
+          <ViewTransition enter="slide-up" default="none">
+            <HeroVisual />
+          </ViewTransition>
+        </div>
+      </section>
 
-        <section className="mt-20 flex flex-col items-start justify-between gap-6 border-t border-[var(--line)] pt-12 sm:flex-row sm:items-center">
-          <div>
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-              Three steps
-            </p>
-            <ol className="mt-4 space-y-2 text-sm text-[var(--muted)]">
-              <li>
-                <span className="text-[var(--foreground)]">01</span> — Quote &
-                reserve
-              </li>
-              <li>
-                <span className="text-[var(--foreground)]">02</span> — Fund
-                escrow
-              </li>
-              <li>
-                <span className="text-[var(--foreground)]">03</span> — Release
-                on milestone
-              </li>
-            </ol>
+      <section className="bg-[var(--background-secondary)] px-6 py-20 sm:py-28">
+        <div className="mx-auto max-w-[980px]">
+          <h2 className="text-title-2 text-center text-balance">
+            Everything you need. Nothing you don&apos;t.
+          </h2>
+          <p className="text-body mx-auto mt-3 max-w-lg text-center">
+            Three ideas behind every trade on UPEER.
+          </p>
+          <div className="mt-12 grid gap-4 sm:grid-cols-3">
+            {PILLARS.map((item) => (
+              <ViewTransition key={item.title} enter="slide-up" default="none">
+                <article className="bento-card h-full text-center sm:text-left">
+                  <span
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent-muted)] text-lg text-[var(--accent)]"
+                    aria-hidden
+                  >
+                    {item.glyph}
+                  </span>
+                  <h3 className="text-headline mt-4">{item.title}</h3>
+                  <p className="text-body mt-2 text-[0.9375rem]">{item.body}</p>
+                </article>
+              </ViewTransition>
+            ))}
           </div>
+        </div>
+      </section>
+
+      <section className="px-6 py-20">
+        <div className="mx-auto flex max-w-[980px] flex-col items-center text-center">
+          <p className="text-caption uppercase tracking-widest">How it works</p>
+          <ol className="mt-8 flex flex-col gap-6 sm:flex-row sm:gap-12">
+            {[
+              ['Quote', 'Pick an offer and lock terms.'],
+              ['Fund', 'Deploy Trustless Work escrow.'],
+              ['Release', 'Milestone approval releases USDC.'],
+            ].map(([step, detail], i) => (
+              <li key={step} className="max-w-[200px]">
+                <span className="text-headline text-[var(--accent)]">
+                  {i + 1}
+                </span>
+                <p className="text-headline mt-1">{step}</p>
+                <p className="text-body mt-1 text-[0.875rem]">{detail}</p>
+              </li>
+            ))}
+          </ol>
           <NavLink
             href="/merchant"
             direction="forward"
-            className="text-sm font-medium text-[var(--accent)] underline-offset-4 hover:underline"
+            className="mt-12 text-[0.9375rem] font-medium text-[var(--accent)] hover:underline"
           >
-            Become a merchant →
+            List liquidity as a merchant
           </NavLink>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -5,21 +5,21 @@ import { DirectionalTransition } from '@/components/transition/directional-trans
 export default function OnboardingPage() {
   return (
     <DirectionalTransition>
-      <div className="mx-auto max-w-2xl px-4 py-14 sm:px-6">
+      <div className="mx-auto max-w-[640px] px-6 py-16 sm:py-20">
         <PollarRequired
           fallback={
-            <p className="text-sm text-[var(--muted)]">
+            <p className="text-body text-sm">
               Sign in with Pollar from the header to continue onboarding.
             </p>
           }
         >
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-[var(--accent)]">
+          <p className="text-caption font-medium uppercase tracking-widest">
             Welcome
           </p>
-          <h1 className="mt-3 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+          <h1 className="text-title-2 mt-3 text-balance">
             How will you use UPEER?
           </h1>
-          <p className="mt-4 text-pretty text-[var(--muted)]">
+          <p className="text-body mt-4 text-pretty">
             One wallet, one profile—pick buyer, merchant, or both and we&apos;ll
             route you to the right tools.
           </p>

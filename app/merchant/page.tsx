@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/ui/page-header';
 export default function MerchantPage() {
   return (
     <DirectionalTransition>
-      <div className="mx-auto max-w-xl px-4 py-14 sm:px-6">
+      <div className="mx-auto max-w-[640px] px-6 py-16 sm:py-20">
         <PageHeader
           eyebrow="Supply"
           title="Merchant desk"

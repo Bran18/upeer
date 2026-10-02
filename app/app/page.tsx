@@ -4,7 +4,7 @@ import { DirectionalTransition } from '@/components/transition/directional-trans
 export default function AppConsolePage() {
   return (
     <DirectionalTransition>
-      <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6">
+      <div className="mx-auto max-w-[980px] px-6 py-16 sm:py-20">
         <UpeerConsole />
       </div>
     </DirectionalTransition>

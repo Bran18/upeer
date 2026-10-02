@@ -84,7 +84,7 @@ export function OnboardingFlow() {
 
   if (sessionStatus === 'syncing') {
     return (
-      <p className="text-sm text-zinc-600 dark:text-zinc-400" aria-live="polite">
+      <p className="text-body text-sm" aria-live="polite">
         Connecting your wallet to UPEER…
       </p>
     );
@@ -92,7 +92,7 @@ export function OnboardingFlow() {
 
   if (sessionStatus === 'anonymous') {
     return (
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="text-body text-sm">
         Use <strong>Login with Pollar</strong> in the header, then return here.
       </p>
     );
@@ -110,7 +110,7 @@ export function OnboardingFlow() {
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <fieldset>
-        <legend className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        <legend className="text-headline text-sm">
           How will you use UPEER?
         </legend>
         <div
@@ -133,11 +133,11 @@ export function OnboardingFlow() {
         <div>
           <label
             htmlFor="merchant-display-name"
-            className="block text-sm font-medium text-zinc-900 dark:text-zinc-100"
+            className="text-headline block text-sm"
           >
             Merchant display name
           </label>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-body mt-1 text-sm">
             Shown to buyers on offers and quotes.
           </p>
           <input
@@ -150,7 +150,7 @@ export function OnboardingFlow() {
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="e.g. Andes Liquidity…"
-            className="mt-2 w-full rounded-xl border border-[var(--line)] bg-black/40 px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+            className="mt-2 w-full min-h-[44px] rounded-xl border border-[var(--line)] bg-[var(--background-secondary)] px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
           />
         </div>
       ) : null}
@@ -168,7 +168,7 @@ export function OnboardingFlow() {
       <button
         type="submit"
         disabled={busy || !intent}
-        className="rounded-full bg-[var(--accent)] px-6 py-2.5 text-sm font-semibold text-[var(--accent-ink)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
+        className="min-h-[44px] rounded-full bg-[var(--accent)] px-6 py-2.5 text-sm font-medium text-[var(--accent-ink)] hover:bg-[var(--accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40"
       >
         {busy ? 'Saving…' : 'Continue to UPEER'}
       </button>

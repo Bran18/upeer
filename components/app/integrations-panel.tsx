@@ -42,7 +42,7 @@ export function IntegrationsPanel() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <section className="glass-panel p-5">
+      <section className="surface-card p-5">
         <h2 className="font-semibold">Reflector Pulse (FX)</h2>
         <p className="mt-1 text-xs text-zinc-500">
           Reference prices for LATAM fiat. Executable quotes apply merchant spread
@@ -84,7 +84,7 @@ export function IntegrationsPanel() {
         )}
       </section>
 
-      <section className="glass-panel p-5">
+      <section className="surface-card p-5">
         <h2 className="font-semibold">Trustless Work V1</h2>
         <p className="mt-1 text-xs text-zinc-500">
           Single-release escrow API (server-side keys only).

@@ -8,22 +8,30 @@ const HeroScene = dynamic(
   { ssr: false },
 );
 
-export function HeroBackground() {
+/** Right-column product visual with ambient glow + Three.js scene. */
+export function HeroVisual() {
   const reduceMotion = useReducedMotion();
+
+  if (reduceMotion) {
+    return (
+      <div
+        className="flex h-full min-h-[280px] items-center justify-center"
+        aria-hidden
+      >
+        <div className="hero-static-orb h-52 w-52 rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+      className="relative h-full min-h-[320px] w-full sm:min-h-[420px] lg:min-h-[520px]"
       aria-hidden
     >
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(52,211,153,0.18),transparent_55%),radial-gradient(ellipse_60%_50%_at_90%_20%,rgba(139,92,246,0.12),transparent_50%),linear-gradient(to_bottom,#030303_0%,#050508_45%,#030303_100%)]" />
-      <div className="hero-grid absolute inset-0 opacity-[0.35]" />
-      {!reduceMotion ? (
-        <div className="absolute inset-0 opacity-90 mix-blend-screen">
-          <HeroScene />
-        </div>
-      ) : null}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#030303]/20 to-[#030303]" />
+      <div className="hero-canvas-glow pointer-events-none absolute left-1/2 top-1/2 h-[min(90%,420px)] w-[min(90%,420px)] -translate-x-1/2 -translate-y-1/2 rounded-full" />
+      <div className="relative z-[1] h-full w-full">
+        <HeroScene />
+      </div>
     </div>
   );
 }

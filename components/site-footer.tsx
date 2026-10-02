@@ -1,12 +1,14 @@
 export function SiteFooter() {
   return (
-    <footer className="border-t border-[var(--line)] py-10 text-center">
-      <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-[var(--muted)]">
-        Testnet · Fiat off-chain · Escrow on Stellar
-      </p>
-      <p className="mt-2 text-xs text-[var(--muted)]">
-        Declarations do not confirm payment. Use at your own risk.
-      </p>
+    <footer className="border-t border-[var(--line)] bg-[var(--background-secondary)] px-6 py-10">
+      <div className="mx-auto max-w-[980px] text-center">
+        <p className="text-caption">
+          Testnet only · Fiat settles off-chain · Escrow on Stellar
+        </p>
+        <p className="text-caption mt-2">
+          Declarations do not confirm payment.
+        </p>
+      </div>
     </footer>
   );
 }

@@ -28,16 +28,14 @@ function UpeerConsoleInner() {
 
   return (
     <div className="space-y-8">
-      <section className="glass-panel p-6 sm:p-8">
+      <section className="surface-card p-6 sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+            <p className="text-caption font-medium uppercase tracking-widest">
               Console
             </p>
-            <h1 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-bold">
-              Developer console
-            </h1>
-            <p className="mt-2 text-sm text-[var(--muted)]">
+            <h1 className="text-title-2 mt-2 text-[1.75rem]">Developer console</h1>
+            <p className="text-body mt-2 text-sm">
               Pollar wallet, Reflector references, Trustless Work escrow, and
               Soroswap swaps (testnet).
             </p>
@@ -46,7 +44,7 @@ function UpeerConsoleInner() {
         </div>
         <dl className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-[var(--muted)]">Pollar</dt>
+            <dt className="text-[var(--foreground-secondary)]">Pollar</dt>
             <dd>
               {isAuthenticated
                 ? verified
@@ -56,13 +54,13 @@ function UpeerConsoleInner() {
             </dd>
           </div>
           <div>
-            <dt className="text-[var(--muted)]">Wallet</dt>
+            <dt className="text-[var(--foreground-secondary)]">Wallet</dt>
             <dd className="font-mono text-xs">
               {wallet?.address ?? '—'}
             </dd>
           </div>
           <div>
-            <dt className="text-[var(--muted)]">UPEER profile</dt>
+            <dt className="text-[var(--foreground-secondary)]">UPEER profile</dt>
             <dd>
               {profile?.platformIntent
                 ? `${profile.platformIntent} · synced`
@@ -72,7 +70,7 @@ function UpeerConsoleInner() {
             </dd>
           </div>
           <div>
-            <dt className="text-[var(--muted)]">Server session</dt>
+            <dt className="text-[var(--foreground-secondary)]">Server session</dt>
             <dd>
               {upeerStatus === 'syncing'
                 ? 'Syncing…'

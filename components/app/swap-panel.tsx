@@ -66,7 +66,7 @@ export function SwapPanel({ disabled }: Props) {
   };
 
   return (
-    <section className="glass-panel p-6">
+    <section className="surface-card p-6">
       <h2 className="font-semibold">Soroswap (adjacent)</h2>
       <p className="mt-1 text-sm text-zinc-500">
         Fund your wallet with USDC via Soroswap. This does not complete an OTC
@@ -84,7 +84,7 @@ export function SwapPanel({ disabled }: Props) {
         type="button"
         disabled={disabled || busy}
         onClick={() => void runSwap()}
-        className="mt-4 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+        className="mt-4 min-h-[44px] rounded-full bg-[var(--accent)] px-5 text-sm font-medium text-[var(--accent-ink)] hover:bg-[var(--accent-hover)] disabled:opacity-40"
       >
         Quote & swap XLM → USDC
       </button>

@@ -21,7 +21,7 @@ export default async function MarketPage() {
 
   return (
     <DirectionalTransition>
-      <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6">
+      <div className="mx-auto max-w-[980px] px-6 py-16 sm:py-20">
         <PageHeader
           eyebrow="Liquidity"
           title="Live OTC offers"
