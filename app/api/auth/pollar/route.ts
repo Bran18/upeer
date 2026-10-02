@@ -5,7 +5,8 @@ import {
   SESSION_COOKIE,
   type SessionPayload,
 } from '@/lib/auth/session';
-import { upsertProfileFromPollar } from '@/lib/db/profiles';
+import { getMeProfile, upsertProfileFromPollar } from '@/lib/db/profiles';
+import type { PlatformIntent } from '@/lib/profile/types';
 import { verifyPollarAccessToken } from '@/lib/pollar/server';
 import { isSupabaseConfigured } from '@/lib/supabase/server';
 import { getStellarNetwork } from '@/lib/config/network';
@@ -27,8 +28,21 @@ export async function POST(req: Request) {
     }
 
     let profileId: string | undefined;
+    let profileSummary:
+      | {
+          platformIntent: string | null;
+          onboardingCompletedAt: string | null;
+        }
+      | undefined;
     if (isSupabaseConfigured()) {
       profileId = await upsertProfileFromPollar(pollar);
+      const me = await getMeProfile(profileId);
+      if (me) {
+        profileSummary = {
+          platformIntent: me.platformIntent,
+          onboardingCompletedAt: me.onboardingCompletedAt,
+        };
+      }
     }
 
     const expiresAt = new Date(pollar.expiresAt);
@@ -46,6 +60,12 @@ export async function POST(req: Request) {
       expiresAt: pollar.expiresAt,
       stellarAddress: pollar.wallet.publicKey,
       profileId,
+      onboardingComplete: Boolean(
+        profileSummary?.onboardingCompletedAt &&
+          profileSummary.platformIntent,
+      ),
+      platformIntent:
+        (profileSummary?.platformIntent as PlatformIntent | null) ?? null,
     });
     response.cookies.set(SESSION_COOKIE, accessToken, {
       httpOnly: true,

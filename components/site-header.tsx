@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { PollarWalletControl } from '@/components/pollar-wallet-control';
+import { ProfileBadge } from '@/components/session/profile-badge';
 
 const nav = [
   { href: '/market', label: 'Market' },
@@ -33,6 +34,7 @@ export function SiteHeader() {
           </nav>
         </div>
         <div className="flex items-center gap-3">
+          <ProfileBadge />
           <PollarWalletControl />
         </div>
       </div>

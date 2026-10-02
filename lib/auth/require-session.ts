@@ -9,7 +9,7 @@ export async function requireSession(): Promise<
     return NextResponse.json(
       {
         error:
-          'Unauthorized — sign in with Pollar and sync server session (Console → Sync).',
+          'Unauthorized — sign in with Pollar and complete onboarding.',
       },
       { status: 401 },
     );
