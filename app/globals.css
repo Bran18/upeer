@@ -68,6 +68,16 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(0, 113, 227, 0.18);
+  overflow-x: hidden;
+}
+
+input,
+textarea,
+select {
+  background-color: var(--surface);
+  color: var(--foreground);
 }
 
 .text-large-title {
@@ -142,6 +152,30 @@ body {
   }
 }
 
+.hero-stage {
+  background:
+    radial-gradient(ellipse 70% 55% at 78% 42%, rgba(56, 189, 248, 0.16), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 20% 80%, rgba(99, 102, 241, 0.07), transparent 50%),
+    linear-gradient(180deg, var(--background) 0%, var(--background-secondary) 100%);
+}
+
+.hero-static-pair {
+  width: 280px;
+  height: 140px;
+  background:
+    radial-gradient(circle at 28% 50%, rgba(59, 130, 246, 0.45), transparent 42%),
+    radial-gradient(circle at 72% 50%, rgba(34, 211, 238, 0.4), transparent 42%);
+}
+
+@media (prefers-color-scheme: dark) {
+  .hero-stage {
+    background:
+      radial-gradient(ellipse 70% 55% at 78% 42%, rgba(56, 189, 248, 0.2), transparent 55%),
+      radial-gradient(ellipse 45% 40% at 18% 85%, rgba(99, 102, 241, 0.12), transparent 48%),
+      linear-gradient(180deg, #07080c 0%, #0c0d12 100%);
+  }
+}
+
 .glass-panel,
 .surface-card {
   border-radius: var(--radius-card);
@@ -168,7 +202,6 @@ body {
 }
 
 .bento-card:hover {
-  transform: scale(1.01);
   box-shadow: var(--shadow-elevated);
 }
 
@@ -237,6 +270,138 @@ body {
   }
 }
 
+.text-accent-word {
+  color: var(--accent);
+}
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.9s var(--ease-apple),
+    transform 0.9s var(--ease-apple);
+}
+
+.scroll-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.marquee-track {
+  animation: marquee-scroll 36s linear infinite;
+}
+
+.marquee-mask {
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    black 8%,
+    black 92%,
+    transparent
+  );
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.gradient-border-card {
+  position: relative;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-elevated);
+}
+
+.gradient-border-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(10, 132, 255, 0.7),
+    rgba(100, 210, 255, 0.2),
+    rgba(10, 132, 255, 0.5)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.gradient-border-pill {
+  border-radius: 1rem;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-elevated);
+}
+
+.finale-cta {
+  border-radius: 1.75rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-elevated);
+  position: relative;
+  overflow: hidden;
+}
+
+.finale-cta::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -40%;
+  width: 80%;
+  height: 70%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(10, 132, 255, 0.16),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.finale-cta > * {
+  position: relative;
+  z-index: 1;
+}
+
+.market-aurora {
+  background:
+    radial-gradient(ellipse 70% 80% at 80% 0%, rgba(10, 132, 255, 0.18), transparent),
+    radial-gradient(ellipse 50% 60% at 10% 100%, rgba(0, 113, 227, 0.08), transparent);
+}
+
+.page-noise {
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.tilt-card {
+  transform-style: preserve-3d;
+  transition: transform 0.45s var(--ease-apple);
+  will-change: transform;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 @media (prefers-color-scheme: light) {
   .hero-canvas-glow {
     background: radial-gradient(
@@ -261,6 +426,19 @@ body {
   }
 
   .bento-card:hover {
+    transform: none;
+  }
+
+  .marquee-track {
+    animation: none;
+  }
+
+  .finale-cta::before {
+    opacity: 0.6;
+  }
+
+  .scroll-reveal {
+    opacity: 1;
     transform: none;
   }
 }

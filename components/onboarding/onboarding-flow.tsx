@@ -167,7 +167,7 @@ export function OnboardingFlow() {
 
       <button
         type="submit"
-        disabled={busy || !intent}
+        disabled={busy}
         className="min-h-[44px] rounded-full bg-[var(--accent)] px-6 py-2.5 text-sm font-medium text-[var(--accent-ink)] hover:bg-[var(--accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40"
       >
         {busy ? 'Saving…' : 'Continue to UPEER'}

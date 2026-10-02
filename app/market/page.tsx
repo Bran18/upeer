@@ -1,6 +1,6 @@
+import { MarketHero } from '@/components/market/market-hero';
 import { OfferList } from '@/components/market/offer-list';
 import { DirectionalTransition } from '@/components/transition/directional-transition';
-import { PageHeader } from '@/components/ui/page-header';
 import { getNetworkConfig } from '@/lib/config/network';
 import { listMarketOffers } from '@/lib/data/offers';
 import { fetchAssetRating } from '@/lib/stellar-expert/asset';
@@ -21,12 +21,8 @@ export default async function MarketPage() {
 
   return (
     <DirectionalTransition>
-      <div className="mx-auto max-w-[980px] px-6 py-16 sm:py-20">
-        <PageHeader
-          eyebrow="Liquidity"
-          title="Live OTC offers"
-          description="Verified merchants on testnet. Quotes lock Reflector references plus spread before you fund escrow."
-        />
+      <MarketHero offerCount={offers.length} />
+      <div className="mx-auto max-w-[980px] px-6 py-14 sm:py-16">
         <OfferList
           offers={offers}
           usdcIssuer={network.usdcIssuer}

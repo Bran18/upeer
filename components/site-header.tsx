@@ -20,15 +20,18 @@ export function SiteHeader() {
       className="material-bar sticky top-0 z-50"
       style={{ viewTransitionName: 'persistent-nav' }}
     >
-      <div className="mx-auto flex h-[52px] max-w-[1068px] items-center justify-between gap-4 px-6">
-        <div className="flex items-center gap-10">
+      <div className="mx-auto flex min-h-12 max-w-[1120px] items-center justify-between gap-4 px-5 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-8">
+        <div className="flex min-w-0 items-center gap-8">
           <Link
             href="/"
-            className="text-[1.0625rem] font-semibold tracking-tight"
+            className="font-mono text-[0.8125rem] font-medium tracking-[0.18em] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
           >
             UPEER
           </Link>
-          <nav className="hidden items-center gap-8 sm:flex">
+          <nav
+            aria-label="Primary"
+            className="flex items-center gap-5 overflow-x-auto sm:gap-7"
+          >
             {nav.map((item) => {
               const active =
                 pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -37,10 +40,11 @@ export function SiteHeader() {
                   key={item.href}
                   href={item.href}
                   direction="none"
-                  className={`text-[0.8125rem] transition ${
+                  aria-current={active ? 'page' : undefined}
+                  className={`whitespace-nowrap text-[0.8125rem] transition-[color] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] ${
                     active
-                      ? 'font-semibold text-[var(--foreground)]'
-                      : 'text-[var(--foreground-secondary)] hover:text-[var(--foreground)]'
+                      ? 'text-[var(--foreground)]'
+                      : 'text-[var(--foreground-tertiary)] hover:text-[var(--foreground)]'
                   }`}
                 >
                   {item.label}
@@ -49,7 +53,7 @@ export function SiteHeader() {
             })}
           </nav>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <ProfileBadge />
           <PollarWalletControl />
         </div>

@@ -14,19 +14,19 @@ type Props = {
 
 export function TradeStepper({ activeStep }: Props) {
   return (
-    <ol className="flex flex-wrap gap-2 text-sm">
+    <ol className="flex flex-wrap gap-2">
       {STEPS.map((label, index) => {
         const active = index === activeStep;
         const done = index < activeStep;
         return (
           <li
             key={label}
-            className={`rounded-full px-3 py-1 font-medium ${
+            className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition sm:text-sm ${
               active
-                ? 'bg-emerald-600 text-white'
+                ? 'step-pill-active bg-[var(--accent)] text-[var(--accent-ink)] shadow-[0_0_24px_-4px_rgba(10,132,255,0.55)]'
                 : done
-                  ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100'
-                  : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
+                  ? 'bg-[var(--accent-muted)] text-[var(--accent)]'
+                  : 'bg-[var(--fill)] text-[var(--foreground-secondary)]'
             }`}
           >
             {index + 1}. {label}

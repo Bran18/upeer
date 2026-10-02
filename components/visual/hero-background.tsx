@@ -8,7 +8,6 @@ const HeroScene = dynamic(
   { ssr: false },
 );
 
-/** Right-column product visual with ambient glow + Three.js scene. */
 export function HeroVisual() {
   const reduceMotion = useReducedMotion();
 
@@ -25,10 +24,10 @@ export function HeroVisual() {
 
   return (
     <div
-      className="relative h-full min-h-[320px] w-full sm:min-h-[420px] lg:min-h-[520px]"
+      className="pointer-events-none relative h-full min-h-[320px] w-full sm:min-h-[420px] lg:min-h-[520px]"
       aria-hidden
     >
-      <div className="hero-canvas-glow pointer-events-none absolute left-1/2 top-1/2 h-[min(90%,420px)] w-[min(90%,420px)] -translate-x-1/2 -translate-y-1/2 rounded-full" />
+      <div className="hero-canvas-glow absolute left-1/2 top-1/2 h-[min(90%,420px)] w-[min(90%,420px)] -translate-x-1/2 -translate-y-1/2 rounded-full" />
       <div className="relative z-[1] h-full w-full">
         <HeroScene />
       </div>

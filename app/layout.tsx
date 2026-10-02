@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import '@pollar/react/styles.css';
 import { AppProviders } from '@/components/providers/app-providers';
@@ -22,6 +22,13 @@ export const metadata: Metadata = {
     'Verified merchants, Reflector quotes, Trustless Work escrow. Trade USDC peer to peer on Stellar.',
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#fbfbfd' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,13 +42,20 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-[var(--surface)] focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:shadow"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-[max(1rem,env(safe-area-inset-top))] focus:z-[100] focus:rounded-xl focus:bg-[var(--surface)] focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
         >
           Skip to content
         </a>
         <AppProviders>
+          <div className="page-noise pointer-events-none fixed inset-0 z-[1]" aria-hidden />
           <SiteHeader />
-          <main id="main-content" className="flex-1">{children}</main>
+          <main
+            id="main-content"
+            className="relative z-[2] flex-1 scroll-mt-[72px]"
+            tabIndex={-1}
+          >
+            {children}
+          </main>
           <SiteFooter />
         </AppProviders>
       </body>

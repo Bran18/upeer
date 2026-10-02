@@ -1,3 +1,5 @@
+'use client';
+
 import { NavLink } from '@/components/transition/nav-link';
 import type { ComponentProps } from 'react';
 
@@ -17,10 +19,10 @@ export function GlowButton({
   className = '',
 }: GlowButtonProps) {
   const base =
-    'inline-flex min-h-[44px] items-center justify-center rounded-full px-6 text-[0.9375rem] font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]';
+    'inline-flex min-h-[44px] items-center justify-center rounded-full px-6 text-[0.9375rem] font-medium transition-[background-color,transform,box-shadow] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:scale-[0.98]';
   const styles =
     variant === 'primary'
-      ? 'bg-[var(--accent)] text-[var(--accent-ink)] hover:bg-[var(--accent-hover)]'
+      ? 'bg-[var(--accent)] text-[var(--accent-ink)] shadow-[0_8px_24px_-10px_rgba(0,113,227,0.7)] hover:bg-[var(--accent-hover)]'
       : variant === 'secondary'
         ? 'bg-[var(--fill)] text-[var(--accent)] hover:bg-[var(--accent-muted)]'
         : 'text-[var(--accent)] hover:underline';
@@ -43,7 +45,7 @@ export function GlowButtonNative({
   ...props
 }: GlowButtonNativeProps) {
   const base =
-    'inline-flex min-h-[44px] items-center justify-center rounded-full px-6 text-[0.9375rem] font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40';
+    'inline-flex min-h-[44px] items-center justify-center rounded-full px-6 text-[0.9375rem] font-medium transition-[background-color,opacity] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40';
   const styles =
     variant === 'primary'
       ? 'bg-[var(--accent)] text-[var(--accent-ink)] hover:bg-[var(--accent-hover)]'

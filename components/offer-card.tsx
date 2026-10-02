@@ -16,7 +16,7 @@ export function OfferCard({ offer, usdcRating, usdcIssuer }: Props) {
     offer.side === 'sell_usdc' ? 'Sells USDC' : 'Buys USDC';
 
   return (
-    <article className="surface-card group p-6 transition hover:shadow-[var(--shadow-elevated)]">
+    <article className="surface-card group p-6 transition duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-elevated)]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <ViewTransition name={`merchant-${offer.id}`} share="morph" default="none">
@@ -44,7 +44,7 @@ export function OfferCard({ offer, usdcRating, usdcIssuer }: Props) {
         direction="forward"
         className="mt-5 inline-flex min-h-[40px] items-center rounded-full bg-[var(--accent)] px-5 text-[0.875rem] font-medium text-[var(--accent-ink)] hover:bg-[var(--accent-hover)]"
       >
-        Start trade
+        Start Trade
       </NavLink>
     </article>
   );
