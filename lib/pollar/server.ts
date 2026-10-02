@@ -8,7 +8,7 @@ export type PollarVerifiedSession = {
   profile?: { displayName?: string; email?: string };
 };
 
-type VerifyEnvelope = {
+type VerifyContent = {
   userId: string;
   applicationId: string;
   expiresAt: string;
@@ -16,11 +16,16 @@ type VerifyEnvelope = {
   wallet: { publicKey: string; custody: string };
   authProvider: string;
   profile?: { displayName?: string; email?: string };
-  error?: { code?: string; message?: string };
+};
+
+type VerifyApiResponse = {
+  success: boolean;
+  code?: string;
+  content?: VerifyContent;
 };
 
 function pollarServerUrl(): string {
-  return process.env.POLLAR_SERVER_URL ?? 'https://sdk.api.pollar.xyz';
+  return process.env.POLLAR_SERVER_URL ?? 'https://server.api.pollar.xyz';
 }
 
 function pollarSecretKey(): string {
@@ -43,11 +48,14 @@ export async function verifyPollarAccessToken(
     body: JSON.stringify({ token }),
   });
 
-  const body = (await response.json()) as VerifyEnvelope;
-  if (!response.ok) {
-    throw new Error(body.error?.message ?? 'Pollar token verification failed');
+  const envelope = (await response.json()) as VerifyApiResponse;
+  if (!response.ok || !envelope.success || !envelope.content) {
+    throw new Error(
+      envelope.code ?? 'Pollar token verification failed',
+    );
   }
 
+  const body = envelope.content;
   const custody = body.wallet.custody;
   const mappedCustody =
     custody === 'internal' || custody === 'smart' || custody === 'external'
