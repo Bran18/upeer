@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/cn';
+import { isNavItemActive } from '@/lib/nav/active-route';
 
 type NavPillLinkProps = {
   href: string;
   label: string;
   overlay?: boolean;
   match?: string[];
+  activeExcept?: string[];
 };
 
 export function NavPillLink({
@@ -16,13 +18,10 @@ export function NavPillLink({
   label,
   overlay = false,
   match,
+  activeExcept,
 }: NavPillLinkProps) {
   const pathname = usePathname();
-  const prefixes = match ?? [href];
-  const active = prefixes.some(
-    (path) =>
-      pathname === path || (path !== '/' && pathname.startsWith(`${path}/`)),
-  );
+  const active = isNavItemActive(pathname, { href, label, match, activeExcept });
 
   return (
     <Link

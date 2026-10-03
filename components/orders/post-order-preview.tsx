@@ -123,13 +123,19 @@ export function PostOrderPreview({
         </div>
       </dl>
 
-      {step < 3 ? (
+      {step < 4 ? (
         <p className="rounded-[var(--radius-ui)] border border-[var(--line)] bg-[var(--fill)] px-3 py-2 text-xs text-[var(--foreground-secondary)] text-pretty">
           {step === 1
             ? 'Amount and payout appear here as you continue.'
-            : 'Add payout on the next step to finish your listing.'}
+            : step === 2
+              ? 'Add payout on the next step, then review before posting.'
+              : 'Review on the next step before your listing goes live.'}
         </p>
-      ) : null}
+      ) : (
+        <p className="rounded-[var(--radius-ui)] border border-[color-mix(in_srgb,var(--accent)_35%,var(--line))] bg-[color-mix(in_srgb,var(--accent)_8%,var(--fill))] px-3 py-2 text-xs text-[var(--foreground-secondary)] text-pretty">
+          Ready to post when you confirm below.
+        </p>
+      )}
 
       <ul className="space-y-2 border-t border-[var(--line)] pt-4 text-xs text-[var(--foreground-secondary)]">
         <li

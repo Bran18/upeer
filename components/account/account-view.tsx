@@ -73,7 +73,7 @@ function AccountInner() {
         <section>
           <h2 className="text-sm font-medium">Merchant</h2>
           <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
-            Operational tools stay out of the main navigation.
+            Liquidity and performance tools for sellers.
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {merchant.map((item) => (

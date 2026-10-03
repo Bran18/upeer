@@ -2,12 +2,13 @@
 
 import { cn } from '@/lib/cn';
 
-export type PostOrderStep = 1 | 2 | 3;
+export type PostOrderStep = 1 | 2 | 3 | 4;
 
 const STEPS: { id: PostOrderStep; label: string; shortLabel: string }[] = [
   { id: 1, label: 'Trade & price', shortLabel: 'Trade' },
   { id: 2, label: 'Amount', shortLabel: 'Amount' },
   { id: 3, label: 'Payout', shortLabel: 'Payout' },
+  { id: 4, label: 'Review', shortLabel: 'Review' },
 ];
 
 type Props = {

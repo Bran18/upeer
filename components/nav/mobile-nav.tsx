@@ -16,6 +16,7 @@ import {
   navLinksForSession,
   resolveUserIdentity,
 } from '@/lib/nav/user-links';
+import { isNavItemActive } from '@/lib/nav/active-route';
 
 type MobileNavProps = {
   overlay?: boolean;
@@ -72,8 +73,8 @@ export function MobileNav({ overlay = false }: MobileNavProps) {
     ? merchantNavItems(session?.profile)
     : [];
 
-  const linkClass = (href: string) => {
-    const active = pathname === href || pathname.startsWith(`${href}/`);
+  const linkClass = (item: { href: string; label: string; match?: string[]; activeExcept?: string[] }) => {
+    const active = isNavItemActive(pathname, item);
     return cn('menu-item rounded-[var(--radius-ui)]', active && 'menu-item--active');
   };
 
@@ -124,7 +125,7 @@ export function MobileNav({ overlay = false }: MobileNavProps) {
                 <>
                   <p className="text-sm font-semibold">Navigate</p>
                   <p className="px-3 py-1 text-xs text-[var(--foreground-secondary)] text-pretty">
-                    Exchange, activity, and your account
+                    Exchange, market, post orders, and your account
                   </p>
                 </>
               )}
@@ -134,7 +135,7 @@ export function MobileNav({ overlay = false }: MobileNavProps) {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={linkClass(link.href)}
+                  className={linkClass(link)}
                   onClick={close}
                 >
                   {link.label}
@@ -149,7 +150,7 @@ export function MobileNav({ overlay = false }: MobileNavProps) {
                     <Link
                       key={`${link.href}-${link.label}`}
                       href={link.href}
-                      className={linkClass(link.href)}
+                      className={linkClass(link)}
                       onClick={close}
                     >
                       {link.label}
@@ -171,7 +172,7 @@ export function MobileNav({ overlay = false }: MobileNavProps) {
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={linkClass(link.href)}
+                      className={linkClass(link)}
                       onClick={close}
                     >
                       {link.label}

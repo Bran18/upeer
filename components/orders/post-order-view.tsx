@@ -26,6 +26,11 @@ import {
   marketForCurrency,
   UPEER_COVERAGE_BLURB,
 } from '@/lib/fiat/coverage';
+import {
+  formatPricePerUsdc,
+  formatUsdcAmount,
+  orderSideLabel,
+} from '@/lib/market/format';
 import type { MeProfile } from '@/lib/profile/types';
 import {
   exchangePollarSessionFromClient,
@@ -93,6 +98,15 @@ function validatePostOrderStep(
       minUsdc: form.minUsdc,
       maxUsdc: form.maxUsdc,
     });
+  }
+  if (step === 3) {
+    if (!payoutReady) {
+      return 'Set a valid Stellar payout address (G…, 56 characters).';
+    }
+    if (payoutDraft && !STELLAR_G_REGEX.test(payoutDraft)) {
+      return 'Payout address must be a valid Stellar public key.';
+    }
+    return null;
   }
   const price = Number(form.pricePerUsdc);
   if (!Number.isFinite(price) || price <= 0) {
@@ -192,7 +206,7 @@ export function PostOrderView() {
       toast.error('Check this step', validationError);
       return;
     }
-    if (step < 3) {
+    if (step < 4) {
       goToStep((step + 1) as PostOrderStep);
     }
   };
@@ -203,10 +217,18 @@ export function PostOrderView() {
     }
   };
 
-  async function handleSubmit(event: React.FormEvent) {
+  function handleFormSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (step < 4) {
+      handleContinue();
+      return;
+    }
+    void submitOrder();
+  }
+
+  async function submitOrder() {
     setFormError(null);
-    const validationError = validatePostOrderStep(3, form, payoutReady, payoutDraft);
+    const validationError = validatePostOrderStep(4, form, payoutReady, payoutDraft);
     if (validationError) {
       setFormError(validationError);
       toast.error('Check the form', validationError);
@@ -268,7 +290,8 @@ export function PostOrderView() {
   const stepIntro: Record<PostOrderStep, string> = {
     1: `Set side and price per USDC for ${UPEER_COVERAGE_BLURB}.`,
     2: 'Choose how much USDC is on this listing and the size of each trade.',
-    3: 'Confirm where escrow sends USDC, then post to the market.',
+    3: 'Set where escrow sends USDC when you sell.',
+    4: 'Review your listing. Nothing goes live until you post.',
   };
 
   return (
@@ -308,7 +331,7 @@ export function PostOrderView() {
         className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,280px)] lg:items-start"
       >
         <form
-          onSubmit={handleSubmit}
+          onSubmit={handleFormSubmit}
           className="ui-card flex flex-col px-5 py-5 sm:px-6 sm:py-6"
           noValidate
         >
@@ -387,7 +410,7 @@ export function PostOrderView() {
             {step === 3 ? (
               <PostOrderStepPanel
                 title="USDC payout"
-                description="Escrow releases sold USDC to this Stellar address. Review your listing, then post."
+                description="Escrow releases sold USDC to this Stellar address."
               >
                 {savedPayout && !showPayoutField ? (
                   <div className="space-y-2">
@@ -461,6 +484,81 @@ export function PostOrderView() {
                 )}
               </PostOrderStepPanel>
             ) : null}
+
+            {step === 4 ? (
+              <PostOrderStepPanel
+                title="Review listing"
+                description="Check everything below. Use Back to change trade, amount, or payout."
+              >
+                <dl className="space-y-4 text-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <dt className="text-[var(--foreground-tertiary)]">Side</dt>
+                    <dd className="text-right font-medium text-[var(--foreground)]">
+                      {orderSideLabel(form.side)}
+                      <button
+                        type="button"
+                        className="ml-2 text-xs font-medium text-[var(--accent)] hover:underline"
+                        onClick={() => goToStep(1)}
+                      >
+                        Edit
+                      </button>
+                    </dd>
+                  </div>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <dt className="text-[var(--foreground-tertiary)]">Price</dt>
+                    <dd className="text-right font-medium tabular-nums text-[var(--foreground)]">
+                      {formatPricePerUsdc(form.fiatCurrency, form.pricePerUsdc)}
+                      <button
+                        type="button"
+                        className="ml-2 text-xs font-medium text-[var(--accent)] hover:underline"
+                        onClick={() => goToStep(1)}
+                      >
+                        Edit
+                      </button>
+                    </dd>
+                  </div>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <dt className="text-[var(--foreground-tertiary)]">Listing size</dt>
+                    <dd className="text-right font-medium tabular-nums text-[var(--foreground)]">
+                      {formatUsdcAmount(form.availableUsdc)} USDC
+                      <button
+                        type="button"
+                        className="ml-2 text-xs font-medium text-[var(--accent)] hover:underline"
+                        onClick={() => goToStep(2)}
+                      >
+                        Edit
+                      </button>
+                    </dd>
+                  </div>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <dt className="text-[var(--foreground-tertiary)]">Per trade</dt>
+                    <dd className="text-right font-medium tabular-nums text-[var(--foreground)]">
+                      {formatUsdcAmount(form.minUsdc)} – {formatUsdcAmount(form.maxUsdc)} USDC
+                      <button
+                        type="button"
+                        className="ml-2 text-xs font-medium text-[var(--accent)] hover:underline"
+                        onClick={() => goToStep(2)}
+                      >
+                        Edit
+                      </button>
+                    </dd>
+                  </div>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <dt className="text-[var(--foreground-tertiary)]">Payout</dt>
+                    <dd className="max-w-[min(100%,16rem)] text-right font-mono text-xs text-[var(--foreground)]">
+                      {effectivePayout}
+                      <button
+                        type="button"
+                        className="ml-2 font-sans text-xs font-medium text-[var(--accent)] hover:underline"
+                        onClick={() => goToStep(3)}
+                      >
+                        Edit
+                      </button>
+                    </dd>
+                  </div>
+                </dl>
+              </PostOrderStepPanel>
+            ) : null}
           </div>
 
           {formError ? (
@@ -482,7 +580,7 @@ export function PostOrderView() {
                 Cancel
               </Link>
             )}
-            {step < 3 ? (
+            {step < 4 ? (
               <Button type="button" onClick={handleContinue} className="ml-auto">
                 Continue
               </Button>

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { NotificationBell } from '@/components/notification-bell';
 import { MobileNav } from '@/components/nav/mobile-nav';
+import { PostOrderHeaderLink } from '@/components/nav/post-order-header-link';
 import { PrimaryNav } from '@/components/nav/primary-nav';
 import { UserMenu } from '@/components/nav/user-menu';
 import { SiteLogo } from '@/components/site-logo';
@@ -40,6 +41,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
         </div>
 
         <div className="pointer-events-auto ml-auto flex min-w-0 shrink-0 items-center gap-2">
+          <PostOrderHeaderLink overlay={overlay} />
           <NotificationBell overlay={overlay} />
           <MobileNav overlay={overlay} />
           <UserMenu overlay={overlay} />

@@ -37,6 +37,7 @@ export function PrimaryNav({ overlay = false, className = '' }: PrimaryNavProps)
           label={link.label}
           overlay={overlay}
           match={link.match}
+          activeExcept={link.activeExcept}
         />
       ))}
     </nav>
