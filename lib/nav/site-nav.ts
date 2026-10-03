@@ -55,7 +55,7 @@ export function merchantNavItems(profile: MeProfile | null | undefined): NavItem
   }
   return [
     { href: '/orders', label: 'Orders' },
-    { href: '/merchant', label: 'Liquidity' },
+    { href: '/merchant', label: 'Desk' },
     { href: '/dashboard', label: 'Performance' },
   ];
 }

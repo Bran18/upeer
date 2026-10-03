@@ -16,15 +16,40 @@ export async function GET(request: Request) {
   }
 
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
-    .from('merchants')
-    .select('id, status, display_name, payout_address, created_at')
-    .eq('profile_id', session.profileId)
-    .maybeSingle();
+  const [merchantResult, offersResult] = await Promise.all([
+    supabase
+      .from('merchants')
+      .select('id, status, display_name, payout_address, created_at')
+      .eq('profile_id', session.profileId)
+      .maybeSingle(),
+    supabase
+      .from('offers')
+      .select(
+        `
+        id,
+        side,
+        fiat_currency,
+        price_per_usdc,
+        min_usdc,
+        max_usdc,
+        available_usdc,
+        status,
+        created_at
+      `,
+      )
+      .eq('maker_profile_id', session.profileId)
+      .order('created_at', { ascending: false }),
+  ]);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (merchantResult.error) {
+    return NextResponse.json({ error: merchantResult.error.message }, { status: 500 });
+  }
+  if (offersResult.error) {
+    return NextResponse.json({ error: offersResult.error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ merchant: data });
+  return NextResponse.json({
+    merchant: merchantResult.data,
+    offers: offersResult.data ?? [],
+  });
 }

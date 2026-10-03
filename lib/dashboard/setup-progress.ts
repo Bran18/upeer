@@ -40,13 +40,33 @@ export function buildSetupItems(profile: MeProfile): SetupItem[] {
   }
 
   if (showMerchant) {
+    const verified = profile.merchantStatus === 'approved';
+    items.push({
+      id: 'desk',
+      title: 'Merchant desk',
+      description: verified
+        ? 'Your desk is verified. Post and manage orders from Desk.'
+        : 'Verification, payout, and the public name buyers see.',
+      status: verified ? 'done' : 'action',
+      href: '/merchant',
+      hrefLabel: verified ? 'Open desk' : 'Finish desk',
+    });
     items.push({
       id: 'post-order',
       title: 'Post an offer',
       description: 'Set your price per USDC and wait for takers.',
-      status: profile.payoutAddress ? 'done' : 'action',
-      href: profile.payoutAddress ? '/orders/new' : '/settings?tab=payout',
-      hrefLabel: profile.payoutAddress ? 'Post offer' : 'Set payout',
+      status: verified && profile.payoutAddress ? 'done' : 'action',
+      href:
+        !verified
+          ? '/merchant'
+          : profile.payoutAddress
+            ? '/orders/new'
+            : '/settings?tab=payout',
+      hrefLabel: !verified
+        ? 'Finish desk'
+        : profile.payoutAddress
+          ? 'Post offer'
+          : 'Set payout',
     });
     items.push({
       id: 'fiat-payments',

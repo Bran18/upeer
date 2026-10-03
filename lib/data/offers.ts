@@ -54,6 +54,25 @@ function mapOfferRow(row: {
   };
 }
 
+async function approvedDeskIds(profileIds: string[]): Promise<Set<string>> {
+  const verifiedIds = new Set<string>();
+  if (profileIds.length === 0 || !isSupabaseConfigured()) {
+    return verifiedIds;
+  }
+  const supabase = getSupabaseAdmin();
+  const { data: desks } = await supabase
+    .from('merchants')
+    .select('profile_id, status')
+    .in('profile_id', profileIds)
+    .eq('status', 'approved');
+  for (const desk of desks ?? []) {
+    if (desk.profile_id) {
+      verifiedIds.add(desk.profile_id as string);
+    }
+  }
+  return verifiedIds;
+}
+
 export async function listMarketOffers(): Promise<MarketOffer[]> {
   if (!isSupabaseConfigured()) {
     return [];
@@ -86,7 +105,22 @@ export async function listMarketOffers(): Promise<MarketOffer[]> {
     return [];
   }
 
-  return data.map((row) => mapOfferRow(row as Parameters<typeof mapOfferRow>[0]));
+  const makerIds = [
+    ...new Set(
+      data
+        .map((row) => (row as { maker_profile_id?: string }).maker_profile_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const verifiedIds = await approvedDeskIds(makerIds);
+
+  return data.map((row) => {
+    const mapped = mapOfferRow(row as Parameters<typeof mapOfferRow>[0]);
+    return {
+      ...mapped,
+      verified: verifiedIds.has(mapped.makerProfileId),
+    };
+  });
 }
 
 export async function getOfferById(id: string): Promise<MarketOffer | null> {
@@ -119,5 +153,10 @@ export async function getOfferById(id: string): Promise<MarketOffer | null> {
     return null;
   }
 
-  return mapOfferRow(data as Parameters<typeof mapOfferRow>[0]);
+  const mapped = mapOfferRow(data as Parameters<typeof mapOfferRow>[0]);
+  const verifiedIds = await approvedDeskIds([mapped.makerProfileId]);
+  return {
+    ...mapped,
+    verified: verifiedIds.has(mapped.makerProfileId),
+  };
 }

@@ -205,15 +205,36 @@ async function ensureMerchantRow(
 ): Promise<void> {
   const supabase = getSupabaseAdmin();
   const now = new Date().toISOString();
-  const { error } = await supabase.from('merchants').upsert(
-    {
-      profile_id: profileId,
-      display_name: displayName,
-      status: 'pending',
-      updated_at: now,
-    },
-    { onConflict: 'profile_id' },
-  );
+  const { data: existing, error: lookupError } = await supabase
+    .from('merchants')
+    .select('id')
+    .eq('profile_id', profileId)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw new Error(lookupError.message);
+  }
+
+  if (existing?.id) {
+    const { error } = await supabase
+      .from('merchants')
+      .update({
+        display_name: displayName,
+        updated_at: now,
+      })
+      .eq('id', existing.id);
+    if (error) {
+      throw new Error(error.message);
+    }
+    return;
+  }
+
+  const { error } = await supabase.from('merchants').insert({
+    profile_id: profileId,
+    display_name: displayName,
+    status: 'pending',
+    updated_at: now,
+  });
   if (error) {
     throw new Error(error.message);
   }

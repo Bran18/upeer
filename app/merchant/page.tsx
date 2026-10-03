@@ -1,22 +1,19 @@
-import { MerchantApplyForm } from '@/components/merchant-apply-form';
-import { MerchantDashboard } from '@/components/merchant-dashboard';
+import type { Metadata } from 'next';
+import { MerchantView } from '@/components/merchant/merchant-view';
 import { DirectionalTransition } from '@/components/transition/directional-transition';
 import { AppPage } from '@/components/ui/app-page';
-import { PageHeader } from '@/components/ui/page-header';
+
+export const metadata: Metadata = {
+  title: 'Merchant desk',
+  description:
+    'List as a upeer merchant: post USDC prices in local currency, settle fiat peer to peer, and receive payouts through on-chain escrow.',
+};
 
 export default function MerchantPage() {
   return (
     <DirectionalTransition>
-      <AppPage width="narrow">
-        <PageHeader
-          eyebrow="Merchant"
-          title="Liquidity"
-          description="Offers, payout rails, and how you supply the network. Additional tools stay here — not in the main nav."
-        />
-        <div className="space-y-10">
-          <MerchantApplyForm />
-          <MerchantDashboard />
-        </div>
+      <AppPage width="content">
+        <MerchantView />
       </AppPage>
     </DirectionalTransition>
   );
