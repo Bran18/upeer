@@ -4,6 +4,7 @@ export type RoleOptionConfig = {
   intent: PlatformIntent;
   title: string;
   tag: string;
+  glyph: string;
   description: string;
   bullets: readonly string[];
 };
@@ -13,7 +14,8 @@ export const ONBOARDING_ROLE_OPTIONS: readonly RoleOptionConfig[] = [
     intent: 'buyer',
     title: 'Buy USDC',
     tag: 'Buy',
-    description: 'Pay local currency. Receive USDC from a verified merchant.',
+    glyph: '↓',
+    description: 'Pay in local currency and receive USDC.',
     bullets: [
       'Get a quote without browsing ads',
       'Pay with a method you already use',
@@ -24,7 +26,8 @@ export const ONBOARDING_ROLE_OPTIONS: readonly RoleOptionConfig[] = [
     intent: 'merchant',
     title: 'Sell USDC',
     tag: 'Sell',
-    description: 'Provide liquidity in your market and receive local currency.',
+    glyph: '↑',
+    description: 'Quote a price and receive local currency.',
     bullets: [
       'Post offers at your price',
       'Get matched automatically',
@@ -35,7 +38,8 @@ export const ONBOARDING_ROLE_OPTIONS: readonly RoleOptionConfig[] = [
     intent: 'both',
     title: 'Buy & sell',
     tag: 'Both',
-    description: 'Use upeer from either side of an exchange.',
+    glyph: '⇄',
+    description: 'Trade in both directions from one account.',
     bullets: [
       'One account for both directions',
       'Merchant tools stay in Account',
@@ -51,5 +55,11 @@ export function onboardingSubmitLabel(busy: boolean, hasIntent: boolean): string
   if (!hasIntent) {
     return 'Choose a role to save';
   }
-  return 'Save and start exchanging';
+  return 'Finish setup';
+}
+
+export function roleOptionForIntent(
+  intent: PlatformIntent,
+): RoleOptionConfig | undefined {
+  return ONBOARDING_ROLE_OPTIONS.find((option) => option.intent === intent);
 }

@@ -2,12 +2,12 @@ import { OnboardingFlow } from '@/components/onboarding/onboarding-flow';
 import { PollarRequired } from '@/components/pollar-required';
 import { DirectionalTransition } from '@/components/transition/directional-transition';
 import { AppPage } from '@/components/ui/app-page';
-import { PageHeader } from '@/components/ui/page-header';
+import { ScreenHeader } from '@/components/ui/screen-header';
 
 export default function OnboardingPage() {
   return (
     <DirectionalTransition>
-      <AppPage width="narrow">
+      <AppPage width="narrow" className="!pt-10 sm:!pt-14">
         <PollarRequired
           fallback={
             <div className="surface-card p-6">
@@ -22,11 +22,10 @@ export default function OnboardingPage() {
             </div>
           }
         >
-          <PageHeader
+          <ScreenHeader
             titleId="onboarding-page-title"
-            eyebrow="Setup"
-            title="How will you use upeer?"
-            description="Buy, sell, or both. Then start an exchange — upeer handles matching, quotes, and protection."
+            title="Set up your account"
+            description="Two quick steps — pick how you trade, add how you want to appear, then head to the exchange."
           />
           <section aria-labelledby="onboarding-page-title">
             <OnboardingFlow />

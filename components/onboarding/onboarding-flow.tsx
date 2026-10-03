@@ -1,17 +1,24 @@
 'use client';
 
+import { usePollar } from '@pollar/react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { RoleOption } from '@/components/onboarding/role-option';
+import {
+  OnboardingStepNav,
+  type OnboardingStep,
+} from '@/components/onboarding/onboarding-step-nav';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardDescription, CardTitle } from '@/components/ui/card';
 import {
   ONBOARDING_ROLE_OPTIONS,
   onboardingSubmitLabel,
+  roleOptionForIntent,
 } from '@/lib/onboarding/role-options';
 import type { PlatformIntent } from '@/lib/profile/types';
 import { completeOnboarding } from '@/lib/upeer-api';
+import { cn } from '@/lib/cn';
 
 function shortenAddress(address: string) {
   if (address.length < 12) {
@@ -20,16 +27,37 @@ function shortenAddress(address: string) {
   return `${address.slice(0, 4)}…${address.slice(-4)}`;
 }
 
+function OnboardingShell({
+  children,
+  className,
+  role,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  role?: React.AriaRole;
+}) {
+  return (
+    <div
+      role={role}
+      className={cn('ui-card px-5 py-5 sm:px-6 sm:py-6', className)}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function OnboardingFlow() {
   const router = useRouter();
   const errorId = useId();
   const displayNameId = 'merchant-display-name';
   const displayNameRef = useRef<HTMLInputElement>(null);
   const roleGroupRef = useRef<HTMLDivElement>(null);
+  const { openLoginModal } = usePollar();
 
   const { profile, refreshProfile, status: sessionStatus, syncWithPollar } =
     useUpeerSession();
 
+  const [step, setStep] = useState<OnboardingStep>(1);
   const [intent, setIntent] = useState<PlatformIntent | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -43,8 +71,9 @@ export function OnboardingFlow() {
     setDisplayName((prev) => prev || profile.displayName || '');
   }, [sessionStatus, profile]);
 
+  const selectedRole = intent ? roleOptionForIntent(intent) : undefined;
   const needsMerchantName = intent === 'merchant' || intent === 'both';
-  const showDisplayName = intent != null;
+
   const selectIntent = useCallback((next: PlatformIntent) => {
     setIntent(next);
     setError(null);
@@ -70,11 +99,22 @@ export function OnboardingFlow() {
     [selectIntent],
   );
 
+  function goToDetails() {
+    if (!intent) {
+      setError('Choose how you want to use upeer, then continue.');
+      roleGroupRef.current?.focus();
+      return;
+    }
+    setError(null);
+    setStep(2);
+    requestAnimationFrame(() => displayNameRef.current?.focus());
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!intent) {
+      setStep(1);
       setError('Choose how you want to use upeer, then try again.');
-      roleGroupRef.current?.focus();
       return;
     }
     if (needsMerchantName && displayName.trim().length < 2) {
@@ -112,116 +152,217 @@ export function OnboardingFlow() {
 
   if (sessionStatus === 'syncing') {
     return (
-      <Card role="status" aria-live="polite">
-        <CardHeader>
+      <OnboardingShell>
+        <div role="status" aria-live="polite" className="space-y-3 py-4">
+          <div className="h-2 w-2/3 max-w-xs animate-pulse rounded-full bg-[var(--fill)]" />
           <CardTitle>Connecting your wallet…</CardTitle>
           <CardDescription>
             Linking your Pollar session to upeer. This usually takes a few seconds.
           </CardDescription>
-        </CardHeader>
-      </Card>
+        </div>
+      </OnboardingShell>
     );
   }
 
   if (sessionStatus === 'anonymous') {
     return (
-      <Card>
-        <CardHeader>
+      <OnboardingShell className="space-y-5">
+        <div>
           <CardTitle>Sign in to continue</CardTitle>
-          <CardDescription>
-            Use <strong>Login with Pollar</strong> in the header, then return to
-            this page to finish setup.
+          <CardDescription className="mt-2">
+            Connect with Pollar to link your Stellar wallet, then finish setup here.
           </CardDescription>
-        </CardHeader>
-      </Card>
+        </div>
+        <Button type="button" onClick={() => openLoginModal()}>
+          Login with Pollar
+        </Button>
+      </OnboardingShell>
     );
   }
 
   if (sessionStatus === 'error') {
     return (
-      <Card className="border-red-500/35" role="alert">
-        <CardHeader>
-          <CardTitle className="text-red-800 dark:text-red-200">
-            Connection failed
-          </CardTitle>
-          <CardDescription>
-            We could not link your wallet to upeer. Retry the connection, or sign
-            out and sign in again.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => void syncWithPollar()}
-          >
-            Retry connection
-          </Button>
-        </CardContent>
-      </Card>
+      <OnboardingShell className="border-red-500/35" role="alert">
+        <CardTitle className="text-red-800 dark:text-red-200">
+          Connection failed
+        </CardTitle>
+        <CardDescription className="mt-2">
+          We could not link your wallet to upeer. Retry the connection, or sign
+          out and sign in again.
+        </CardDescription>
+        <Button
+          type="button"
+          variant="secondary"
+          className="mt-5"
+          onClick={() => void syncWithPollar()}
+        >
+          Retry connection
+        </Button>
+      </OnboardingShell>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {profile?.stellarAddress ? (
-        <Card>
-          <CardContent className="flex min-w-0 flex-col gap-1 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--foreground-tertiary)]">
-              Connected wallet
-            </p>
-            <p
-              className="min-w-0 truncate font-mono text-sm"
-              translate="no"
-              title={profile.stellarAddress}
-            >
-              {shortenAddress(profile.stellarAddress)}
-            </p>
-          </CardContent>
-        </Card>
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-ui)] border border-[var(--line)] bg-[color-mix(in_srgb,var(--fill)_55%,var(--surface))] px-4 py-3"
+        >
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--foreground-tertiary)]">
+            Connected wallet
+          </p>
+          <p
+            className="min-w-0 truncate font-mono text-sm text-[var(--foreground)]"
+            translate="no"
+            title={profile.stellarAddress}
+          >
+            {shortenAddress(profile.stellarAddress)}
+          </p>
+        </div>
       ) : null}
 
-      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-        <fieldset className="m-0 border-0 p-0">
-          <legend className="sr-only">How you will use upeer</legend>
-          <p className="text-[0.6875rem] font-medium uppercase tracking-[0.22em] text-[var(--foreground-tertiary)]">
-            Step 1 — Choose your role
-          </p>
-          <div
-            ref={roleGroupRef}
-            tabIndex={-1}
-            className="mt-4 grid gap-3"
-            role="radiogroup"
-            aria-label="Platform role"
-            aria-describedby={error && !intent ? errorId : undefined}
-          >
-            {ONBOARDING_ROLE_OPTIONS.map((option, index) => (
-              <RoleOption
-                key={option.intent}
-                config={option}
-                selected={intent === option.intent}
-                tabIndex={intent === option.intent ? 0 : -1}
-                onSelect={() => selectIntent(option.intent)}
-                onKeyDown={(event) => handleRoleKeyDown(event, index)}
-              />
-            ))}
-          </div>
-        </fieldset>
+      <form
+        onSubmit={handleSubmit}
+        className="ui-card flex flex-col px-5 py-5 sm:px-6 sm:py-6"
+        noValidate
+      >
+        <OnboardingStepNav step={step} />
 
-        {showDisplayName ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Step 2 — Your name</CardTitle>
-              <CardDescription>
-                {needsMerchantName
-                  ? 'Shown to buyers on offers and quotes.'
-                  : 'Optional. Shown in the header menu instead of your wallet address.'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
+        {step === 1 ? (
+          <div className="mt-6 space-y-6">
+            <div>
+              <h2 className="text-sm font-medium text-[var(--foreground)]">
+                How will you use upeer?
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-[var(--foreground-tertiary)] text-pretty">
+                You can change this later in Account settings.
+              </p>
+            </div>
+
+            <div className="flex flex-col">
+              <div
+                ref={roleGroupRef}
+                tabIndex={-1}
+                className="grid gap-5 sm:grid-cols-3 sm:gap-5"
+                role="radiogroup"
+                aria-label="Platform role"
+                aria-describedby={error && !intent ? errorId : undefined}
+              >
+                {ONBOARDING_ROLE_OPTIONS.map((option, index) => (
+                  <RoleOption
+                    key={option.intent}
+                    config={option}
+                    selected={intent === option.intent}
+                    tabIndex={
+                      (intent ?? ONBOARDING_ROLE_OPTIONS[0].intent) ===
+                      option.intent
+                        ? 0
+                        : -1
+                    }
+                    onSelect={() => selectIntent(option.intent)}
+                    onKeyDown={(event) => handleRoleKeyDown(event, index)}
+                  />
+                ))}
+              </div>
+
+              {selectedRole ? (
+                <div
+                  className="mt-6 rounded-[var(--radius-ui)] border border-[var(--line)] bg-[var(--fill)] px-4 py-4 sm:mt-7 sm:px-5 sm:py-4"
+                  aria-live="polite"
+                >
+                  <p className="px-0.5 text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-[var(--foreground-tertiary)]">
+                    What you get
+                  </p>
+                  <ul
+                    className="mt-3 grid list-none gap-3 p-0 sm:mt-3.5 sm:grid-cols-3 sm:gap-4 sm:gap-y-3"
+                  >
+                    {selectedRole.bullets.map((item) => (
+                      <li
+                        key={item}
+                        className="flex items-start gap-2 px-0.5 text-[0.8125rem] leading-snug text-[var(--foreground-secondary)] text-pretty sm:text-sm sm:leading-relaxed"
+                      >
+                        <span
+                          className="mt-[0.4rem] h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)]"
+                          aria-hidden="true"
+                        />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="mt-6 px-0.5 py-1 text-sm text-[var(--foreground-tertiary)] text-pretty sm:mt-7">
+                  Select a role to see what&apos;s included.
+                </p>
+              )}
+            </div>
+
+            {error && step === 1 ? (
+              <p
+                id={errorId}
+                className="text-sm text-red-800 dark:text-red-200"
+                role="alert"
+              >
+                {error}
+              </p>
+            ) : null}
+
+            <div className="flex flex-col gap-3 border-t border-[var(--line)] pt-6 sm:flex-row sm:items-center sm:justify-end">
+              <Button
+                type="button"
+                size="lg"
+                disabled={!intent}
+                className="sm:min-w-[10rem]"
+                onClick={goToDetails}
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {step === 2 && intent && selectedRole ? (
+          <div className="mt-6 space-y-5">
+            <div
+              className="flex flex-wrap items-center gap-3 rounded-[var(--radius-ui)] border border-[var(--accent)]/35 bg-[color-mix(in_srgb,var(--accent)_10%,var(--surface))] px-4 py-3"
+            >
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 items-center justify-center rounded-[0.65rem] bg-[var(--accent)] text-sm font-semibold text-[var(--accent-ink)]"
+              >
+                {selectedRole.glyph}
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[var(--foreground)]">
+                  {selectedRole.title}
+                </p>
+                <p className="text-xs text-[var(--foreground-secondary)] text-pretty">
+                  {selectedRole.description}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="ml-auto"
+                onClick={() => {
+                  setStep(1);
+                  setError(null);
+                }}
+              >
+                Change
+              </Button>
+            </div>
+
+            <div>
               <label htmlFor={displayNameId} className="field-label">
                 {needsMerchantName ? 'Merchant display name' : 'Display name'}
               </label>
+              <p className="mt-1 text-xs leading-relaxed text-[var(--foreground-tertiary)] text-pretty">
+                {needsMerchantName
+                  ? 'Shown to buyers on offers and quotes. Required for selling.'
+                  : 'Optional. Shown in the menu instead of your wallet address.'}
+              </p>
               <input
                 ref={displayNameRef}
                 id={displayNameId}
@@ -234,39 +375,52 @@ export function OnboardingFlow() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder={
-                  needsMerchantName ? 'e.g. Andes Liquidity…' : 'e.g. María'
+                  needsMerchantName ? 'e.g. Andes Liquidity' : 'e.g. María'
                 }
                 aria-invalid={Boolean(error && needsMerchantName)}
-                className="field-input"
+                className="field-input mt-3"
               />
-            </CardContent>
-          </Card>
+            </div>
+
+            <p className="text-xs leading-relaxed text-[var(--foreground-tertiary)] text-pretty">
+              After you finish, we&apos;ll take you to the exchange to get your first
+              quote. Payout and payment methods live in Account when you&apos;re ready.
+            </p>
+
+            {error ? (
+              <p
+                id={errorId}
+                className="text-sm text-red-800 dark:text-red-200"
+                role="alert"
+                aria-live="polite"
+              >
+                {error}
+              </p>
+            ) : null}
+
+            <div className="flex flex-col-reverse gap-3 border-t border-[var(--line)] pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setStep(1);
+                  setError(null);
+                }}
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                size="lg"
+                disabled={busy}
+                aria-busy={busy}
+                className="sm:min-w-[10rem]"
+              >
+                {onboardingSubmitLabel(busy, true)}
+              </Button>
+            </div>
+          </div>
         ) : null}
-
-        <p className="text-body text-sm text-pretty">
-          Your role is stored on your profile. After saving, you&apos;ll land on
-          your dashboard to finish verification and account settings.
-        </p>
-
-        {error ? (
-          <p
-            id={errorId}
-            className="text-sm text-red-800 dark:text-red-200"
-            role="alert"
-            aria-live="polite"
-          >
-            {error}
-          </p>
-        ) : null}
-
-        <Button
-          type="submit"
-          disabled={busy || !intent}
-          aria-busy={busy}
-          className="w-full sm:w-auto"
-        >
-          {onboardingSubmitLabel(busy, Boolean(intent))}
-        </Button>
       </form>
     </div>
   );

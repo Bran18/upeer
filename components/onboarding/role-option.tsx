@@ -10,7 +10,6 @@ type RoleOptionProps = {
   tabIndex: number;
   onSelect: () => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
-  showDestination?: boolean;
 };
 
 export const RoleOption = memo(function RoleOption({
@@ -29,47 +28,45 @@ export const RoleOption = memo(function RoleOption({
       onClick={onSelect}
       onKeyDown={onKeyDown}
       className={cn(
-        'flex w-full gap-4 rounded-[var(--radius-ui)] border p-4 text-left transition-[border-color,background-color,box-shadow] duration-200 touch-manipulation sm:p-5',
+        'flex w-full min-h-[7.5rem] flex-col rounded-[var(--radius-ui)] border p-4 text-left transition-[border-color,background-color,box-shadow,transform] duration-200 touch-manipulation sm:p-5',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]',
         selected
-          ? 'border-[var(--accent)] bg-[var(--accent-muted)] shadow-[0_0_0_1px_var(--accent)]'
+          ? 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_14%,var(--surface))] shadow-[0_0_0_1px_var(--accent)]'
           : 'border-[var(--line)] bg-[var(--surface)] hover:border-[var(--foreground-tertiary)] hover:bg-[var(--fill)]',
       )}
     >
-      <span
-        aria-hidden="true"
-        className={cn(
-          'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2',
-          selected ? 'border-[var(--accent)]' : 'border-[var(--foreground-tertiary)]',
-        )}
-      >
+      <span className="flex items-start justify-between gap-2">
         <span
+          aria-hidden="true"
           className={cn(
-            'h-2.5 w-2.5 rounded-full bg-[var(--accent)] transition-opacity duration-150',
-            selected ? 'opacity-100' : 'opacity-0',
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.65rem] text-sm font-semibold',
+            selected
+              ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
+              : 'bg-[var(--fill)] text-[var(--foreground-secondary)]',
           )}
-        />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-2">
-          <span className="text-base font-semibold tracking-tight text-balance">
-            {config.title}
-          </span>
-          <span className="rounded-full bg-[var(--fill)] px-2 py-0.5 text-[0.625rem] font-medium uppercase tracking-[0.14em] text-[var(--foreground-tertiary)]">
-            {config.tag}
-          </span>
+        >
+          {config.glyph}
         </span>
-        <p className="mt-1.5 text-sm leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-          {config.description}
-        </p>
-        <ul className="mt-3 space-y-1.5 text-sm text-[var(--foreground-secondary)]">
-          {config.bullets.map((item) => (
-            <li key={item} className="flex gap-2 text-pretty">
-              <span className="text-[var(--accent)]" aria-hidden="true">·</span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
+        <span
+          aria-hidden="true"
+          className={cn(
+            'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
+            selected ? 'border-[var(--accent)]' : 'border-[var(--line)]',
+          )}
+        >
+          <span
+            className={cn(
+              'h-2 w-2 rounded-full bg-[var(--accent)] transition-opacity duration-150',
+              selected ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+        </span>
+      </span>
+      <span className="mt-4 text-sm font-semibold tracking-tight text-balance">
+        {config.title}
+      </span>
+      <span className="mt-1.5 text-xs leading-relaxed text-[var(--foreground-secondary)] text-pretty">
+        {config.description}
       </span>
     </button>
   );
