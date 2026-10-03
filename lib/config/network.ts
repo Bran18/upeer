@@ -28,7 +28,7 @@ const TESTNET: NetworkConfig = {
   horizonUrl: 'https://horizon-testnet.stellar.org',
   networkPassphrase: Networks.TESTNET,
   usdcIssuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5',
-  usdcSac: 'CBBHRKEP5M3NUDRISGLJKGHDHX3DA2CN2AZBQY6WLVUJ7VNLGSKBDUCM',
+  usdcSac: 'CB3TLW74NBIOT3BUWOZ3TUM6RFDF6A4GVIRUQRQZABG5KPOUL4JJOV2F',
   reflectorFxContractId:
     'CCSSOHTBL3LEWUCBBEB5NJFC2OKFRC74OWEIJIZLRJBGAAU4VMU5NV4W',
   trustlessWorkBaseUrl: 'https://dev.api.trustlesswork.com',

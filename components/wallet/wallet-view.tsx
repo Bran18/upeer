@@ -184,7 +184,13 @@ function WalletViewInner() {
       </section>
 
       <section className={sectionClass}>
-        <h2 className="text-sm font-semibold text-[var(--foreground)]">Send</h2>
+        <div>
+          <h2 className="text-sm font-semibold text-[var(--foreground)]">Send</h2>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--foreground-secondary)] text-pretty">
+            Send Stellar assets to any account. Add a memo when the recipient requires
+            one (exchanges, anchors, or shared deposit addresses).
+          </p>
+        </div>
         <WalletSendForm
           balances={sendOptions}
           onSent={() => void refreshWalletBalance()}

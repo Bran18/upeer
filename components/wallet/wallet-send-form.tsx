@@ -119,13 +119,11 @@ export function WalletSendForm({ balances, onSent }: Props) {
     );
   }
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-      <p className="text-xs leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-        Send Stellar assets to any account. Use a memo when the recipient requires one
-        (exchanges, anchors, or shared deposit addresses).
-      </p>
+  const availableHint =
+    selectedAsset?.available != null ? `${selectedAsset.available} available` : null;
 
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
       <div>
         <label htmlFor="wallet-send-dest" className="field-label">
           Destination address
@@ -144,25 +142,29 @@ export function WalletSendForm({ balances, onSent }: Props) {
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
+      <div className="grid gap-6 sm:grid-cols-2 sm:gap-4">
+        <div className="min-w-0">
           <label htmlFor="wallet-send-asset" className="field-label">Asset</label>
           <select
             id="wallet-send-asset"
             name="asset"
-            className="field-input mt-2"
+            className="field-input mt-2 max-w-full truncate"
             value={selectedAsset?.id ?? ''}
             onChange={(e) => setAssetId(e.target.value)}
           >
             {selectable.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.label}
-                {item.available != null ? ` — ${item.available} available` : ''}
               </option>
             ))}
           </select>
+          {availableHint ? (
+            <p className="mt-2 text-xs tabular-nums text-[var(--foreground-secondary)]">
+              {availableHint}
+            </p>
+          ) : null}
         </div>
-        <div>
+        <div className="min-w-0">
           <label htmlFor="wallet-send-amount" className="field-label">Amount</label>
           <input
             id="wallet-send-amount"
@@ -179,8 +181,14 @@ export function WalletSendForm({ balances, onSent }: Props) {
         </div>
       </div>
 
-      <fieldset className="m-0 space-y-3 border-0 p-0">
-        <legend className="field-label">Memo (optional)</legend>
+      <div
+        className="space-y-3"
+        role="group"
+        aria-labelledby="wallet-send-memo-label"
+      >
+        <span id="wallet-send-memo-label" className="field-label block">
+          Memo (optional)
+        </span>
         <div className="flex flex-wrap gap-2">
           {(
             [
@@ -214,24 +222,31 @@ export function WalletSendForm({ balances, onSent }: Props) {
               type="text"
               spellCheck={false}
               autoComplete="off"
-              className="field-input mt-1 font-mono text-sm"
+              className="field-input font-mono text-sm"
               placeholder={memoKind === 'text' ? 'Up to 28 bytes' : 'Numeric ID'}
               value={memoValue}
               onChange={(e) => setMemoValue(e.target.value)}
             />
           </div>
         ) : null}
-      </fieldset>
+      </div>
 
-      {error ? (
-        <p className="text-sm text-red-800 dark:text-red-200" role="alert">
-          {error}
-        </p>
-      ) : null}
+      <div className="flex flex-col gap-4 border-t border-[var(--line)] pt-6">
+        {error ? (
+          <p className="text-sm text-red-800 dark:text-red-200" role="alert">
+            {error}
+          </p>
+        ) : null}
 
-      <Button type="submit" disabled={busy || !verified} aria-busy={busy}>
-        {busy ? 'Sending…' : 'Send payment'}
-      </Button>
+        <Button
+          type="submit"
+          disabled={busy || !verified}
+          aria-busy={busy}
+          className="w-full sm:w-auto"
+        >
+          {busy ? 'Sending…' : 'Send payment'}
+        </Button>
+      </div>
     </form>
   );
 }
