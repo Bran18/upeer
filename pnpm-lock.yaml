@@ -26,9 +26,6 @@ importers:
       '@reflector/contract-client':
         specifier: ^2.2.0
         version: 2.2.0(@stellar/stellar-sdk@17.2.1)
-      '@soroswap/sdk':
-        specifier: ^0.5.0
-        version: 0.5.0
       '@stellar/stellar-sdk':
         specifier: ^17.2.1
         version: 17.2.1
@@ -612,10 +609,6 @@ packages:
 
   '@simplewebauthn/browser@13.3.0':
     resolution: {integrity: sha512-BE/UWv6FOToAdVk0EokzkqQQDOWtNydYlY6+OrmiZ5SCNmb41VehttboTetUM3T/fr6EAFYVXjz4My2wg230rQ==}
-
-  '@soroswap/sdk@0.5.0':
-    resolution: {integrity: sha512-BgWqs3TgVFq/25Go533A2IUR7g5NnWPHHJUM8f/iT1j0d0VwA464wH9JReUGxXNZmsAOP4Zggdeof2AUOHsuOw==}
-    engines: {node: '>=22.0.0'}
 
   '@stellar/freighter-api@6.0.0':
     resolution: {integrity: sha512-8CTQcKQmTq/wL715ZUzn1x1POpR0eYhYPKEiaeA7AT0WYBOauOGTxfWPFtSidX3ohAlJZP5HFXy1kG29cVjqxw==}
@@ -3035,13 +3028,6 @@ snapshots:
   '@rtsao/scc@1.1.0': {}
 
   '@simplewebauthn/browser@13.3.0': {}
-
-  '@soroswap/sdk@0.5.0':
-    dependencies:
-      axios: 1.20.0
-    transitivePeerDependencies:
-      - debug
-      - supports-color
 
   '@stellar/freighter-api@6.0.0':
     dependencies:

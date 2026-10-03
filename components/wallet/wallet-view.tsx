@@ -1,28 +1,32 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePollar } from '@pollar/react';
 import { CopyWalletButton } from '@/components/dashboard/copy-wallet-button';
 import { WalletSendForm } from '@/components/wallet/wallet-send-form';
+import { WalletSwapForm } from '@/components/wallet/wallet-swap-form';
 import { PollarRequired } from '@/components/pollar-required';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
 import { Button } from '@/components/ui/button';
 import { getStellarNetworkClient } from '@/lib/config/network-client';
 import { shortenWallet } from '@/lib/nav/user-identity';
+import {
+  assetRefId,
+  balanceRowToAssetRef,
+} from '@/lib/pollar/swap-assets';
 
 const sectionClass =
   'space-y-4 rounded-[var(--radius-ui)] border border-[var(--line)] bg-[var(--surface)] p-4 sm:p-5';
+
+type WalletAction = 'send' | 'swap';
 
 function balanceId(record: {
   type?: string;
   code: string;
   issuer?: string;
 }): string {
-  if (record.type === 'native' || record.code === 'XLM') {
-    return 'native';
-  }
-  return `${record.code}:${record.issuer ?? ''}`;
+  return assetRefId(balanceRowToAssetRef(record));
 }
 
 function balanceLabel(record: {
@@ -39,6 +43,13 @@ function balanceLabel(record: {
   return record.code;
 }
 
+function hashToAction(hash: string): WalletAction | null {
+  if (hash === 'swap' || hash === 'fund') {
+    return 'swap';
+  }
+  return null;
+}
+
 function WalletViewInner() {
   const network = getStellarNetworkClient();
   const { profile } = useUpeerSession();
@@ -51,13 +62,34 @@ function WalletViewInner() {
     openReceiveModal,
     openTxHistoryModal,
     openLoginModal,
+    tx,
   } = usePollar();
+
+  const [action, setAction] = useState<WalletAction>('send');
+
+  useEffect(() => {
+    const syncFromHash = () => {
+      const next = hashToAction(window.location.hash.replace(/^#/, ''));
+      if (next) {
+        setAction(next);
+      }
+    };
+    syncFromHash();
+    window.addEventListener('hashchange', syncFromHash);
+    return () => window.removeEventListener('hashchange', syncFromHash);
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && verified) {
       void refreshWalletBalance();
     }
   }, [isAuthenticated, verified, refreshWalletBalance]);
+
+  useEffect(() => {
+    if (tx.step === 'success') {
+      void refreshWalletBalance();
+    }
+  }, [tx.step, refreshWalletBalance]);
 
   const address = profile?.stellarAddress ?? wallet?.address ?? null;
 
@@ -76,26 +108,39 @@ function WalletViewInner() {
         id: balanceId(b),
         label: balanceLabel(b),
         available: b.available,
-        asset:
-          b.type === 'native'
-            ? { type: 'native' as const }
-            : {
-                type:
-                  (b.type === 'credit_alphanum12'
-                    ? 'credit_alphanum12'
-                    : 'credit_alphanum4') as 'credit_alphanum4' | 'credit_alphanum12',
-                code: b.code,
-                issuer: b.issuer ?? '',
-              },
+        asset: balanceRowToAssetRef(b),
       })),
     [stellarBalances],
   );
+
+  const swapSellOptions = useMemo(
+    () =>
+      stellarBalances.map((b) => ({
+        id: balanceId(b),
+        label: balanceLabel(b),
+        available: b.available,
+        asset: balanceRowToAssetRef(b),
+      })),
+    [stellarBalances],
+  );
+
+  const balanceAssetIds = useMemo(
+    () => new Set(stellarBalances.map((b) => balanceId(b))),
+    [stellarBalances],
+  );
+
+  const selectAction = (next: WalletAction) => {
+    setAction(next);
+    const hash = next === 'swap' ? '#swap' : '';
+    const base = `${window.location.pathname}${window.location.search}`;
+    window.history.replaceState(null, '', hash ? `${base}${hash}` : base);
+  };
 
   if (!isAuthenticated) {
     return (
       <div className={sectionClass}>
         <p className="text-sm text-[var(--foreground-secondary)]">
-          Sign in with Pollar to view balances and send payments.
+          Sign in with Pollar to view balances, send payments, and swap assets.
         </p>
         <Button type="button" onClick={() => openLoginModal()}>
           Sign in
@@ -113,7 +158,7 @@ function WalletViewInner() {
           </h2>
           <p className="mt-1 text-xs text-[var(--foreground-secondary)] text-pretty">
             {network === 'testnet' ? 'Stellar testnet' : 'Stellar mainnet'} ·
-            classic payments with optional memo (SEP-style deposits).
+            send payments or swap assets in one place.
           </p>
         </div>
         {address ? (
@@ -183,18 +228,62 @@ function WalletViewInner() {
         ) : null}
       </section>
 
-      <section className={sectionClass}>
+      <section
+        id="fund"
+        className={`${sectionClass} scroll-mt-[calc(var(--site-header-height)+1rem)]`}
+      >
         <div>
-          <h2 className="text-sm font-semibold text-[var(--foreground)]">Send</h2>
+          <h2 className="text-sm font-semibold text-[var(--foreground)]">
+            Send & swap
+          </h2>
           <p className="mt-1 text-xs leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-            Send Stellar assets to any account. Add a memo when the recipient requires
-            one (exchanges, anchors, or shared deposit addresses).
+            {action === 'send'
+              ? 'Send Stellar assets to any account. Add a memo when the recipient requires one.'
+              : 'Swap between assets in your wallet. Quotes refresh as you type; slippage is 0.5%.'}
           </p>
         </div>
-        <WalletSendForm
-          balances={sendOptions}
-          onSent={() => void refreshWalletBalance()}
-        />
+
+        <div
+          className="flex flex-wrap gap-2"
+          role="tablist"
+          aria-label="Wallet actions"
+        >
+          {(
+            [
+              ['send', 'Send'],
+              ['swap', 'Swap'],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={action === id}
+              id={id === 'swap' ? 'swap' : undefined}
+              className={
+                action === id
+                  ? 'nav-pill nav-pill--active min-h-9 px-3'
+                  : 'nav-pill min-h-9 px-3 text-[var(--foreground-secondary)]'
+              }
+              onClick={() => selectAction(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {action === 'send' ? (
+          <WalletSendForm
+            balances={sendOptions}
+            onSent={() => void refreshWalletBalance()}
+          />
+        ) : (
+          <WalletSwapForm
+            sellOptions={swapSellOptions}
+            balanceAssetIds={balanceAssetIds}
+            onSwapped={() => void refreshWalletBalance()}
+          />
+        )}
       </section>
 
       <p className="text-sm text-[var(--foreground-tertiary)]">

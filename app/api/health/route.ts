@@ -24,7 +24,6 @@ export async function GET() {
     },
     integrations: {
       trustlessWork: Boolean(process.env.TRUSTLESS_WORK_API_KEY),
-      soroswap: Boolean(process.env.SOROSWAP_API_KEY),
       reflector: {
         rpcUrl: reflector.rpcUrl,
         contractId: reflector.contractId,

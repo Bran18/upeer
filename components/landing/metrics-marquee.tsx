@@ -8,7 +8,7 @@ const METRICS = [
   { label: 'Settlement', value: 'Trustless Work' },
   { label: 'Pricing', value: 'Reflector FX' },
   { label: 'Login', value: 'Pollar embedded' },
-  { label: 'Swap rail', value: 'Soroswap' },
+  { label: 'Swap rail', value: 'Pollar' },
 ] as const;
 
 export function MetricsMarquee() {

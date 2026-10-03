@@ -1,4 +1,3 @@
-import { SoroswapSection } from '@/components/dashboard/soroswap-section';
 import { WalletView } from '@/components/wallet/wallet-view';
 import { AppPage } from '@/components/ui/app-page';
 import { ScreenHeader } from '@/components/ui/screen-header';
@@ -10,13 +9,10 @@ export default function WalletPage() {
       <AppPage width="content">
         <ScreenHeader
           title="Wallet"
-          description="Balances, receive details, and send USDC when you need to move funds yourself."
+          description="Balances, receive details, send payments, and swap assets when you need to move or convert funds."
         />
         <div className="ui-card px-5 py-6 sm:px-6">
           <WalletView />
-        </div>
-        <div className="ui-card mt-4 px-5 py-6 sm:px-6">
-          <SoroswapSection />
         </div>
       </AppPage>
     </DirectionalTransition>

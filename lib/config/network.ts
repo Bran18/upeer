@@ -16,10 +16,8 @@ export type NetworkConfig = {
   horizonUrl: string;
   networkPassphrase: string;
   usdcIssuer: string;
-  usdcSac: string;
   reflectorFxContractId: string;
   trustlessWorkBaseUrl: string;
-  soroswapNetwork: 'testnet' | 'mainnet';
 };
 
 const TESTNET: NetworkConfig = {
@@ -28,11 +26,9 @@ const TESTNET: NetworkConfig = {
   horizonUrl: 'https://horizon-testnet.stellar.org',
   networkPassphrase: Networks.TESTNET,
   usdcIssuer: 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5',
-  usdcSac: 'CB3TLW74NBIOT3BUWOZ3TUM6RFDF6A4GVIRUQRQZABG5KPOUL4JJOV2F',
   reflectorFxContractId:
     'CCSSOHTBL3LEWUCBBEB5NJFC2OKFRC74OWEIJIZLRJBGAAU4VMU5NV4W',
   trustlessWorkBaseUrl: 'https://dev.api.trustlesswork.com',
-  soroswapNetwork: 'testnet',
 };
 
 const MAINNET: NetworkConfig = {
@@ -41,11 +37,9 @@ const MAINNET: NetworkConfig = {
   horizonUrl: 'https://horizon.stellar.org',
   networkPassphrase: Networks.PUBLIC,
   usdcIssuer: 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN',
-  usdcSac: '',
   reflectorFxContractId:
     'CBKGPWGKSKZF52CFHMTRR23TBWTPMRDIYZ4O2P5VS65BMHYH4DXMCJZC',
   trustlessWorkBaseUrl: 'https://api.trustlesswork.com',
-  soroswapNetwork: 'mainnet',
 };
 
 export function getStellarNetwork(): StellarNetwork {

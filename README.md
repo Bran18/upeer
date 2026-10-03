@@ -1,6 +1,6 @@
 # UPEER
 
-P2P USDC marketplace on Stellar: users **post orders** at a fiat price per USDC, **request trades**, makers **accept**, then the USDC leg settles through **Trustless Work** single-release escrow. Fiat is off-chain between peers. Optional **Soroswap** swaps help fund wallets on testnet.
+P2P USDC marketplace on Stellar: users **post orders** at a fiat price per USDC, **request trades**, makers **accept**, then the USDC leg settles through **Trustless Work** single-release escrow. Fiat is off-chain between peers. **Wallet** (`/wallet`) uses Pollar for send and swap (fund USDC via XLM → USDC when venues are enabled).
 
 **Login:** [Pollar](https://docs.pollar.xyz) embedded wallets (`@pollar/react`).
 
@@ -9,7 +9,7 @@ P2P USDC marketplace on Stellar: users **post orders** at a fiat price per USDC,
 - Next.js App Router (BFF route handlers for secrets)
 - Supabase Postgres (server uses service role)
 - Trustless Work V1 (`TRUSTLESS_WORK_API_KEY`, testnet: `https://dev.api.trustlesswork.com`)
-- Soroswap API (`SOROSWAP_API_KEY`)
+- Pollar swaps (client SDK; configure venues in Pollar Dashboard → Treasury → Swap)
 - Reflector Pulse (optional; developer tools / reference only)
 
 ## Quick start
@@ -18,13 +18,16 @@ P2P USDC marketplace on Stellar: users **post orders** at a fiat price per USDC,
 cp .env.example .env.local
 # Pollar, UPEER_SESSION_SECRET, Supabase URL + service role
 # Trustless Work + UPEER_PLATFORM_ADDRESS for escrow
-# Optional: SOROSWAP_API_KEY
 
 npm install
 npm run dev
 ```
 
 Visit [http://localhost:3000](http://localhost:3000) and check [http://localhost:3000/api/health](http://localhost:3000/api/health).
+
+### Wallet swap (Pollar)
+
+Enable at least one swap venue and buy tokens (e.g. USDC) in the [Pollar dashboard](https://docs.pollar.xyz) under **Treasury → Swap**. Until then, `/wallet` shows swap as unavailable. See [Pollar swaps guide](https://docs.pollar.xyz/docs/guides/swaps-guide).
 
 ## Routes
 
@@ -36,9 +39,10 @@ Visit [http://localhost:3000](http://localhost:3000) and check [http://localhost
 | `/orders` | Your trades |
 | `/orders/[id]` | Accept / escrow / fiat confirmation |
 | `/trade/[offerId]` | Request trade on a listing |
-| `/dashboard` | Account + Soroswap fund USDC |
+| `/wallet` | Balances, send, swap |
+| `/dashboard` | Account overview |
 | `/admin` | Operators (`profiles.is_operator`) |
-| `/app` | Integration diagnostics |
+| `/app` | Redirects to dashboard |
 
 ## P2P flow (two users)
 
@@ -69,6 +73,7 @@ Set `is_operator = true` on your `profiles` row, or use `UPEER_OPERATOR_API_KEY`
 - [ ] B requests trade; A sees notification and accepts
 - [ ] Escrow deploy/fund with TW env configured
 - [ ] Fiat confirmations; release completes order
+- [ ] `/wallet` send and swap tabs (swap requires Pollar venues enabled)
 - [ ] Empty `/market` when no rows (no mock data)
 
 ## Testnet disclaimer

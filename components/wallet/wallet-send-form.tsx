@@ -111,8 +111,8 @@ export function WalletSendForm({ balances, onSent }: Props) {
     return (
       <p className="text-sm text-[var(--foreground-secondary)] text-pretty">
         No spendable balance found. Fund your wallet with XLM or USDC in{' '}
-        <a href="/wallet#fund" className="font-medium text-[var(--accent)] hover:underline">
-          Wallet
+        <a href="/wallet#swap" className="font-medium text-[var(--accent)] hover:underline">
+          Swap
         </a>
         .
       </p>
