@@ -9,7 +9,7 @@ import {
 } from '@/lib/market/format';
 import {
   formatOrderDate,
-  formatOrderStatus,
+  formatOrderProgress,
   orderStatusTone,
   viewerRoleLabel,
 } from '@/lib/orders/format';
@@ -63,8 +63,16 @@ function currentStepIndex(order: OrderDetail): number {
       return 1;
     case 'created':
     case 'reserved':
-    case 'escrow_pending':
+    case 'escrow_pending': {
+      const milestone = order.escrow?.milestone_state ?? '';
+      if (
+        milestone === 'funded' ||
+        Boolean(order.fiat_confirmation.takerPaidAt)
+      ) {
+        return 3;
+      }
       return 2;
+    }
     case 'fiat_pending':
       return 3;
     case 'released':
@@ -142,7 +150,7 @@ export function OrderSummary({
           </ViewTransition>
           <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
             <span className={`offer-tag offer-tag--${statusTone}`}>
-              {formatOrderStatus(order.status)}
+              {formatOrderProgress(order)}
             </span>
             <span className="ml-2 tabular-nums text-xs text-[var(--foreground-tertiary)]">
               {formatOrderDate(order.created_at)}

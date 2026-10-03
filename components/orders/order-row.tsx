@@ -12,7 +12,7 @@ import {
 } from '@/lib/market/format';
 import {
   formatOrderDate,
-  formatOrderStatus,
+  formatOrderProgress,
   orderStatusTone,
   viewerRoleLabel,
 } from '@/lib/orders/format';
@@ -64,6 +64,7 @@ export const OrderRow = memo(function OrderRow({ order, isMaker }: Props) {
     order.quote.fiat_currency,
     Number(order.quote.fiat_amount),
   );
+  const statusLabel = formatOrderProgress(order);
   const statusTone = orderStatusTone(order.status);
 
   return (
@@ -71,7 +72,7 @@ export const OrderRow = memo(function OrderRow({ order, isMaker }: Props) {
       href={`/orders/${order.id}`}
       direction="forward"
       className="offer-card group text-left no-underline"
-      aria-label={`${action} · ${formatOrderStatus(order.status)} · ${usdcLabel}`}
+      aria-label={`${action} · ${statusLabel} · ${usdcLabel}`}
     >
       <div className="flex min-w-0 items-start gap-3 md:max-w-[18rem] md:shrink-0 md:items-center">
         <Avatar
@@ -124,7 +125,7 @@ export const OrderRow = memo(function OrderRow({ order, isMaker }: Props) {
           </p>
           <p className="mt-1">
             <OrderTag tone={statusTone}>
-              {formatOrderStatus(order.status)}
+              {statusLabel}
             </OrderTag>
           </p>
           <p className="mt-1.5 text-xs text-[var(--foreground-tertiary)] tabular-nums">
