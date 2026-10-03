@@ -14,15 +14,15 @@ export default async function OrderPage({ params }: Props) {
 
   return (
     <DirectionalTransition>
-      <AppPage width="narrow">
+      <AppPage width="content">
         <NavLink
           href="/orders"
           direction="back"
-          className="text-sm font-medium text-[var(--accent)] hover:underline"
+          className="text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-hover)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
         >
-          ← Back to orders
+          ← Back to Orders
         </NavLink>
-        <div className="mt-8">
+        <div className="mt-6">
           <OrderDetailClient orderId={orderId} />
         </div>
       </AppPage>

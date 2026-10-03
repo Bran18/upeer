@@ -28,7 +28,7 @@ export function onboardingComplete(profile: MeProfile): boolean {
 }
 
 /** Where users land after onboarding or when revisiting setup. */
-export const USER_HOME_PATH = '/exchange';
+export const USER_HOME_PATH = '/market';
 
 export function defaultPathForIntent(_intent: PlatformIntent): string {
   return USER_HOME_PATH;

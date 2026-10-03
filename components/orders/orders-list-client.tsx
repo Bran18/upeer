@@ -1,9 +1,20 @@
 'use client';
 
-import Link from 'next/link';
+import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { ViewTransition } from 'react';
 import { usePollar } from '@pollar/react';
-import { useCallback, useEffect, useState } from 'react';
 import type { OrderDetail } from '@/lib/db/orders';
+import {
+  DEFAULT_ORDER_ROLE,
+  orderRoleToSearchParams,
+  parseOrderRole,
+  type OrderRoleFilter,
+} from '@/lib/orders/filters';
+import { isActiveOrderStatus } from '@/lib/orders/format';
+import { OrdersEmpty } from '@/components/orders/orders-empty';
+import { OrdersToolbar } from '@/components/orders/orders-toolbar';
+import { OrderRow } from '@/components/orders/order-row';
 import { PollarRequired } from '@/components/pollar-required';
 import {
   exchangePollarSessionFromClient,
@@ -11,19 +22,39 @@ import {
   upeerAuthedFetch,
 } from '@/lib/upeer-api';
 
-export function OrdersListClient() {
+type Props = {
+  initialRole?: OrderRoleFilter;
+};
+
+export function OrdersListClient({ initialRole }: Props) {
   return (
-    <PollarRequired>
-      <OrdersListInner />
+    <PollarRequired
+      fallback={
+        <OrdersEmpty signedIn={false} filtered={false} />
+      }
+    >
+      <OrdersListInner initialRole={initialRole} />
     </PollarRequired>
   );
 }
 
-function OrdersListInner() {
-  const { getClient, isAuthenticated, verified } = usePollar();
-  const [role, setRole] = useState<'all' | 'incoming' | 'outgoing'>('all');
+function OrdersListInner({ initialRole }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { getClient, isAuthenticated, verified, openLoginModal } = usePollar();
+
+  const role = useMemo(() => {
+    if (searchParams.toString()) {
+      return parseOrderRole(Object.fromEntries(searchParams.entries()));
+    }
+    return initialRole ?? DEFAULT_ORDER_ROLE;
+  }, [searchParams, initialRole]);
+
   const [orders, setOrders] = useState<OrderDetail[]>([]);
+  const [profileId, setProfileId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     let session = readStoredSession();
@@ -34,67 +65,112 @@ function OrdersListInner() {
       }
     }
     if (!session) {
+      setLoading(false);
       return;
     }
-    const res = await upeerAuthedFetch(`/api/orders?role=${role}`);
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error ?? 'Failed to load');
+
+    const [ordersRes, meRes] = await Promise.all([
+      upeerAuthedFetch(`/api/orders?role=${role}`),
+      upeerAuthedFetch('/api/me'),
+    ]);
+    const [ordersData, meData] = await Promise.all([
+      ordersRes.json(),
+      meRes.json(),
+    ]);
+
+    if (!ordersRes.ok) {
+      setError(
+        ordersData.error ?? 'Could not load orders. Refresh and try again.',
+      );
+      setLoading(false);
       return;
     }
+
     setError(null);
-    setOrders(data.orders ?? []);
+    setOrders(ordersData.orders ?? []);
+    if (meRes.ok) {
+      setProfileId(meData.profile?.id ?? null);
+    }
+    setLoading(false);
   }, [role, getClient]);
 
   useEffect(() => {
-    if (isAuthenticated && verified) {
-      void load();
+    if (!isAuthenticated || !verified) {
+      setLoading(false);
+      return;
     }
+    setLoading(true);
+    void load();
   }, [isAuthenticated, verified, load]);
+
+  const setRole = useCallback(
+    (next: OrderRoleFilter) => {
+      const query = orderRoleToSearchParams(next);
+      startTransition(() => {
+        router.replace(query ? `${pathname}?${query}` : pathname, {
+          scroll: false,
+        });
+      });
+    },
+    [pathname, router],
+  );
+
+  const signedIn = isAuthenticated && verified;
+  const activeCount = orders.filter((order) =>
+    isActiveOrderStatus(order.status),
+  ).length;
+
+  if (!signedIn && !loading) {
+    return (
+      <OrdersEmpty
+        signedIn={false}
+        filtered={false}
+        onSignIn={() => openLoginModal()}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
-        {(['all', 'incoming', 'outgoing'] as const).map((r) => (
-          <button
-            key={r}
-            type="button"
-            className={`nav-pill px-3 ${role === r ? 'nav-pill--active' : ''}`}
-            onClick={() => setRole(r)}
-          >
-            {r === 'all' ? 'All' : r === 'incoming' ? 'Incoming' : 'Outgoing'}
-          </button>
-        ))}
-      </div>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      <ul className="space-y-3">
-        {orders.length === 0 ? (
-          <li className="ui-card px-4 py-8 text-center text-sm text-muted">
-            No trades yet.{' '}
-            <Link href="/market" className="text-[var(--accent)]">
-              Browse market
-            </Link>
-          </li>
-        ) : (
-          orders.map((o) => (
-            <li key={o.id}>
-              <Link
-                href={`/orders/${o.id}`}
-                className="ui-card block px-4 py-3 hover:border-[var(--accent)]"
-              >
-                <p className="font-medium">
-                  {o.quote.usdc_amount} USDC → {o.quote.fiat_amount}{' '}
-                  {o.quote.fiat_currency}
-                </p>
-                <p className="mt-1 text-xs text-muted">
-                  {o.status.replace(/_/g, ' ')} ·{' '}
-                  {o.offer.maker_display_name ?? 'Maker'}
-                </p>
-              </Link>
+      <OrdersToolbar
+        role={role}
+        resultCount={orders.length}
+        activeCount={activeCount}
+        onChange={setRole}
+      />
+
+      {error ? (
+        <p className="text-sm text-red-400" role="status" aria-live="polite">
+          {error}
+        </p>
+      ) : null}
+
+      {loading ? (
+        <p className="text-sm text-[var(--foreground-tertiary)]">
+          Loading orders…
+        </p>
+      ) : orders.length === 0 ? (
+        <OrdersEmpty
+          signedIn
+          filtered={role !== 'all'}
+          onResetFilters={() => setRole('all')}
+        />
+      ) : (
+        <ul className="grid list-none gap-3">
+          {orders.map((order) => (
+            <li key={order.id} className="offer-list-item">
+              <ViewTransition>
+                <OrderRow
+                  order={order}
+                  isMaker={Boolean(
+                    profileId && order.maker_profile_id === profileId,
+                  )}
+                />
+              </ViewTransition>
             </li>
-          ))
-        )}
-      </ul>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

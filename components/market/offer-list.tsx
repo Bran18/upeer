@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { startTransition, useCallback, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ViewTransition } from 'react';
 import { MarketEmpty } from '@/components/market/market-empty';
@@ -17,32 +17,23 @@ import {
 
 type Props = {
   offers: MarketOffer[];
-  usdcIssuer: string;
-  usdcRating?: number;
   initialFilters?: MarketFilters;
 };
 
-export function OfferList({
-  offers,
-  usdcIssuer,
-  usdcRating,
-  initialFilters,
-}: Props) {
+export function OfferList({ offers, initialFilters }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const filters = useMemo(() => {
     if (searchParams.toString()) {
-      return parseMarketFilters(
-        Object.fromEntries(searchParams.entries()),
-      );
+      return parseMarketFilters(Object.fromEntries(searchParams.entries()));
     }
     return initialFilters ?? DEFAULT_MARKET_FILTERS;
   }, [searchParams, initialFilters]);
 
   const fiatOptions = useMemo(
-    () => [...new Set(offers.map((o) => o.fiatCurrency))].sort(),
+    () => [...new Set(offers.map((offer) => offer.fiatCurrency))].sort(),
     [offers],
   );
 
@@ -56,15 +47,19 @@ export function OfferList({
       const next = { ...filters, ...patch };
       const params = filtersToSearchParams(next);
       const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, {
-        scroll: false,
+      startTransition(() => {
+        router.replace(query ? `${pathname}?${query}` : pathname, {
+          scroll: false,
+        });
       });
     },
     [filters, pathname, router],
   );
 
   const resetFilters = useCallback(() => {
-    router.replace(pathname, { scroll: false });
+    startTransition(() => {
+      router.replace(pathname, { scroll: false });
+    });
   }, [pathname, router]);
 
   if (offers.length === 0) {
@@ -82,17 +77,13 @@ export function OfferList({
       />
 
       {visibleOffers.length === 0 ? (
-        <MarketEmpty filtered={true} onResetFilters={resetFilters} />
+        <MarketEmpty filtered onResetFilters={resetFilters} />
       ) : (
-        <ul className="grid list-none gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid list-none gap-3">
           {visibleOffers.map((offer) => (
-            <li key={offer.id}>
+            <li key={offer.id} className="offer-list-item">
               <ViewTransition>
-                <OfferCard
-                  offer={offer}
-                  usdcIssuer={usdcIssuer}
-                  usdcRating={usdcRating}
-                />
+                <OfferCard offer={offer} />
               </ViewTransition>
             </li>
           ))}

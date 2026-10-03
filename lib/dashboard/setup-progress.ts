@@ -31,11 +31,11 @@ export function buildSetupItems(profile: MeProfile): SetupItem[] {
   if (showBuyer) {
     items.push({
       id: 'market',
-      title: 'Start an exchange',
-      description: 'Get a quote for the amount you want to buy or sell.',
+      title: 'Browse the market',
+      description: 'Take a live desk at the posted price per USDC.',
       status: 'action',
-      href: '/exchange',
-      hrefLabel: 'Start exchange',
+      href: '/market',
+      hrefLabel: 'Open market',
     });
   }
 
@@ -91,9 +91,9 @@ export function primaryCtaForIntent(intent: PlatformIntent): {
   switch (intent) {
     case 'buyer':
       return {
-        href: '/exchange',
-        label: 'Start exchange',
-        description: 'Say what you have, what you want, and how much.',
+        href: '/market',
+        label: 'Open Market',
+        description: 'Compare live desks and take a posted price.',
       };
     case 'merchant':
       return {
@@ -103,15 +103,15 @@ export function primaryCtaForIntent(intent: PlatformIntent): {
       };
     case 'both':
       return {
-        href: '/exchange',
-        label: 'Start exchange',
-        description: 'Buy or sell from the same quote.',
+        href: '/market',
+        label: 'Open Market',
+        description: 'Take a desk or post your own liquidity.',
       };
     default:
       return {
-        href: '/exchange',
-        label: 'Start exchange',
-        description: 'Begin with a transparent quote.',
+        href: '/market',
+        label: 'Open Market',
+        description: 'Browse open offers.',
       };
   }
 }

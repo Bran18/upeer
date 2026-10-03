@@ -19,7 +19,6 @@ export function headerNavItems(
   isOnboarded: boolean,
 ): NavItem[] {
   const browse = [
-    { href: '/exchange', label: 'Exchange', match: ['/', '/exchange'] },
     { href: '/market', label: 'Market', match: ['/market'] },
     postOrderNavItem,
   ];
@@ -74,7 +73,7 @@ export function accountMenuItems(profile: MeProfile | null | undefined): NavItem
 }
 
 export const footerNavItems: NavItem[] = [
-  { href: '/exchange', label: 'Exchange' },
+  { href: '/market', label: 'Market' },
   { href: '/orders', label: 'Activity' },
   { href: '/account', label: 'Account' },
 ];

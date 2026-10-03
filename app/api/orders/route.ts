@@ -7,6 +7,7 @@ import {
 } from '@/lib/auth/require-session';
 import { createNotification } from '@/lib/db/notifications';
 import { listOrdersForProfile } from '@/lib/db/orders';
+import { acceptanceDeadline } from '@/lib/quotes/ttl';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const bodySchema = z.object({
@@ -79,7 +80,13 @@ export async function POST(req: Request) {
     }
 
     if (new Date(quote.expires_at).getTime() <= Date.now()) {
-      return NextResponse.json({ error: 'Quote expired' }, { status: 400 });
+      return NextResponse.json(
+        {
+          error:
+            'This quote expired. Request the trade again from the offer.',
+        },
+        { status: 400 },
+      );
     }
 
     const rawOffer = quote.offers;
@@ -122,6 +129,15 @@ export async function POST(req: Request) {
     if (orderError) {
       return NextResponse.json({ error: orderError.message }, { status: 400 });
     }
+
+    const acceptBy = acceptanceDeadline(
+      order.created_at,
+      quote.expires_at,
+    ).toISOString();
+    await supabase
+      .from('quotes')
+      .update({ expires_at: acceptBy })
+      .eq('id', quoteId);
 
     await supabase.from('escrow_sessions').insert({
       order_id: order.id,

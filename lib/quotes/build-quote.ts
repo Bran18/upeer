@@ -1,4 +1,4 @@
-const QUOTE_TTL_MS = 5 * 60 * 1000;
+import { quoteCreateDeadline } from '@/lib/quotes/ttl';
 
 export type BuiltQuote = {
   usdcAmount: string;
@@ -35,6 +35,6 @@ export async function buildExecutableQuote(input: {
       pricePerUsdc: input.pricePerUsdc,
       fiatCurrency: input.fiatCurrency,
     },
-    expiresAt: new Date(Date.now() + QUOTE_TTL_MS).toISOString(),
+    expiresAt: quoteCreateDeadline().toISOString(),
   };
 }

@@ -4,6 +4,7 @@ import {
   requireSession,
 } from '@/lib/auth/require-session';
 import { createNotification } from '@/lib/db/notifications';
+import { orderCanBeAccepted } from '@/lib/quotes/ttl';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 type Params = { params: Promise<{ id: string }> };
@@ -27,6 +28,7 @@ export async function POST(req: Request, { params }: Params) {
       `
       id,
       status,
+      created_at,
       maker_profile_id,
       taker_profile_id,
       quotes!inner (
@@ -47,13 +49,6 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: 'Only the maker can accept' }, { status: 403 });
   }
 
-  if (order.status !== 'pending_acceptance') {
-    return NextResponse.json(
-      { error: `Order is not awaiting acceptance (${order.status})` },
-      { status: 400 },
-    );
-  }
-
   const rawQuote = order.quotes;
   const quote = (Array.isArray(rawQuote) ? rawQuote[0] : rawQuote) as {
     usdc_amount: string;
@@ -61,12 +56,26 @@ export async function POST(req: Request, { params }: Params) {
     offers: { id: string; available_usdc: string } | { id: string; available_usdc: string }[];
   };
 
-  if (new Date(quote.expires_at).getTime() <= Date.now()) {
-    await supabase
-      .from('orders')
-      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-      .eq('id', id);
-    return NextResponse.json({ error: 'Quote expired' }, { status: 400 });
+  if (!orderCanBeAccepted(order.status, order.created_at, quote.expires_at)) {
+    if (order.status !== 'pending_acceptance' && order.status !== 'cancelled') {
+      return NextResponse.json(
+        { error: `Order is not awaiting acceptance (${order.status})` },
+        { status: 400 },
+      );
+    }
+    if (order.status === 'pending_acceptance') {
+      await supabase
+        .from('orders')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', id);
+    }
+    return NextResponse.json(
+      {
+        error:
+          'This take expired. Ask the taker to request the trade again.',
+      },
+      { status: 400 },
+    );
   }
 
   const offer = Array.isArray(quote.offers) ? quote.offers[0] : quote.offers;

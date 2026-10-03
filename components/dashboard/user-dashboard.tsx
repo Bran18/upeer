@@ -71,8 +71,8 @@ function UserDashboardInner() {
         title={merchant ? 'Performance' : 'Ready to exchange'}
         description={
           merchant
-            ? 'A quiet view of what is set up. Posting and matching still happen in Exchange and Offers.'
-            : 'Your account is connected. Start from Exchange — this page stays out of the way.'
+            ? 'A quiet view of what is set up. Posting and matching happen in Market and Orders.'
+            : 'Your account is connected. Start from Market — this page stays out of the way.'
         }
         action={
           <Link href={primary.href} className="btn-primary">

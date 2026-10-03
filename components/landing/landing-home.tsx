@@ -33,7 +33,7 @@ export function LandingHome() {
             </div>
           </dl>
           <div className="mt-8">
-            <GlowButton href="/exchange">Get a quote</GlowButton>
+            <GlowButton href="/market">Browse Market</GlowButton>
           </div>
         </div>
       </div>

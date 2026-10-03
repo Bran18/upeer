@@ -17,7 +17,7 @@ export const ONBOARDING_ROLE_OPTIONS: readonly RoleOptionConfig[] = [
     glyph: '↓',
     description: 'Pay in local currency and receive USDC.',
     bullets: [
-      'Get a quote without browsing ads',
+      'Browse live desks and take a posted price',
       'Pay with a method you already use',
       'Follow the exchange through to completion',
     ],
@@ -30,7 +30,7 @@ export const ONBOARDING_ROLE_OPTIONS: readonly RoleOptionConfig[] = [
     description: 'Quote a price and receive local currency.',
     bullets: [
       'Post offers at your price',
-      'Get matched automatically',
+      'Takers find you on the market',
       'Keep payouts on an address you control',
     ],
   },
@@ -43,7 +43,7 @@ export const ONBOARDING_ROLE_OPTIONS: readonly RoleOptionConfig[] = [
     bullets: [
       'One account for both directions',
       'Merchant tools stay in Account',
-      'Same quote experience either way',
+      'Same market and orders in both directions',
     ],
   },
 ] as const;

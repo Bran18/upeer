@@ -206,9 +206,9 @@ export function SoroswapSection({ disabled = false }: Props) {
         ) : null}
 
         <p className="text-sm text-[var(--foreground-tertiary)]">
-          To exchange with a person, go to{' '}
-          <Link href="/exchange" className="font-medium text-[var(--accent)] hover:underline">
-            Exchange
+          To trade with a person, go to the{' '}
+          <Link href="/market" className="font-medium text-[var(--accent)] hover:underline">
+            market
           </Link>
           .
         </p>

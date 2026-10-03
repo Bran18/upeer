@@ -1069,6 +1069,11 @@ select {
     radial-gradient(ellipse 50% 60% at 10% 100%, rgba(0, 113, 227, 0.08), transparent);
 }
 
+.offer-list-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 11rem;
+}
+
 .offer-card {
   display: flex;
   flex-direction: column;
@@ -1078,10 +1083,27 @@ select {
   border: 1px solid var(--line);
   background: var(--surface-elevated);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  scroll-margin-top: calc(var(--site-header-height) + 4.5rem);
   transition:
     border-color 0.25s var(--ease-apple),
     transform 0.25s var(--ease-apple),
     box-shadow 0.25s var(--ease-apple);
+}
+
+@media (min-width: 768px) {
+  .offer-card {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1.125rem 1.25rem;
+  }
+
+  .offer-list-item {
+    contain-intrinsic-size: 0 7.5rem;
+  }
 }
 
 .offer-card:hover {
@@ -1123,6 +1145,26 @@ select {
 .offer-tag--verified {
   background: rgba(52, 211, 153, 0.14);
   color: rgb(167, 243, 208);
+}
+
+.offer-tag--pending {
+  background: rgba(251, 191, 36, 0.16);
+  color: rgb(253, 230, 138);
+}
+
+.offer-tag--live {
+  background: var(--accent-muted);
+  color: var(--accent);
+}
+
+.offer-tag--done {
+  background: rgba(52, 211, 153, 0.14);
+  color: rgb(167, 243, 208);
+}
+
+.offer-tag--danger {
+  background: rgba(248, 113, 113, 0.14);
+  color: rgb(254, 202, 202);
 }
 
 .know-section {
@@ -1222,6 +1264,16 @@ select {
   }
 
   .know-card:hover {
+    transform: none;
+  }
+
+  .offer-card {
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .offer-card:hover {
     transform: none;
   }
 
