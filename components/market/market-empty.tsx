@@ -41,9 +41,6 @@ export function MarketEmpty({ filtered, onResetFilters }: Props) {
         <Link href="/merchant" className="btn-primary">
           Open Merchant Desk
         </Link>
-        <Link href="/onboarding" className="btn-secondary">
-          Finish Setup
-        </Link>
       </div>
     </div>
   );
