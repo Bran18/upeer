@@ -89,7 +89,9 @@ export function OrderSummary({
   escrowStatusError = null,
 }: Props) {
   const action = buyerActionLabel(order.offer.side);
-  const deskName = order.offer.maker_display_name?.trim() || 'Desk';
+  const counterpartyLabel =
+    order.counterparty?.displayName?.trim() ||
+    (isMaker ? 'Taker' : order.offer.maker_display_name?.trim() || 'Desk');
   const price =
     (order.quote.reflector_snapshot?.pricePerUsdc as string) ??
     order.offer.price_per_usdc;
@@ -131,7 +133,8 @@ export function OrderSummary({
     <aside className="ui-card flex flex-col px-5 py-5 sm:px-6 sm:py-6">
       <div className="flex items-start gap-3">
         <Avatar
-          label={deskName}
+          label={counterpartyLabel}
+          src={order.counterparty?.avatarUrl ?? undefined}
           size="lg"
           className="ring-2 ring-[var(--line)] ring-offset-2 ring-offset-[var(--surface-elevated)]"
         />
@@ -145,7 +148,7 @@ export function OrderSummary({
             default="none"
           >
             <p className="mt-1 truncate text-lg font-semibold tracking-tight">
-              {deskName}
+              {counterpartyLabel}
             </p>
           </ViewTransition>
           <p className="mt-1 text-sm text-[var(--foreground-secondary)]">

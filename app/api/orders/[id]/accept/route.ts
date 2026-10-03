@@ -1,13 +1,22 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import {
   isSessionError,
   requireSession,
 } from '@/lib/auth/require-session';
+import {
+  resolveSellerPaymentMethod,
+  usdcSellerProfileId,
+} from '@/lib/orders/fiat-settlement';
 import { createNotification } from '@/lib/db/notifications';
 import { orderCanBeAccepted } from '@/lib/quotes/ttl';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 type Params = { params: Promise<{ id: string }> };
+
+const bodySchema = z.object({
+  paymentMethodId: z.string().min(8).max(64).optional(),
+});
 
 export async function POST(req: Request, { params }: Params) {
   if (!isSupabaseConfigured()) {
@@ -20,6 +29,10 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   const { id } = await params;
+  const body = bodySchema.safeParse(
+    await req.json().catch(() => ({})),
+  );
+  const paymentMethodId = body.success ? body.data.paymentMethodId : undefined;
   const supabase = getSupabaseAdmin();
 
   const { data: order, error } = await supabase
@@ -31,10 +44,12 @@ export async function POST(req: Request, { params }: Params) {
       created_at,
       maker_profile_id,
       taker_profile_id,
+      fiat_settlement,
       quotes!inner (
         usdc_amount,
+        fiat_currency,
         expires_at,
-        offers!inner ( id, available_usdc )
+        offers!inner ( id, available_usdc, side )
       )
     `,
     )
@@ -52,8 +67,11 @@ export async function POST(req: Request, { params }: Params) {
   const rawQuote = order.quotes;
   const quote = (Array.isArray(rawQuote) ? rawQuote[0] : rawQuote) as {
     usdc_amount: string;
+    fiat_currency: string;
     expires_at: string;
-    offers: { id: string; available_usdc: string } | { id: string; available_usdc: string }[];
+    offers:
+      | { id: string; available_usdc: string; side: 'sell_usdc' | 'buy_usdc' }
+      | { id: string; available_usdc: string; side: 'sell_usdc' | 'buy_usdc' }[];
   };
 
   if (!orderCanBeAccepted(order.status, order.created_at, quote.expires_at)) {
@@ -79,6 +97,51 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   const offer = Array.isArray(quote.offers) ? quote.offers[0] : quote.offers;
+  const makerId = order.maker_profile_id as string;
+  const takerId = order.taker_profile_id as string;
+  const sellerId = usdcSellerProfileId(offer.side, makerId, takerId);
+
+  let fiatSettlement = order.fiat_settlement as Record<string, unknown> | null;
+  if (offer.side === 'sell_usdc') {
+    if (!paymentMethodId) {
+      return NextResponse.json(
+        {
+          error:
+            'Choose how you receive fiat for this trade before accepting.',
+        },
+        { status: 400 },
+      );
+    }
+    const { data: sellerProfile, error: sellerError } = await supabase
+      .from('profiles')
+      .select('payment_prefs')
+      .eq('id', sellerId)
+      .single();
+    if (sellerError || !sellerProfile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+    try {
+      fiatSettlement = resolveSellerPaymentMethod(
+        sellerProfile.payment_prefs,
+        paymentMethodId,
+        String(quote.fiat_currency),
+        sellerId,
+      );
+    } catch (e: unknown) {
+      const message =
+        e instanceof Error ? e.message : 'Invalid payment method';
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+  } else if (!fiatSettlement) {
+    return NextResponse.json(
+      {
+        error:
+          'This trade is missing a fiat account. Ask the taker to request again.',
+      },
+      { status: 400 },
+    );
+  }
+
   const usdc = Number(quote.usdc_amount);
   const available = Number(offer.available_usdc);
   if (usdc > available) {
@@ -103,6 +166,7 @@ export async function POST(req: Request, { params }: Params) {
     .from('orders')
     .update({
       status: 'reserved',
+      fiat_settlement: fiatSettlement,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)

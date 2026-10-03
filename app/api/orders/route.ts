@@ -7,11 +7,16 @@ import {
 } from '@/lib/auth/require-session';
 import { createNotification } from '@/lib/db/notifications';
 import { listOrdersForProfile } from '@/lib/db/orders';
+import {
+  resolveSellerPaymentMethod,
+  usdcSellerProfileId,
+} from '@/lib/orders/fiat-settlement';
 import { acceptanceDeadline } from '@/lib/quotes/ttl';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const bodySchema = z.object({
   quoteId: z.string().uuid(),
+  paymentMethodId: z.string().min(8).max(64).optional(),
 });
 
 export async function GET(req: Request) {
@@ -52,7 +57,7 @@ export async function POST(req: Request) {
   const profileId = sessionProfileId(session);
 
   try {
-    const { quoteId } = bodySchema.parse(await req.json());
+    const { quoteId, paymentMethodId } = bodySchema.parse(await req.json());
     const supabase = getSupabaseAdmin();
 
     const { data: quote, error: quoteError } = await supabase
@@ -61,13 +66,15 @@ export async function POST(req: Request) {
         `
         id,
         usdc_amount,
+        fiat_currency,
         expires_at,
         buyer_profile_id,
         offers!inner (
           id,
           available_usdc,
           maker_profile_id,
-          status
+          status,
+          side
         )
       `,
       )
@@ -95,6 +102,7 @@ export async function POST(req: Request) {
       available_usdc: string;
       maker_profile_id: string;
       status: string;
+      side: 'sell_usdc' | 'buy_usdc';
     };
 
     if (offer.status !== 'open') {
@@ -114,6 +122,46 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Insufficient liquidity' }, { status: 409 });
     }
 
+    const fiatCurrency = String(quote.fiat_currency);
+    const sellerId = usdcSellerProfileId(
+      offer.side,
+      offer.maker_profile_id,
+      profileId,
+    );
+
+    let fiatSettlement: Record<string, unknown> | null = null;
+    if (offer.side === 'buy_usdc') {
+      if (!paymentMethodId) {
+        return NextResponse.json(
+          {
+            error:
+              'Choose how you receive fiat for this trade before requesting.',
+          },
+          { status: 400 },
+        );
+      }
+      const { data: sellerProfile, error: sellerError } = await supabase
+        .from('profiles')
+        .select('payment_prefs')
+        .eq('id', sellerId)
+        .single();
+      if (sellerError || !sellerProfile) {
+        return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+      }
+      try {
+        fiatSettlement = resolveSellerPaymentMethod(
+          sellerProfile.payment_prefs,
+          paymentMethodId,
+          fiatCurrency,
+          sellerId,
+        );
+      } catch (e: unknown) {
+        const message =
+          e instanceof Error ? e.message : 'Invalid payment method';
+        return NextResponse.json({ error: message }, { status: 400 });
+      }
+    }
+
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -122,6 +170,7 @@ export async function POST(req: Request) {
         engagement_id: crypto.randomUUID(),
         maker_profile_id: offer.maker_profile_id,
         taker_profile_id: profileId,
+        ...(fiatSettlement ? { fiat_settlement: fiatSettlement } : {}),
       })
       .select('*')
       .single();

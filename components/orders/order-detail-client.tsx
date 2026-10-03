@@ -27,7 +27,14 @@ import {
   extractDeployContractId,
   extractUnsignedXdr,
 } from '@/lib/trustless-work/client';
+import { OrderSettlementDetails } from '@/components/orders/order-settlement-details';
+import {
+  defaultPaymentMethodId,
+  PaymentMethodPicker,
+} from '@/components/orders/payment-method-picker';
 import { OrderSummary } from '@/components/orders/order-summary';
+import { useUpeerSession } from '@/components/session/upeer-session-provider';
+import { EMPTY_PAYMENT_PREFS } from '@/lib/profile/payment-prefs';
 import { WalletActionProgress } from '@/components/orders/wallet-action-progress';
 import { PollarRequired } from '@/components/pollar-required';
 import { Button } from '@/components/ui/button';
@@ -65,6 +72,7 @@ export function OrderDetailClient({ orderId, initial }: Props) {
 function OrderDetailInner({ orderId, initial }: Props) {
   const { wallet, signAndSubmitTx, getClient, isAuthenticated, verified, openLoginModal } =
     usePollar();
+  const { profile } = useUpeerSession();
   const [order, setOrder] = useState<OrderDetail | null>(initial ?? null);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -77,6 +85,9 @@ function OrderDetailInner({ orderId, initial }: Props) {
   } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [confirmDecline, setConfirmDecline] = useState(false);
+  const [acceptPaymentMethodId, setAcceptPaymentMethodId] = useState<
+    string | null
+  >(null);
   const [deployExplorer, setDeployExplorer] = useState<{
     contractId?: string;
     txHash?: string;
@@ -280,6 +291,28 @@ function OrderDetailInner({ orderId, initial }: Props) {
     p2pInput && profileId && isUsdcBuyerProfile(p2pInput, profileId),
   );
 
+  const paymentPrefs = profile?.paymentPrefs ?? EMPTY_PAYMENT_PREFS;
+  const makerPicksFiatOnAccept = Boolean(
+    order &&
+      profileId &&
+      order.maker_profile_id === profileId &&
+      orderCanBeAccepted(
+        order.status,
+        order.created_at,
+        order.quote.expires_at,
+      ) &&
+      order.offer.side === 'sell_usdc',
+  );
+
+  useEffect(() => {
+    if (!makerPicksFiatOnAccept || !order) {
+      return;
+    }
+    setAcceptPaymentMethodId(
+      defaultPaymentMethodId(paymentPrefs, order.quote.fiat_currency),
+    );
+  }, [makerPicksFiatOnAccept, order?.quote.fiat_currency, paymentPrefs]);
+
   const reportProgress = (
     detail: string,
     headline = 'Working on this trade',
@@ -319,8 +352,19 @@ function OrderDetailInner({ orderId, initial }: Props) {
   const accept = () =>
     runAction(async () => {
       await ensureSession();
+      const payload: { paymentMethodId?: string } = {};
+      if (order?.offer.side === 'sell_usdc') {
+        if (!acceptPaymentMethodId) {
+          throw new Error(
+            'Choose how you receive fiat for this trade before accepting.',
+          );
+        }
+        payload.paymentMethodId = acceptPaymentMethodId;
+      }
       const res = await upeerAuthedFetch(`/api/orders/${orderId}/accept`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -728,6 +772,16 @@ function OrderDetailInner({ orderId, initial }: Props) {
       order.status === 'fiat_pending') &&
     !isUsdcSeller;
 
+  const showUsdcRelease =
+    order.status === 'reserved' ||
+    order.status === 'escrow_pending' ||
+    order.status === 'fiat_pending' ||
+    order.status === 'released';
+
+  const acceptDisabled =
+    busy ||
+    (order.offer.side === 'sell_usdc' && isMaker && !acceptPaymentMethodId);
+
   return (
     <div>
       <h1 className="text-title-2 text-balance scroll-mt-[var(--site-header-height)]">
@@ -738,12 +792,25 @@ function OrderDetailInner({ orderId, initial }: Props) {
       </p>
 
       <div className="mt-8 grid gap-4 lg:mt-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)] lg:items-start">
-        <OrderSummary
-          order={order}
-          isMaker={isMaker}
-          escrowOnChain={escrowOnChain}
-          escrowStatusError={escrowStatusError}
-        />
+        <div className="flex flex-col gap-4">
+          <OrderSummary
+            order={order}
+            isMaker={isMaker}
+            escrowOnChain={escrowOnChain}
+            escrowStatusError={escrowStatusError}
+          />
+          {order.fiatSettlement || showUsdcRelease ? (
+            <div className="ui-card px-5 py-5 sm:px-6 sm:py-6">
+              <OrderSettlementDetails
+                fiatSettlement={order.fiatSettlement}
+                usdcReleaseAddress={order.usdcReleaseAddress}
+                showUsdcRelease={showUsdcRelease}
+                viewerIsUsdcBuyer={isUsdcBuyer}
+                viewerIsUsdcSeller={isUsdcSeller}
+              />
+            </div>
+          ) : null}
+        </div>
 
         <section className="relative ui-card flex flex-col px-5 py-5 sm:px-6 sm:py-6">
           {busy && actionProgress ? (
@@ -769,9 +836,19 @@ function OrderDetailInner({ orderId, initial }: Props) {
 
           {canAccept ? (
             <div className="mt-6 flex flex-col gap-3">
+              {canAccept && order.offer.side === 'sell_usdc' && isMaker ? (
+                <PaymentMethodPicker
+                  currency={order.quote.fiat_currency}
+                  prefs={paymentPrefs}
+                  value={acceptPaymentMethodId}
+                  onChange={setAcceptPaymentMethodId}
+                  disabled={busy}
+                  legend="How you receive fiat"
+                />
+              ) : null}
               <Button
                 type="button"
-                disabled={busy}
+                disabled={acceptDisabled}
                 onClick={() => void accept()}
               >
                 {busy ? 'Working…' : 'Accept Trade'}

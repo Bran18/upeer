@@ -1,3 +1,8 @@
+import {
+  parseFiatSettlement,
+  usdcReleaseAddressForOrder,
+  type FiatSettlementSnapshot,
+} from '@/lib/orders/fiat-settlement';
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 
 export type OrderStatus =
@@ -14,6 +19,12 @@ export type OrderStatus =
 export type FiatConfirmation = {
   takerPaidAt?: string;
   makerReceivedAt?: string;
+};
+
+export type OrderCounterparty = {
+  profileId: string;
+  displayName: string | null;
+  avatarUrl: string | null;
 };
 
 export type OrderDetail = {
@@ -46,6 +57,9 @@ export type OrderDetail = {
     milestone_state: string;
     last_error: string | null;
   } | null;
+  counterparty: OrderCounterparty | null;
+  fiatSettlement: FiatSettlementSnapshot | null;
+  usdcReleaseAddress: string | null;
 };
 
 export async function getOrderDetailForParticipant(
@@ -64,6 +78,7 @@ export async function getOrderDetailForParticipant(
       maker_profile_id,
       taker_profile_id,
       fiat_confirmation,
+      fiat_settlement,
       created_at,
       updated_at,
       quotes!inner (
@@ -139,11 +154,54 @@ export async function getOrderDetailForParticipant(
     return null;
   }
 
-  const { data: makerProfile } = await supabase
+  const counterpartyId =
+    profileId === makerId
+      ? takerId
+      : profileId === takerId
+        ? makerId
+        : null;
+
+  const profileIds = [offerRow.maker_profile_id, makerId, takerId].filter(
+    Boolean,
+  ) as string[];
+  const uniqueIds = [...new Set(profileIds)];
+
+  const { data: profileRows } = await supabase
     .from('profiles')
-    .select('display_name')
-    .eq('id', offerRow.maker_profile_id)
-    .maybeSingle();
+    .select('id, display_name, avatar_url, payout_address, stellar_address')
+    .in('id', uniqueIds);
+
+  const profileById = new Map(
+    (profileRows ?? []).map((row) => [row.id as string, row]),
+  );
+  const makerOfferProfile = profileById.get(offerRow.maker_profile_id);
+  const makerRow = makerId ? profileById.get(makerId) : undefined;
+  const takerRow = takerId ? profileById.get(takerId) : undefined;
+
+  const counterpartyRow =
+    counterpartyId ? profileById.get(counterpartyId) : undefined;
+  const counterparty: OrderCounterparty | null =
+    counterpartyId && counterpartyRow
+      ? {
+          profileId: counterpartyId,
+          displayName: counterpartyRow.display_name ?? null,
+          avatarUrl: (counterpartyRow as { avatar_url?: string | null })
+            .avatar_url ?? null,
+        }
+      : counterpartyId
+        ? {
+            profileId: counterpartyId,
+            displayName: null,
+            avatarUrl: null,
+          }
+        : null;
+
+  const side = offerRow.side as 'sell_usdc' | 'buy_usdc';
+  const usdcReleaseAddress = usdcReleaseAddressForOrder(
+    side,
+    (makerRow?.payout_address as string | null) ?? null,
+    (takerRow?.stellar_address as string | null) ?? null,
+  );
 
   const rawEscrow = order.escrow_sessions;
   const escrowRow = Array.isArray(rawEscrow) ? rawEscrow[0] : rawEscrow;
@@ -171,8 +229,11 @@ export async function getOrderDetailForParticipant(
       side: offerRow.side as 'sell_usdc' | 'buy_usdc',
       fiat_currency: offerRow.fiat_currency,
       price_per_usdc: String(offerRow.price_per_usdc),
-      maker_display_name: makerProfile?.display_name ?? null,
+      maker_display_name: makerOfferProfile?.display_name ?? null,
     },
+    counterparty,
+    fiatSettlement: parseFiatSettlement(order.fiat_settlement),
+    usdcReleaseAddress,
     escrow: escrowRow
       ? {
           tw_contract_id: escrowRow.tw_contract_id,

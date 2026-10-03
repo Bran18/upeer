@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePollar } from '@pollar/react';
 import type { MarketOffer } from '@/lib/data/offers';
@@ -16,7 +16,13 @@ import {
   defaultTakeUsdc,
   offerFillBounds,
 } from '@/lib/market/take';
+import {
+  defaultPaymentMethodId,
+  PaymentMethodPicker,
+} from '@/components/orders/payment-method-picker';
 import { PollarRequired } from '@/components/pollar-required';
+import { useUpeerSession } from '@/components/session/upeer-session-provider';
+import { EMPTY_PAYMENT_PREFS } from '@/lib/profile/payment-prefs';
 import { Button } from '@/components/ui/button';
 import {
   exchangePollarSessionFromClient,
@@ -60,6 +66,19 @@ function TradeFlowClientInner({ offer, initialUsdc }: Props) {
   );
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { profile } = useUpeerSession();
+  const [paymentMethodId, setPaymentMethodId] = useState<string | null>(null);
+  const takerReceivesFiat = offer.side === 'buy_usdc';
+  const paymentPrefs = profile?.paymentPrefs ?? EMPTY_PAYMENT_PREFS;
+
+  useEffect(() => {
+    if (!takerReceivesFiat) {
+      return;
+    }
+    setPaymentMethodId(
+      defaultPaymentMethodId(paymentPrefs, offer.fiatCurrency),
+    );
+  }, [takerReceivesFiat, paymentPrefs, offer.fiatCurrency]);
 
   const { min, max } = offerFillBounds(offer);
   const amount = parseAmount(usdcAmount);
@@ -107,10 +126,22 @@ function TradeFlowClientInner({ offer, initialUsdc }: Props) {
         throw new Error(quoteData.error ?? 'Quote failed. Try a different size.');
       }
 
+      const orderBody: { quoteId: string; paymentMethodId?: string } = {
+        quoteId: quoteData.quote.id,
+      };
+      if (takerReceivesFiat) {
+        if (!paymentMethodId) {
+          throw new Error(
+            'Choose how you receive fiat for this trade before requesting.',
+          );
+        }
+        orderBody.paymentMethodId = paymentMethodId;
+      }
+
       const orderRes = await upeerAuthedFetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quoteId: quoteData.quote.id }),
+        body: JSON.stringify(orderBody),
       });
       const orderData = await orderRes.json();
       if (!orderRes.ok) {
@@ -226,11 +257,24 @@ function TradeFlowClientInner({ offer, initialUsdc }: Props) {
         </div>
       </dl>
 
+      {takerReceivesFiat && canTrade ? (
+        <div className="mt-6 border-t border-[var(--line)] pt-5">
+          <PaymentMethodPicker
+            currency={offer.fiatCurrency}
+            prefs={paymentPrefs}
+            value={paymentMethodId}
+            onChange={setPaymentMethodId}
+            disabled={busy}
+            legend="How you receive fiat"
+          />
+        </div>
+      ) : null}
+
       <Button
         type="submit"
         className="mt-6"
         fullWidth
-        disabled={busy}
+        disabled={busy || (takerReceivesFiat && canTrade && !paymentMethodId)}
       >
         {submitLabel}
       </Button>
