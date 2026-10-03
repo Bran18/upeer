@@ -4,6 +4,10 @@ import {
   type EscrowOnChainSnapshot,
 } from '@/lib/escrow/on-chain';
 import {
+  fetchEscrowContractEvents,
+  snapshotFromContractEvents,
+} from '@/lib/escrow/contract-events';
+import {
   pickEscrowContractByEngagement,
   twGetEscrowByContractIds,
   twGetEscrowsBySigner,
@@ -14,26 +18,17 @@ import {
 async function loadFromIndexerByContractId(
   contractId: string,
   expectedAmount: number,
+  validateOnChain: boolean,
 ): Promise<EscrowOnChainSnapshot | null> {
-  for (const validateOnChain of [false, true]) {
-    try {
-      const payload = await twGetEscrowByContractIds(
-        [contractId],
-        validateOnChain,
-      );
-      const snapshot = parseEscrowOnChainSnapshot(
-        payload,
-        expectedAmount,
-        contractId,
-      );
-      if (snapshot) {
-        return snapshot;
-      }
-    } catch {
-      // try validateOnChain=true
-    }
+  try {
+    const payload = await twGetEscrowByContractIds(
+      [contractId],
+      validateOnChain,
+    );
+    return parseEscrowOnChainSnapshot(payload, expectedAmount, contractId);
+  } catch {
+    return null;
   }
-  return null;
 }
 
 async function readChainBalance(
@@ -47,25 +42,38 @@ async function readChainBalance(
   }
 }
 
-function mergeChainBalance(
-  snapshot: EscrowOnChainSnapshot | null,
-  chainBalance: number | null,
-  expectedAmount: number,
+function mergeSnapshots(
+  primary: EscrowOnChainSnapshot | null,
+  secondary: EscrowOnChainSnapshot | null,
 ): EscrowOnChainSnapshot | null {
-  if (chainBalance == null) {
-    return snapshot;
+  if (!primary) {
+    return secondary;
   }
-  const amount = snapshot?.amount ?? expectedAmount;
-  const released = snapshot?.released ?? false;
-  const disputed = snapshot?.disputed ?? false;
+  if (!secondary) {
+    return primary;
+  }
+  const released = primary.released || secondary.released;
+  const disputed = primary.disputed || secondary.disputed;
+  const approved = Boolean(primary.approved || secondary.approved);
+  const fundCount = Math.max(
+    primary.fundCount ?? 0,
+    secondary.fundCount ?? 0,
+  );
+  const amount = Math.max(primary.amount, secondary.amount);
+  const balance = released ? 0 : Math.max(primary.balance, secondary.balance);
   const funded =
-    released || (amount > 0 ? chainBalance >= amount * 0.999 : chainBalance > 0);
+    released ||
+    primary.funded ||
+    secondary.funded ||
+    (amount > 0 ? balance >= amount * 0.999 : balance > 0);
   return {
-    balance: chainBalance,
+    balance,
     amount,
     funded,
     released,
     disputed,
+    approved,
+    fundCount: fundCount || undefined,
   };
 }
 
@@ -79,22 +87,53 @@ export async function fetchEscrowOnChainSnapshot(
     syncTxHash?: string | null;
   },
 ): Promise<EscrowOnChainSnapshot | null> {
-  let snapshot: EscrowOnChainSnapshot | null =
-    await loadFromIndexerByContractId(contractId, options.expectedAmount);
+  let eventsSnapshot: EscrowOnChainSnapshot | null = null;
+  try {
+    const events = await fetchEscrowContractEvents(
+      contractId,
+      options.expectedAmount,
+    );
+    eventsSnapshot = snapshotFromContractEvents(events, options.expectedAmount);
+  } catch {
+    eventsSnapshot = null;
+  }
 
+  let snapshot: EscrowOnChainSnapshot | null =
+    await loadFromIndexerByContractId(
+      contractId,
+      options.expectedAmount,
+      false,
+    );
+
+  const needsOnChainCheck =
+    !eventsSnapshot?.funded &&
+    (!snapshot || (!snapshot.funded && snapshot.balance === 0));
   const syncHash = options.syncTxHash?.trim();
+
   if (!snapshot && syncHash) {
     try {
       await twUpdateFromTxHash(syncHash);
     } catch {
       // indexer sync is best-effort
     }
-    snapshot = await loadFromIndexerByContractId(contractId, options.expectedAmount);
+    snapshot =
+      (await loadFromIndexerByContractId(
+        contractId,
+        options.expectedAmount,
+        true,
+      )) ?? snapshot;
+  } else if (needsOnChainCheck) {
+    snapshot =
+      (await loadFromIndexerByContractId(
+        contractId,
+        options.expectedAmount,
+        true,
+      )) ?? snapshot;
   }
 
-  if (!snapshot && options.sellerSigner) {
+  if (!snapshot && !eventsSnapshot && options.sellerSigner) {
     try {
-      const bySigner = await twGetEscrowsBySigner(options.sellerSigner, true);
+      const bySigner = await twGetEscrowsBySigner(options.sellerSigner, false);
       const matchedId = pickEscrowContractByEngagement(
         bySigner,
         options.engagementId,
@@ -112,6 +151,23 @@ export async function fetchEscrowOnChainSnapshot(
     }
   }
 
+  snapshot = mergeSnapshots(eventsSnapshot, snapshot);
+
   const chainBalance = await readChainBalance(contractId);
-  return mergeChainBalance(snapshot, chainBalance, options.expectedAmount);
+  if (chainBalance == null) {
+    return snapshot;
+  }
+  return mergeSnapshots(snapshot, {
+    balance: chainBalance,
+    amount: snapshot?.amount ?? options.expectedAmount,
+    funded:
+      Boolean(snapshot?.released) ||
+      (options.expectedAmount > 0
+        ? chainBalance >= options.expectedAmount * 0.999
+        : chainBalance > 0),
+    released: snapshot?.released ?? false,
+    disputed: snapshot?.disputed ?? false,
+    approved: snapshot?.approved,
+    fundCount: snapshot?.fundCount,
+  });
 }

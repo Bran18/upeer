@@ -22,16 +22,22 @@ export async function GET(req: Request, { params }: Params) {
   const profileId = sessionProfileId(session);
 
   const { id } = await params;
-  const isOperator = await profileIsOperator(profileId);
-  const order = await getOrderDetailForParticipant(
-    id,
-    profileId,
-    isOperator,
-  );
+  try {
+    const isOperator = await profileIsOperator(profileId);
+    const order = await getOrderDetailForParticipant(
+      id,
+      profileId,
+      isOperator,
+    );
 
-  if (!order) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ order, isOperator });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Could not load this order';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  return NextResponse.json({ order, isOperator });
 }

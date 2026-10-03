@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePollar } from '@pollar/react';
 import type { OrderDetail } from '@/lib/db/orders';
 import { buyerActionLabel } from '@/lib/market/format';
@@ -10,6 +10,8 @@ import type { EscrowOnChainSnapshot } from '@/lib/escrow/on-chain';
 import {
   isEscrowFundedForDisplay,
   isEscrowFundPending,
+  preferMilestoneState,
+  preferOnChainSnapshot,
   shouldHideFundEscrowAction,
 } from '@/lib/escrow/funding-state';
 import {
@@ -79,6 +81,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
   const [escrowStatusError, setEscrowStatusError] = useState<string | null>(
     null,
   );
+  const refreshInFlight = useRef(false);
   const stellarNetwork = getStellarNetworkClient();
 
   const ensureSession = useCallback(async () => {
@@ -98,61 +101,85 @@ function OrderDetailInner({ orderId, initial }: Props) {
   }, []);
 
   const refreshOrder = useCallback(
-    async (options?: { syncTxHash?: string | null }) => {
-      await ensureSession();
-      const res = await upeerAuthedFetch(`/api/orders/${orderId}`);
-      const data = await res.json();
-      if (!res.ok) {
-        setLoadError(
-          data.error ?? 'Could not load this order. Go back and try again.',
-        );
+    async (options?: { syncTxHash?: string | null; force?: boolean }) => {
+      if (refreshInFlight.current && !options?.force) {
         return;
       }
-      setLoadError(null);
-      setOrder(data.order);
-
-      if (data.order?.escrow?.tw_contract_id) {
-        const txForSync =
-          options?.syncTxHash ??
-          deployExplorer?.fundTxHash ??
-          deployExplorer?.txHash ??
-          null;
-        const statusQuery = new URLSearchParams({ orderId });
-        if (txForSync) {
-          statusQuery.set('txHash', txForSync);
+      refreshInFlight.current = true;
+      try {
+        await ensureSession();
+        const res = await upeerAuthedFetch(`/api/orders/${orderId}`);
+        let data: { order?: OrderDetail | null; error?: string } = {};
+        try {
+          data = await res.json();
+        } catch {
+          return;
         }
-        const statusRes = await upeerAuthedFetch(
-          `/api/escrow/status?${statusQuery}`,
-        );
-        const statusData = await statusRes.json();
-        if (statusRes.ok) {
-          setEscrowOnChain(statusData.snapshot ?? null);
-          setEscrowStatusError(
-            typeof statusData.error === 'string' ? statusData.error : null,
+        if (!res.ok) {
+          setLoadError(
+            data.error ?? 'Could not load this order. Go back and try again.',
           );
-          const milestoneState =
-            typeof statusData.milestoneState === 'string'
-              ? statusData.milestoneState
-              : null;
-          if (milestoneState && data.order?.escrow) {
-            setOrder((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    escrow: prev.escrow
-                      ? { ...prev.escrow, milestone_state: milestoneState }
-                      : prev.escrow,
-                  }
-                : prev,
+          return;
+        }
+        if (!data.order) {
+          return;
+        }
+        setLoadError(null);
+        setOrder((prev) => mergeOrderDetail(prev, data.order as OrderDetail));
+
+        if (data.order.escrow?.tw_contract_id) {
+          const txForSync = options?.syncTxHash ?? null;
+          const statusQuery = new URLSearchParams({ orderId });
+          if (txForSync) {
+            statusQuery.set('txHash', txForSync);
+          }
+          const statusRes = await upeerAuthedFetch(
+            `/api/escrow/status?${statusQuery}`,
+          );
+          let statusData: {
+            snapshot?: EscrowOnChainSnapshot | null;
+            error?: string;
+            milestoneState?: string;
+          } = {};
+          try {
+            statusData = await statusRes.json();
+          } catch {
+            return;
+          }
+          if (statusRes.ok) {
+            setEscrowOnChain((prev) =>
+              preferOnChainSnapshot(prev, statusData.snapshot ?? null),
             );
+            setEscrowStatusError(
+              typeof statusData.error === 'string' ? statusData.error : null,
+            );
+            const milestoneState =
+              typeof statusData.milestoneState === 'string'
+                ? statusData.milestoneState
+                : null;
+            if (milestoneState) {
+              setOrder((prev) =>
+                prev?.escrow
+                  ? {
+                      ...prev,
+                      escrow: {
+                        ...prev.escrow,
+                        milestone_state: preferMilestoneState(
+                          prev.escrow.milestone_state,
+                          milestoneState,
+                        ),
+                      },
+                    }
+                  : prev,
+              );
+            }
           }
         }
-      } else {
-        setEscrowOnChain(null);
-        setEscrowStatusError(null);
+      } finally {
+        refreshInFlight.current = false;
       }
     },
-    [orderId, ensureSession, deployExplorer?.fundTxHash, deployExplorer?.txHash],
+    [orderId, ensureSession],
   );
 
   useEffect(() => {
@@ -163,7 +190,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
       await ensureSession();
       await Promise.all([refreshOrder(), loadProfile()]);
     })();
-    const timer = window.setInterval(() => void refreshOrder(), 8_000);
+    const timer = window.setInterval(() => void refreshOrder(), 12_000);
     return () => window.clearInterval(timer);
   }, [
     isAuthenticated,
@@ -244,7 +271,9 @@ function OrderDetailInner({ orderId, initial }: Props) {
     try {
       const syncTxHash = await work();
       await refreshOrder(
-        typeof syncTxHash === 'string' ? { syncTxHash } : undefined,
+        typeof syncTxHash === 'string'
+          ? { syncTxHash, force: true }
+          : { force: true },
       );
     } catch (e: unknown) {
       setStatusTone('error');
@@ -393,6 +422,20 @@ function OrderDetailInner({ orderId, initial }: Props) {
           ...prev,
           fundTxHash: outcome.hash,
         }));
+        setOrder((prev) =>
+          prev?.escrow
+            ? {
+                ...prev,
+                escrow: {
+                  ...prev.escrow,
+                  milestone_state: preferMilestoneState(
+                    prev.escrow.milestone_state,
+                    'fund_submitted',
+                  ),
+                },
+              }
+            : prev,
+        );
         const ackRes = await upeerAuthedFetch('/api/escrow/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -672,7 +715,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
                 type="button"
                 variant="secondary"
                 fullWidth
-                disabled={busy}
+                disabled={busy || escrowFundPending}
                 onClick={() => fundEscrow()}
               >
                 Fund Escrow
@@ -781,6 +824,32 @@ function OrderDetailInner({ orderId, initial }: Props) {
       </div>
     </div>
   );
+}
+
+function mergeOrderDetail(
+  prev: OrderDetail | null,
+  next: OrderDetail,
+): OrderDetail {
+  if (!prev) {
+    return next;
+  }
+  const prevEscrow = prev.escrow;
+  const nextEscrow = next.escrow;
+  if (!prevEscrow && !nextEscrow) {
+    return next;
+  }
+  return {
+    ...next,
+    escrow: {
+      tw_contract_id:
+        nextEscrow?.tw_contract_id ?? prevEscrow?.tw_contract_id ?? null,
+      last_error: nextEscrow?.last_error ?? prevEscrow?.last_error ?? null,
+      milestone_state: preferMilestoneState(
+        prevEscrow?.milestone_state ?? 'idle',
+        nextEscrow?.milestone_state ?? 'idle',
+      ),
+    },
+  };
 }
 
 function nextStepCopy(

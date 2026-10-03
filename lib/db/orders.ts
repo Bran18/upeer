@@ -107,25 +107,37 @@ export async function getOrderDetailForParticipant(
   }
 
   const rawQuotes = order.quotes;
-  const quote = (Array.isArray(rawQuotes) ? rawQuotes[0] : rawQuotes) as {
-    id: string;
-    usdc_amount: string;
-    fiat_amount: string;
-    fiat_currency: string;
-    expires_at: string;
-    spread_bps: number;
-    reflector_snapshot: Record<string, unknown>;
-    offers: unknown;
-  };
+  const quote = (Array.isArray(rawQuotes) ? rawQuotes[0] : rawQuotes) as
+    | {
+        id: string;
+        usdc_amount: string;
+        fiat_amount: string;
+        fiat_currency: string;
+        expires_at: string;
+        spread_bps: number;
+        reflector_snapshot: Record<string, unknown>;
+        offers: unknown;
+      }
+    | undefined;
+
+  if (!quote) {
+    return null;
+  }
 
   const rawOffers = quote.offers;
-  const offerRow = (Array.isArray(rawOffers) ? rawOffers[0] : rawOffers) as {
-    id: string;
-    side: string;
-    fiat_currency: string;
-    price_per_usdc: string;
-    maker_profile_id: string;
-  };
+  const offerRow = (Array.isArray(rawOffers) ? rawOffers[0] : rawOffers) as
+    | {
+        id: string;
+        side: string;
+        fiat_currency: string;
+        price_per_usdc: string;
+        maker_profile_id: string;
+      }
+    | undefined;
+
+  if (!offerRow) {
+    return null;
+  }
 
   const { data: makerProfile } = await supabase
     .from('profiles')

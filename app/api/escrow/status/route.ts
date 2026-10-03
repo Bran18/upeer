@@ -67,7 +67,25 @@ export async function GET(req: Request) {
     });
 
     let milestoneState = sessionRow?.milestone_state ?? 'idle';
-    if (snapshot?.funded && milestoneState !== 'funded') {
+    if (snapshot?.released) {
+      milestoneState = 'released';
+      await supabase
+        .from('escrow_sessions')
+        .update({
+          milestone_state: 'released',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('order_id', parsed.data.orderId);
+      if (ctx.status !== 'released') {
+        await supabase
+          .from('orders')
+          .update({
+            status: 'released',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', parsed.data.orderId);
+      }
+    } else if (snapshot?.funded && milestoneState !== 'funded') {
       await supabase
         .from('escrow_sessions')
         .update({
@@ -82,7 +100,7 @@ export async function GET(req: Request) {
       contractId,
       milestoneState,
       snapshot,
-      error: snapshot ? null : 'Escrow not indexed yet — try again shortly',
+      error: snapshot ? null : 'On-chain escrow events not found yet — try again shortly',
     });
   } catch (error) {
     const message =

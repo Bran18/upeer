@@ -28,10 +28,20 @@ function fundingLabel(
   statusError?: string | null,
   milestoneState?: string,
 ): string {
-  if (
-    isEscrowFundedForDisplay(milestoneState ?? 'idle', onChain)
-  ) {
-    return onChain?.released ? 'Released' : 'Fully funded';
+  if (onChain?.released) {
+    return 'Released';
+  }
+  if (isEscrowFundedForDisplay(milestoneState ?? 'idle', onChain)) {
+    if (
+      onChain &&
+      onChain.amount > 0 &&
+      onChain.balance > onChain.amount * 1.01
+    ) {
+      return onChain.fundCount && onChain.fundCount > 1
+        ? `Funded on-chain (${onChain.fundCount} deposits)`
+        : 'Funded on-chain';
+    }
+    return 'Fully funded';
   }
   if (isEscrowFundPending(milestoneState ?? 'idle', onChain)) {
     return 'Funding submitted — confirming on Stellar…';
@@ -43,6 +53,12 @@ function fundingLabel(
     return 'Released';
   }
   if (onChain.funded) {
+    if (
+      onChain.amount > 0 &&
+      onChain.balance > onChain.amount * 1.01
+    ) {
+      return `Funded (${onChain.fundCount && onChain.fundCount > 1 ? `${onChain.fundCount} deposits` : 'on-chain'})`;
+    }
     return 'Fully funded';
   }
   if (onChain.balance > 0) {

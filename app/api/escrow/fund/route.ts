@@ -65,6 +65,15 @@ export async function POST(req: Request) {
         snapshot,
       )
     ) {
+      if (snapshot?.funded || (snapshot && snapshot.balance > 0)) {
+        await supabase
+          .from('escrow_sessions')
+          .update({
+            milestone_state: 'funded',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('order_id', body.orderId);
+      }
       return NextResponse.json(
         { error: 'Escrow is already funded or funding is in progress.' },
         { status: 409 },

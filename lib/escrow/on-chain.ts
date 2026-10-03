@@ -4,6 +4,8 @@ export type EscrowOnChainSnapshot = {
   funded: boolean;
   released: boolean;
   disputed: boolean;
+  approved?: boolean;
+  fundCount?: number;
 };
 
 function readNumber(value: unknown): number | null {
@@ -23,16 +25,29 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function unwrapDataEnvelope(payload: unknown): unknown {
+  const record = asRecord(payload);
+  if (!record) {
+    return payload;
+  }
+  const nested = record.data ?? record.result;
+  if (nested && nested !== payload && record.contractId == null && record.address == null) {
+    return nested;
+  }
+  return payload;
+}
+
 function escrowList(payload: unknown): Record<string, unknown>[] {
-  if (!payload) {
+  const unwrapped = unwrapDataEnvelope(payload);
+  if (!unwrapped) {
     return [];
   }
-  if (Array.isArray(payload)) {
-    return payload.filter(
+  if (Array.isArray(unwrapped)) {
+    return unwrapped.filter(
       (row): row is Record<string, unknown> => asRecord(row) !== null,
     );
   }
-  const record = asRecord(payload);
+  const record = asRecord(unwrapped);
   if (!record) {
     return [];
   }
@@ -42,6 +57,10 @@ function escrowList(payload: unknown): Record<string, unknown>[] {
       (row): row is Record<string, unknown> => asRecord(row) !== null,
     );
   }
+  const nested = asRecord(list);
+  if (nested) {
+    return [nested];
+  }
   return [record];
 }
 
@@ -50,7 +69,7 @@ export function pickEscrowRowByContractId(
   contractId: string,
 ): Record<string, unknown> | null {
   const normalized = contractId.trim();
-  const keyed = asRecord(payload);
+  const keyed = asRecord(unwrapDataEnvelope(payload)) ?? asRecord(payload);
   if (keyed?.[normalized]) {
     return asRecord(keyed[normalized]);
   }
@@ -64,7 +83,15 @@ export function pickEscrowRowByContractId(
   }
 
   const rows = escrowList(payload);
-  return rows[0] ?? null;
+  if (rows.length === 1) {
+    const only = rows[0];
+    const id =
+      only.contractId ?? only.contract_id ?? only.address ?? only.escrowContractId;
+    if (typeof id !== 'string' || id === normalized) {
+      return only;
+    }
+  }
+  return null;
 }
 
 function amountFromMilestones(row: Record<string, unknown>): number | null {
@@ -84,6 +111,20 @@ function amountFromMilestones(row: Record<string, unknown>): number | null {
   return total;
 }
 
+function isEscrowShaped(row: Record<string, unknown>): boolean {
+  return (
+    row.contractId != null ||
+    row.contract_id != null ||
+    row.address != null ||
+    row.escrowContractId != null ||
+    row.balance != null ||
+    row.amount != null ||
+    row.flags != null ||
+    row.milestones != null ||
+    row.escrow != null
+  );
+}
+
 export function parseEscrowOnChainSnapshot(
   payload: unknown,
   expectedAmount?: number,
@@ -92,7 +133,7 @@ export function parseEscrowOnChainSnapshot(
   const row = contractId
     ? pickEscrowRowByContractId(payload, contractId)
     : escrowList(payload)[0] ?? null;
-  if (!row) {
+  if (!row || !isEscrowShaped(row)) {
     return null;
   }
 
@@ -141,7 +182,8 @@ export function parseEscrowBalanceOnly(
     return null;
   }
   const normalized = contractId.trim();
-  const keyed = asRecord(payload);
+  const body = unwrapDataEnvelope(payload);
+  const keyed = asRecord(body) ?? asRecord(payload);
   const keyedRow = keyed?.[normalized];
   if (keyedRow) {
     const direct = readNumber(keyedRow);
@@ -154,7 +196,7 @@ export function parseEscrowBalanceOnly(
     }
   }
 
-  const rows = Array.isArray(payload) ? payload : escrowList(payload);
+  const rows = Array.isArray(body) ? body : escrowList(payload);
   for (const row of rows) {
     const record = asRecord(row);
     if (!record) {

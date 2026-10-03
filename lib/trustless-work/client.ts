@@ -243,18 +243,24 @@ export async function twGetEscrowByContractIds(
 
 /** Sync indexer from a ledger tx (SDK: `updateFromTxHash`). */
 export async function twUpdateFromTxHash(txHash: string): Promise<unknown> {
-  const res = await twFetch('/indexer/update-from-txHash', {
-    method: 'POST',
-    body: JSON.stringify({ txHash }),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(
-      (data as { message?: string }).message ??
-        `Indexer update failed (${res.status})`,
-    );
+  const attempts = [
+    { path: '/indexer/update-from-txhash', method: 'PUT' },
+    { path: '/indexer/update-from-txHash', method: 'POST' },
+  ] as const;
+
+  let lastMessage = 'Indexer update failed';
+  for (const attempt of attempts) {
+    const res = await twFetch(attempt.path, {
+      method: attempt.method,
+      body: JSON.stringify({ txHash }),
+    });
+    const data = (await res.json().catch(() => ({}))) as { message?: string };
+    if (res.ok) {
+      return data;
+    }
+    lastMessage = data.message ?? `Indexer update failed (${res.status})`;
   }
-  return data;
+  throw new Error(lastMessage);
 }
 
 export async function twGetMultipleEscrowBalance(
