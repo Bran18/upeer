@@ -227,6 +227,9 @@ export function PostOrderView() {
   }
 
   async function submitOrder() {
+    if (step !== 4) {
+      return;
+    }
     setFormError(null);
     const validationError = validatePostOrderStep(4, form, payoutReady, payoutDraft);
     if (validationError) {
@@ -581,15 +584,22 @@ export function PostOrderView() {
               </Link>
             )}
             {step < 4 ? (
-              <Button type="button" onClick={handleContinue} className="ml-auto">
+              <Button
+                key="continue"
+                type="button"
+                onClick={handleContinue}
+                className="ml-auto"
+              >
                 Continue
               </Button>
             ) : (
               <Button
-                type="submit"
+                key="post"
+                type="button"
                 disabled={submitting}
                 aria-busy={submitting}
                 className="ml-auto"
+                onClick={() => void submitOrder()}
               >
                 {submitting ? 'Posting…' : 'Post to market'}
               </Button>
