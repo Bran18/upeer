@@ -17,6 +17,7 @@ import { acceptanceDeadline } from '@/lib/quotes/ttl';
 import { Avatar } from '@/components/ui/avatar';
 import { getStellarNetworkClient } from '@/lib/config/network-client';
 import type { EscrowOnChainSnapshot } from '@/lib/escrow/on-chain';
+import { escrowSnapshotFromOrder } from '@/lib/escrow/status-snapshot';
 import { EscrowStatus } from '@/components/escrow-status';
 
 type Props = {
@@ -206,19 +207,11 @@ export function OrderSummary({
 
       <div className="mt-6">
         <EscrowStatus
-          state={
-            order.status === 'released'
-              ? 'released'
-              : order.escrow?.tw_contract_id
-                ? (order.escrow.milestone_state ?? 'escrow_pending')
-                : 'idle'
-          }
-          contractId={order.escrow?.tw_contract_id}
-          network={getStellarNetworkClient()}
-          expectedUsdc={order.quote.usdc_amount}
-          onChain={escrowOnChain}
-          milestoneState={order.escrow?.milestone_state}
-          statusError={escrowStatusError}
+          escrow={escrowSnapshotFromOrder(order, {
+            network: getStellarNetworkClient(),
+            onChain: escrowOnChain,
+            statusError: escrowStatusError,
+          })}
         />
       </div>
     </aside>

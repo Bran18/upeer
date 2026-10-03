@@ -1,8 +1,9 @@
 'use client';
 
 import { cn } from '@/lib/cn';
+import type { PostOrderStep } from '@/lib/orders/post-order-types';
 
-export type PostOrderStep = 1 | 2 | 3 | 4;
+export type { PostOrderStep };
 
 const STEPS: { id: PostOrderStep; label: string; shortLabel: string }[] = [
   { id: 1, label: 'Trade & price', shortLabel: 'Trade' },

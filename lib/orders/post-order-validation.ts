@@ -1,18 +1,41 @@
-import type { PostOrderStep } from '@/components/orders/post-order-step-nav';
-import { postOrderSizeFieldError } from '@/components/orders/post-order-size-fields';
-import type { PostOrderSide } from '@/components/orders/post-order-side-pills';
+import { formatUsdcAmount } from '@/lib/market/format';
+import type {
+  PostOrderFormState,
+  PostOrderSizeValues,
+  PostOrderStep,
+} from '@/lib/orders/post-order-types';
 
 const STELLAR_G_REGEX = /^G[ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]{55}$/;
 
-export type PostOrderFormState = {
-  side: PostOrderSide;
-  fiatCurrency: string;
-  pricePerUsdc: string;
-  minUsdc: string;
-  maxUsdc: string;
-  availableUsdc: string;
-  payoutAddress: string;
-};
+function parsePositive(value: string): number | null {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) {
+    return null;
+  }
+  return n;
+}
+
+export function postOrderSizeFieldError(values: PostOrderSizeValues): string | null {
+  const available = parsePositive(values.availableUsdc);
+  const min = parsePositive(values.minUsdc);
+  const max = parsePositive(values.maxUsdc);
+  if (available === null) {
+    return 'Enter how much USDC you want on this listing (greater than zero).';
+  }
+  if (min === null) {
+    return 'Enter the smallest trade size you will accept.';
+  }
+  if (max === null) {
+    return 'Enter the largest trade size you will accept.';
+  }
+  if (min > max) {
+    return 'Smallest trade cannot be larger than the largest.';
+  }
+  if (max > available) {
+    return `Largest trade cannot exceed your listing total (${formatUsdcAmount(values.availableUsdc)} USDC).`;
+  }
+  return null;
+}
 
 export function validatePostOrderStep(
   step: PostOrderStep,

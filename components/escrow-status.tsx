@@ -7,27 +7,15 @@ import {
   isEscrowFundedForDisplay,
   isEscrowFundPending,
 } from '@/lib/escrow/funding-state';
-import type { EscrowOnChainSnapshot } from '@/lib/escrow/on-chain';
-import type { StellarNetwork } from '@/lib/config/network';
+import type { EscrowStatusSnapshot } from '@/lib/escrow/status-snapshot';
 import { formatUsdcLabel } from '@/lib/market/format';
 
 type Props = {
-  state: string;
-  contractId?: string | null;
-  deployTxHash?: string | null;
-  network?: StellarNetwork;
-  expectedUsdc?: string | number;
-  onChain?: EscrowOnChainSnapshot | null;
-  milestoneState?: string;
-  statusError?: string | null;
+  escrow: EscrowStatusSnapshot;
 };
 
-function fundingLabel(
-  onChain: EscrowOnChainSnapshot | null | undefined,
-  expectedUsdc?: string | number,
-  statusError?: string | null,
-  milestoneState?: string,
-): string {
+function fundingLabel(escrow: EscrowStatusSnapshot): string {
+  const { onChain, expectedUsdc, statusError, milestoneState } = escrow;
   if (onChain?.released) {
     return 'Released';
   }
@@ -53,10 +41,7 @@ function fundingLabel(
     return 'Released';
   }
   if (onChain.funded) {
-    if (
-      onChain.amount > 0 &&
-      onChain.balance > onChain.amount * 1.01
-    ) {
+    if (onChain.amount > 0 && onChain.balance > onChain.amount * 1.01) {
       return `Funded (${onChain.fundCount && onChain.fundCount > 1 ? `${onChain.fundCount} deposits` : 'on-chain'})`;
     }
     return 'Fully funded';
@@ -71,16 +56,10 @@ function fundingLabel(
   return 'Not funded yet';
 }
 
-export function EscrowStatus({
-  state,
-  contractId,
-  deployTxHash,
-  network = 'testnet',
-  expectedUsdc,
-  onChain,
-  milestoneState,
-  statusError,
-}: Props) {
+export function EscrowStatus({ escrow }: Props) {
+  const network = escrow.network ?? 'testnet';
+  const contractId = escrow.contractId;
+  const deployTxHash = escrow.deployTxHash;
   const contractUrl = contractId
     ? stellarExpertContractUrl(network, contractId)
     : null;
@@ -88,17 +67,15 @@ export function EscrowStatus({
     ? trustlessWorkViewerUrl(network, contractId)
     : null;
   const txUrl = deployTxHash ? stellarExpertTxUrl(network, deployTxHash) : null;
-  const funding = fundingLabel(
-    onChain,
-    expectedUsdc,
-    statusError,
-    milestoneState,
-  );
+  const funding = fundingLabel(escrow);
+  const { onChain, statusError } = escrow;
 
   return (
     <div className="panel-card">
       <p className="text-sm text-subtle">Trustless Work Escrow</p>
-      <p className="mt-1 font-medium capitalize">{state.replaceAll('_', ' ')}</p>
+      <p className="mt-1 font-medium capitalize">
+        {escrow.state.replaceAll('_', ' ')}
+      </p>
       <p className="mt-2 text-sm font-medium text-[var(--foreground-secondary)]">
         {funding}
       </p>

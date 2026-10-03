@@ -3,7 +3,7 @@ import {
   formatUsdcAmount,
   orderSideLabel,
 } from '@/lib/market/format';
-import type { PostOrderFormState } from '@/lib/orders/post-order-wizard';
+import type { PostOrderFormState } from '@/lib/orders/post-order-types';
 type Props = {
   form: PostOrderFormState;
   effectivePayout: string;

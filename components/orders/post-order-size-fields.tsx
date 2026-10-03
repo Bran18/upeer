@@ -3,6 +3,8 @@
 import { useMemo } from 'react';
 import { cn } from '@/lib/cn';
 import { formatUsdcAmount } from '@/lib/market/format';
+import { postOrderSizeFieldError } from '@/lib/orders/post-order-validation';
+import type { PostOrderSizeValues } from '@/lib/orders/post-order-types';
 
 const LISTING_PRESETS = ['250', '500', '1000', '5000'] as const;
 const MIN_TRADE_PRESETS = ['25', '50', '100', '250'] as const;
@@ -18,11 +20,7 @@ function choicePillClass(active: boolean, size: 'sm' | 'md' = 'md') {
   );
 }
 
-export type PostOrderSizeValues = {
-  availableUsdc: string;
-  minUsdc: string;
-  maxUsdc: string;
-};
+export type { PostOrderSizeValues };
 
 type Props = {
   values: PostOrderSizeValues;
@@ -57,28 +55,6 @@ export function describePostOrderSize(values: PostOrderSizeValues): string | nul
     return `${listed} USDC listed. Each trade can be ${minLabel}–${maxLabel} USDC (up to your full listing).`;
   }
   return `${listed} USDC listed. Each trade must be between ${minLabel} and ${maxLabel} USDC.`;
-}
-
-export function postOrderSizeFieldError(values: PostOrderSizeValues): string | null {
-  const available = parsePositive(values.availableUsdc);
-  const min = parsePositive(values.minUsdc);
-  const max = parsePositive(values.maxUsdc);
-  if (available === null) {
-    return 'Enter how much USDC you want on this listing (greater than zero).';
-  }
-  if (min === null) {
-    return 'Enter the smallest trade size you will accept.';
-  }
-  if (max === null) {
-    return 'Enter the largest trade size you will accept.';
-  }
-  if (min > max) {
-    return 'Smallest trade cannot be larger than the largest.';
-  }
-  if (max > available) {
-    return `Largest trade cannot exceed your listing total (${formatUsdcAmount(values.availableUsdc)} USDC).`;
-  }
-  return null;
 }
 
 export function PostOrderSizeFields({ values, onChange }: Props) {

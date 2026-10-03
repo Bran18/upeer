@@ -1,8 +1,9 @@
 'use client';
 
 import { cn } from '@/lib/cn';
+import type { PostOrderSide } from '@/lib/orders/post-order-types';
 
-export type PostOrderSide = 'sell_usdc' | 'buy_usdc';
+export type { PostOrderSide };
 
 const OPTIONS: { value: PostOrderSide; title: string; description: string }[] = [
   {

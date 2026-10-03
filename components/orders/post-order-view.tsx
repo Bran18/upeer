@@ -28,12 +28,12 @@ import {
   UPEER_COVERAGE_BLURB,
 } from '@/lib/fiat/coverage';
 import type { MeProfile } from '@/lib/profile/types';
+import type { PostOrderFormState } from '@/lib/orders/post-order-types';
 import {
   maxUsdcForApi,
   minUsdcForApi,
-  type PostOrderFormState,
   validatePostOrderStep,
-} from '@/lib/orders/post-order-wizard';
+} from '@/lib/orders/post-order-validation';
 import {
   exchangePollarSessionFromClient,
   readStoredSession,
