@@ -5,12 +5,20 @@ import { usePollar } from '@pollar/react';
 import type { OrderDetail } from '@/lib/db/orders';
 import { buyerActionLabel } from '@/lib/market/format';
 import { orderCanBeAccepted } from '@/lib/quotes/ttl';
+import { getStellarNetworkClient } from '@/lib/config/network-client';
 import {
   isUsdcBuyerProfile,
   isUsdcSellerProfile,
   p2pLegs,
 } from '@/lib/escrow/p2p-legs';
-import { extractUnsignedXdr } from '@/lib/trustless-work/client';
+import {
+  stellarExpertContractUrl,
+  stellarExpertTxUrl,
+} from '@/lib/stellar/explorer';
+import {
+  extractDeployContractId,
+  extractUnsignedXdr,
+} from '@/lib/trustless-work/client';
 import { OrderSummary } from '@/components/orders/order-summary';
 import { PollarRequired } from '@/components/pollar-required';
 import { Button } from '@/components/ui/button';
@@ -55,6 +63,11 @@ function OrderDetailInner({ orderId, initial }: Props) {
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [confirmDecline, setConfirmDecline] = useState(false);
+  const [deployExplorer, setDeployExplorer] = useState<{
+    contractId?: string;
+    txHash?: string;
+  } | null>(null);
+  const stellarNetwork = getStellarNetworkClient();
 
   const ensureSession = useCallback(async () => {
     let session = readStoredSession();
@@ -104,6 +117,48 @@ function OrderDetailInner({ orderId, initial }: Props) {
     loadProfile,
   ]);
 
+  useEffect(() => {
+    if (!order || !wallet?.address || !profileId) {
+      return;
+    }
+    const legs = p2pLegs({
+      side: order.offer.side,
+      makerProfileId: order.maker_profile_id ?? '',
+      takerProfileId: order.taker_profile_id ?? '',
+      makerPayoutAddress: null,
+      takerStellarAddress: null,
+    });
+    if (legs.usdcSellerProfileId !== profileId) {
+      return;
+    }
+    if (order.escrow?.tw_contract_id) {
+      return;
+    }
+    const state = order.escrow?.milestone_state ?? '';
+    if (!state.startsWith('deploy')) {
+      return;
+    }
+
+    void (async () => {
+      await ensureSession();
+      const res = await upeerAuthedFetch('/api/escrow/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, signer: wallet.address }),
+      });
+      if (res.ok) {
+        await refreshOrder();
+      }
+    })();
+  }, [
+    order,
+    wallet?.address,
+    profileId,
+    orderId,
+    ensureSession,
+    refreshOrder,
+  ]);
+
   const isMaker = Boolean(profileId && order?.maker_profile_id === profileId);
   const isTaker = Boolean(profileId && order?.taker_profile_id === profileId);
 
@@ -130,6 +185,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
   ) => {
     setBusy(true);
     setStatus(null);
+    setDeployExplorer(null);
     try {
       await work();
       await refreshOrder();
@@ -209,20 +265,37 @@ function OrderDetailInner({ orderId, initial }: Props) {
       if (!xdr) {
         throw new Error('No unsigned XDR returned. Try deploy again.');
       }
+      const contractId =
+        extractDeployContractId(data as Record<string, unknown>) ??
+        (typeof data.contractId === 'string' ? data.contractId : null);
       const outcome = await signAndSubmitTx(xdr);
       if (outcome.status === 'success') {
-        setStatus(`Deploy submitted: ${outcome.hash}`);
         setStatusTone('info');
-        await upeerAuthedFetch('/api/escrow/submit', {
+        setStatus(
+          contractId
+            ? `Deploy submitted. Fund escrow when the contract is live on-chain.`
+            : `Deploy submitted: ${outcome.hash.slice(0, 12)}…`,
+        );
+        setDeployExplorer({ contractId: contractId ?? undefined, txHash: outcome.hash });
+        const ackRes = await upeerAuthedFetch('/api/escrow/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            signedXdr: xdr,
+            submittedViaWallet: true,
+            txHash: outcome.hash,
+            signer: wallet.address,
             orderId,
             phase: 'deploy',
-            contractId: data.contractId,
+            contractId: contractId ?? undefined,
           }),
         });
+        const ackData = await ackRes.json();
+        if (ackRes.ok && typeof ackData.contractId === 'string') {
+          setDeployExplorer({
+            contractId: ackData.contractId,
+            txHash: outcome.hash,
+          });
+        }
       }
     }, 'Could not deploy escrow. Try again.');
   };
@@ -354,12 +427,16 @@ function OrderDetailInner({ orderId, initial }: Props) {
     order.status === 'reserved' ||
     order.status === 'escrow_pending' ||
     order.status === 'fiat_pending';
-  const showEscrowSetup =
-    (order.status === 'reserved' || order.status === 'escrow_pending') &&
-    isUsdcSeller;
+  const escrowContractId = order.escrow?.tw_contract_id;
+  const escrowSetupPhase =
+    order.status === 'reserved' || order.status === 'escrow_pending';
+  const showEscrowDeploy =
+    escrowSetupPhase && isUsdcSeller && !escrowContractId;
+  const showEscrowFund =
+    escrowSetupPhase && isUsdcSeller && Boolean(escrowContractId);
   const showEscrowRelease =
     isUsdcSeller &&
-    Boolean(order.escrow?.tw_contract_id) &&
+    Boolean(escrowContractId) &&
     Boolean(order.fiat_confirmation.makerReceivedAt) &&
     (order.status === 'escrow_pending' || order.status === 'fiat_pending');
   const showEscrowWaiting =
@@ -471,8 +548,8 @@ function OrderDetailInner({ orderId, initial }: Props) {
             </div>
           ) : null}
 
-          {showEscrowSetup ? (
-            <div className="mt-6 flex flex-col gap-3">
+          {showEscrowDeploy ? (
+            <div className="mt-6">
               <Button
                 type="button"
                 disabled={busy}
@@ -480,16 +557,20 @@ function OrderDetailInner({ orderId, initial }: Props) {
               >
                 {busy ? 'Working…' : 'Deploy Escrow'}
               </Button>
-              {order.escrow?.tw_contract_id ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={busy}
-                  onClick={() => fundEscrow()}
-                >
-                  Fund Escrow
-                </Button>
-              ) : null}
+            </div>
+          ) : null}
+
+          {showEscrowFund ? (
+            <div className="mt-6">
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                disabled={busy}
+                onClick={() => fundEscrow()}
+              >
+                Fund Escrow
+              </Button>
             </div>
           ) : null}
 
@@ -525,6 +606,29 @@ function OrderDetailInner({ orderId, initial }: Props) {
             >
               {status}
             </p>
+          ) : null}
+          {(deployExplorer?.contractId ?? escrowContractId) ? (
+            <a
+              href={stellarExpertContractUrl(
+                stellarNetwork,
+                (deployExplorer?.contractId ?? escrowContractId)!,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-block text-sm font-medium text-[var(--accent)] hover:underline"
+            >
+              View escrow on Stellar Expert
+            </a>
+          ) : null}
+          {deployExplorer?.txHash ? (
+            <a
+              href={stellarExpertTxUrl(stellarNetwork, deployExplorer.txHash)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 block text-sm text-[var(--foreground-secondary)] hover:underline"
+            >
+              Deploy transaction on Stellar Expert
+            </a>
           ) : null}
           {loadError ? (
             <p

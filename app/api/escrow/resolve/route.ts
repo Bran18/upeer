@@ -10,15 +10,14 @@ import {
   loadOrderEscrowContext,
 } from '@/lib/escrow/order-access';
 import {
-  extractUnsignedXdr,
-  twFundEscrow,
+  pickEscrowContractByEngagement,
+  twGetEscrowsBySigner,
 } from '@/lib/trustless-work/client';
-import { isSupabaseConfigured } from '@/lib/supabase/server';
+import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const bodySchema = z.object({
   orderId: z.string().uuid(),
   signer: z.string(),
-  escrowContractId: z.string(),
 });
 
 export async function POST(req: Request) {
@@ -39,20 +38,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    assertEscrowSigner(ctx, profileId, body.signer, 'fund');
+    assertEscrowSigner(ctx, profileId, body.signer, 'deploy');
 
-    const tw = await twFundEscrow({
-      signer: body.signer,
-      contractId: body.escrowContractId,
-      amount: ctx.usdcAmount,
-    });
-    return NextResponse.json({
-      ...tw,
-      unsignedTransaction: extractUnsignedXdr(tw),
-    });
+    const escrows = await twGetEscrowsBySigner(body.signer, true);
+    const contractId = pickEscrowContractByEngagement(escrows, ctx.engagementId);
+    if (!contractId) {
+      return NextResponse.json(
+        { error: 'No on-chain escrow found for this order yet' },
+        { status: 404 },
+      );
+    }
+
+    const supabase = getSupabaseAdmin();
+    await supabase
+      .from('escrow_sessions')
+      .update({
+        tw_contract_id: contractId,
+        milestone_state: 'deploy_submitted',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('order_id', body.orderId);
+
+    return NextResponse.json({ contractId });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : 'Fund escrow failed';
+      error instanceof Error ? error.message : 'Could not resolve escrow';
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

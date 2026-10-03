@@ -2,10 +2,49 @@ import { getNetworkConfig } from '@/lib/config/network';
 
 export type TwUnsignedResponse = {
   unsignedTransaction?: string;
+  unsignedXdr?: string;
   xdr?: string;
+  contractId?: string;
+  escrowContractId?: string;
   status?: string;
   message?: string;
 };
+
+const SOROBAN_CONTRACT_ID = /^C[A-Z0-9]{55}$/;
+
+export function extractDeployContractId(
+  response: Record<string, unknown>,
+): string | null {
+  const nested = response.data;
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+    const fromNested = extractDeployContractId(
+      nested as Record<string, unknown>,
+    );
+    if (fromNested) {
+      return fromNested;
+    }
+  }
+
+  const candidates = [
+    response.contractId,
+    response.escrowContractId,
+    response.contract_id,
+    response.escrowContractAddress,
+    response.address,
+  ];
+  for (const value of candidates) {
+    if (typeof value === 'string' && SOROBAN_CONTRACT_ID.test(value)) {
+      return value;
+    }
+  }
+
+  for (const value of Object.values(response)) {
+    if (typeof value === 'string' && SOROBAN_CONTRACT_ID.test(value)) {
+      return value;
+    }
+  }
+  return null;
+}
 
 function apiKey(): string {
   const key = process.env.TRUSTLESS_WORK_API_KEY;
@@ -158,8 +197,74 @@ export async function twSendTransaction(signedXdr: string): Promise<unknown> {
   return data;
 }
 
+export function extractSendTransactionContractId(
+  response: unknown,
+): string | null {
+  if (!response || typeof response !== 'object') {
+    return null;
+  }
+  return extractDeployContractId(response as Record<string, unknown>);
+}
+
+export async function twGetEscrowsBySigner(
+  signer: string,
+  validateOnChain = true,
+): Promise<unknown> {
+  const query = new URLSearchParams({
+    signer,
+    validateOnChain: String(validateOnChain),
+  });
+  const res = await twFetch(`/helper/get-escrows-by-signer?${query}`);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(
+      (data as { message?: string }).message ??
+        `Escrow lookup failed (${res.status})`,
+    );
+  }
+  return data;
+}
+
+export function pickEscrowContractByEngagement(
+  payload: unknown,
+  engagementId: string,
+): string | null {
+  const list = Array.isArray(payload)
+    ? payload
+    : payload && typeof payload === 'object'
+      ? ((payload as Record<string, unknown>).escrows ??
+        (payload as Record<string, unknown>).data ??
+        [])
+      : [];
+  if (!Array.isArray(list)) {
+    return null;
+  }
+  for (const row of list) {
+    if (!row || typeof row !== 'object') {
+      continue;
+    }
+    const record = row as Record<string, unknown>;
+    const eid = record.engagementId ?? record.engagement_id;
+    const cid =
+      record.contractId ?? record.contract_id ?? record.escrowContractId;
+    if (
+      eid === engagementId &&
+      typeof cid === 'string' &&
+      SOROBAN_CONTRACT_ID.test(cid)
+    ) {
+      return cid;
+    }
+  }
+  return null;
+}
+
 export function extractUnsignedXdr(
   response: TwUnsignedResponse,
 ): string | null {
-  return response.unsignedTransaction ?? response.xdr ?? null;
+  return (
+    response.unsignedTransaction ??
+    response.unsignedXdr ??
+    response.xdr ??
+    null
+  );
 }

@@ -12,6 +12,7 @@ import {
   loadOrderEscrowContext,
 } from '@/lib/escrow/order-access';
 import {
+  extractDeployContractId,
   extractUnsignedXdr,
   twDeploySingleRelease,
 } from '@/lib/trustless-work/client';
@@ -57,6 +58,22 @@ export async function POST(req: Request) {
 
     assertEscrowSigner(ctx, profileId, body.signer, 'deploy');
 
+    const supabase = getSupabaseAdmin();
+    const { data: existingSession } = await supabase
+      .from('escrow_sessions')
+      .select('tw_contract_id')
+      .eq('order_id', body.orderId)
+      .maybeSingle();
+    if (existingSession?.tw_contract_id) {
+      return NextResponse.json(
+        {
+          error: 'Escrow already deployed for this order',
+          contractId: existingSession.tw_contract_id,
+        },
+        { status: 400 },
+      );
+    }
+
     const network = getNetworkConfig();
     const platform = operatorRole('UPEER_PLATFORM_ADDRESS');
     const legs = p2pLegs(ctx);
@@ -98,24 +115,31 @@ export async function POST(req: Request) {
     };
 
     const tw = await twDeploySingleRelease(payload);
+    const twRecord = tw as Record<string, unknown>;
     const xdr = extractUnsignedXdr(tw);
+    const contractId = extractDeployContractId(twRecord);
 
-    const supabase = getSupabaseAdmin();
     await supabase
       .from('orders')
       .update({ status: 'escrow_pending', updated_at: new Date().toISOString() })
       .eq('id', body.orderId);
+
+    const sessionPatch: Record<string, unknown> = {
+      milestone_state: 'deploy_unsigned',
+      updated_at: new Date().toISOString(),
+    };
+    if (contractId) {
+      sessionPatch.tw_contract_id = contractId;
+    }
     await supabase
       .from('escrow_sessions')
-      .update({
-        milestone_state: 'deploy_unsigned',
-        updated_at: new Date().toISOString(),
-      })
+      .update(sessionPatch)
       .eq('order_id', body.orderId);
 
     return NextResponse.json({
       ...tw,
       unsignedTransaction: xdr,
+      contractId,
       engagementId: ctx.engagementId,
     });
   } catch (error) {

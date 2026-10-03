@@ -15,6 +15,7 @@ import {
 } from '@/lib/orders/format';
 import { acceptanceDeadline } from '@/lib/quotes/ttl';
 import { Avatar } from '@/components/ui/avatar';
+import { getStellarNetworkClient } from '@/lib/config/network-client';
 import { EscrowStatus } from '@/components/escrow-status';
 
 type Props = {
@@ -190,10 +191,11 @@ export function OrderSummary({ order, isMaker }: Props) {
             order.status === 'released'
               ? 'released'
               : order.escrow?.tw_contract_id
-                ? 'escrow_pending'
+                ? (order.escrow.milestone_state ?? 'escrow_pending')
                 : 'idle'
           }
           contractId={order.escrow?.tw_contract_id}
+          network={getStellarNetworkClient()}
         />
       </div>
     </aside>

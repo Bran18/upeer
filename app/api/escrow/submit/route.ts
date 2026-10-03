@@ -4,15 +4,32 @@ import {
   isSessionError,
   requireSession,
 } from '@/lib/auth/require-session';
-import { twSendTransaction } from '@/lib/trustless-work/client';
+import {
+  extractSendTransactionContractId,
+  pickEscrowContractByEngagement,
+  twGetEscrowsBySigner,
+  twSendTransaction,
+} from '@/lib/trustless-work/client';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
-const bodySchema = z.object({
-  signedXdr: z.string().min(1),
-  orderId: z.string().uuid().optional(),
-  contractId: z.string().optional(),
-  phase: z.enum(['deploy', 'fund', 'approve', 'release']).optional(),
-});
+const bodySchema = z
+  .object({
+    signedXdr: z.string().min(1).optional(),
+    submittedViaWallet: z.literal(true).optional(),
+    txHash: z.string().optional(),
+    signer: z.string().optional(),
+    orderId: z.string().uuid().optional(),
+    contractId: z.string().optional(),
+    phase: z.enum(['deploy', 'fund', 'approve', 'release']).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.submittedViaWallet && !data.signedXdr) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'signedXdr is required unless submittedViaWallet is true',
+      });
+    }
+  });
 
 export async function POST(req: Request) {
   const session = await requireSession(req);
@@ -22,15 +39,32 @@ export async function POST(req: Request) {
 
   try {
     const body = bodySchema.parse(await req.json());
-    const result = await twSendTransaction(body.signedXdr);
+    let contractId = body.contractId;
+
+    const result = body.signedXdr
+      ? await twSendTransaction(body.signedXdr)
+      : { status: 'submitted_via_wallet', hash: body.txHash ?? null };
+
+    if (
+      !contractId &&
+      body.phase === 'deploy' &&
+      body.signer &&
+      body.orderId &&
+      isSupabaseConfigured()
+    ) {
+      contractId =
+        extractSendTransactionContractId(result) ??
+        (await resolveContractByEngagement(body.orderId, body.signer)) ??
+        undefined;
+    }
 
     if (body.orderId && isSupabaseConfigured()) {
       const supabase = getSupabaseAdmin();
       const patch: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
       };
-      if (body.contractId) {
-        patch.tw_contract_id = body.contractId;
+      if (contractId) {
+        patch.tw_contract_id = contractId;
       }
       if (body.phase) {
         patch.milestone_state = `${body.phase}_submitted`;
@@ -48,10 +82,34 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json(result);
+    return NextResponse.json({
+      ...(typeof result === 'object' && result !== null ? result : { result }),
+      contractId: contractId ?? null,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Submit failed';
     return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+
+async function resolveContractByEngagement(
+  orderId: string,
+  signer: string,
+): Promise<string | null> {
+  const supabase = getSupabaseAdmin();
+  const { data: order } = await supabase
+    .from('orders')
+    .select('engagement_id')
+    .eq('id', orderId)
+    .maybeSingle();
+  if (!order?.engagement_id) {
+    return null;
+  }
+  try {
+    const escrows = await twGetEscrowsBySigner(signer, true);
+    return pickEscrowContractByEngagement(escrows, order.engagement_id);
+  } catch {
+    return null;
   }
 }
