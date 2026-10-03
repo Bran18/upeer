@@ -9,11 +9,14 @@ import {
   assertEscrowSigner,
   loadOrderEscrowContext,
 } from '@/lib/escrow/order-access';
+import { fetchEscrowOnChainSnapshot } from '@/lib/escrow/fetch-on-chain';
+import { shouldHideFundEscrowAction } from '@/lib/escrow/funding-state';
+import { p2pLegs } from '@/lib/escrow/p2p-legs';
 import {
   extractUnsignedXdr,
   twFundEscrow,
 } from '@/lib/trustless-work/client';
-import { isSupabaseConfigured } from '@/lib/supabase/server';
+import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const bodySchema = z.object({
   orderId: z.string().uuid(),
@@ -40,6 +43,33 @@ export async function POST(req: Request) {
     }
 
     assertEscrowSigner(ctx, profileId, body.signer, 'fund');
+
+    const supabase = getSupabaseAdmin();
+    const { data: sessionRow } = await supabase
+      .from('escrow_sessions')
+      .select('milestone_state, last_tx_hash')
+      .eq('order_id', body.orderId)
+      .maybeSingle();
+
+    const legs = p2pLegs(ctx);
+    const snapshot = await fetchEscrowOnChainSnapshot(body.escrowContractId, {
+      expectedAmount: ctx.usdcAmount,
+      engagementId: ctx.engagementId,
+      sellerSigner: legs.usdcSellerAddress,
+      syncTxHash: sessionRow?.last_tx_hash,
+    });
+
+    if (
+      shouldHideFundEscrowAction(
+        sessionRow?.milestone_state ?? 'idle',
+        snapshot,
+      )
+    ) {
+      return NextResponse.json(
+        { error: 'Escrow is already funded or funding is in progress.' },
+        { status: 409 },
+      );
+    }
 
     const tw = await twFundEscrow({
       signer: body.signer,

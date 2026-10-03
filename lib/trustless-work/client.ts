@@ -206,6 +206,76 @@ export function extractSendTransactionContractId(
   return extractDeployContractId(response as Record<string, unknown>);
 }
 
+function appendQueryList(
+  query: URLSearchParams,
+  key: string,
+  values: string[],
+): void {
+  for (const value of values) {
+    query.append(key, value);
+  }
+}
+
+/**
+ * Same endpoint as SDK `useGetEscrowFromIndexerByContractIds` →
+ * `getEscrowByContractIds({ contractIds, validateOnChain? })`.
+ */
+export async function twGetEscrowByContractIds(
+  contractIds: string[],
+  validateOnChain = true,
+): Promise<unknown> {
+  if (contractIds.length === 0) {
+    return [];
+  }
+  const query = new URLSearchParams();
+  appendQueryList(query, 'contractIds', contractIds);
+  query.set('validateOnChain', String(validateOnChain));
+  const res = await twFetch(`/helper/get-escrow-by-contract-ids?${query}`);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(
+      (data as { message?: string }).message ??
+        `Escrow status failed (${res.status})`,
+    );
+  }
+  return data;
+}
+
+/** Sync indexer from a ledger tx (SDK: `updateFromTxHash`). */
+export async function twUpdateFromTxHash(txHash: string): Promise<unknown> {
+  const res = await twFetch('/indexer/update-from-txHash', {
+    method: 'POST',
+    body: JSON.stringify({ txHash }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(
+      (data as { message?: string }).message ??
+        `Indexer update failed (${res.status})`,
+    );
+  }
+  return data;
+}
+
+export async function twGetMultipleEscrowBalance(
+  addresses: string[],
+): Promise<unknown> {
+  if (addresses.length === 0) {
+    return [];
+  }
+  const query = new URLSearchParams();
+  appendQueryList(query, 'addresses', addresses);
+  const res = await twFetch(`/helper/get-multiple-escrow-balance?${query}`);
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(
+      (data as { message?: string }).message ??
+        `Escrow balance failed (${res.status})`,
+    );
+  }
+  return data;
+}
+
 export async function twGetEscrowsBySigner(
   signer: string,
   validateOnChain = true,

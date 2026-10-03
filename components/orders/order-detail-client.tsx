@@ -6,6 +6,12 @@ import type { OrderDetail } from '@/lib/db/orders';
 import { buyerActionLabel } from '@/lib/market/format';
 import { orderCanBeAccepted } from '@/lib/quotes/ttl';
 import { getStellarNetworkClient } from '@/lib/config/network-client';
+import type { EscrowOnChainSnapshot } from '@/lib/escrow/on-chain';
+import {
+  isEscrowFundedForDisplay,
+  isEscrowFundPending,
+  shouldHideFundEscrowAction,
+} from '@/lib/escrow/funding-state';
 import {
   isUsdcBuyerProfile,
   isUsdcSellerProfile,
@@ -66,7 +72,13 @@ function OrderDetailInner({ orderId, initial }: Props) {
   const [deployExplorer, setDeployExplorer] = useState<{
     contractId?: string;
     txHash?: string;
+    fundTxHash?: string;
   } | null>(null);
+  const [escrowOnChain, setEscrowOnChain] =
+    useState<EscrowOnChainSnapshot | null>(null);
+  const [escrowStatusError, setEscrowStatusError] = useState<string | null>(
+    null,
+  );
   const stellarNetwork = getStellarNetworkClient();
 
   const ensureSession = useCallback(async () => {
@@ -85,19 +97,63 @@ function OrderDetailInner({ orderId, initial }: Props) {
     }
   }, []);
 
-  const refreshOrder = useCallback(async () => {
-    await ensureSession();
-    const res = await upeerAuthedFetch(`/api/orders/${orderId}`);
-    const data = await res.json();
-    if (!res.ok) {
-      setLoadError(
-        data.error ?? 'Could not load this order. Go back and try again.',
-      );
-      return;
-    }
-    setLoadError(null);
-    setOrder(data.order);
-  }, [orderId, ensureSession]);
+  const refreshOrder = useCallback(
+    async (options?: { syncTxHash?: string | null }) => {
+      await ensureSession();
+      const res = await upeerAuthedFetch(`/api/orders/${orderId}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setLoadError(
+          data.error ?? 'Could not load this order. Go back and try again.',
+        );
+        return;
+      }
+      setLoadError(null);
+      setOrder(data.order);
+
+      if (data.order?.escrow?.tw_contract_id) {
+        const txForSync =
+          options?.syncTxHash ??
+          deployExplorer?.fundTxHash ??
+          deployExplorer?.txHash ??
+          null;
+        const statusQuery = new URLSearchParams({ orderId });
+        if (txForSync) {
+          statusQuery.set('txHash', txForSync);
+        }
+        const statusRes = await upeerAuthedFetch(
+          `/api/escrow/status?${statusQuery}`,
+        );
+        const statusData = await statusRes.json();
+        if (statusRes.ok) {
+          setEscrowOnChain(statusData.snapshot ?? null);
+          setEscrowStatusError(
+            typeof statusData.error === 'string' ? statusData.error : null,
+          );
+          const milestoneState =
+            typeof statusData.milestoneState === 'string'
+              ? statusData.milestoneState
+              : null;
+          if (milestoneState && data.order?.escrow) {
+            setOrder((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    escrow: prev.escrow
+                      ? { ...prev.escrow, milestone_state: milestoneState }
+                      : prev.escrow,
+                  }
+                : prev,
+            );
+          }
+        }
+      } else {
+        setEscrowOnChain(null);
+        setEscrowStatusError(null);
+      }
+    },
+    [orderId, ensureSession, deployExplorer?.fundTxHash, deployExplorer?.txHash],
+  );
 
   useEffect(() => {
     if (!isAuthenticated || !verified) {
@@ -180,15 +236,16 @@ function OrderDetailInner({ orderId, initial }: Props) {
   );
 
   const runAction = async (
-    work: () => Promise<void>,
+    work: () => Promise<void | string>,
     fallback: string,
   ) => {
     setBusy(true);
     setStatus(null);
-    setDeployExplorer(null);
     try {
-      await work();
-      await refreshOrder();
+      const syncTxHash = await work();
+      await refreshOrder(
+        typeof syncTxHash === 'string' ? { syncTxHash } : undefined,
+      );
     } catch (e: unknown) {
       setStatusTone('error');
       setStatus(e instanceof Error ? e.message : fallback);
@@ -296,6 +353,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
             txHash: outcome.hash,
           });
         }
+        return outcome.hash;
       }
     }, 'Could not deploy escrow. Try again.');
   };
@@ -325,7 +383,41 @@ function OrderDetailInner({ orderId, initial }: Props) {
       if (!xdr) {
         throw new Error('No fund XDR returned. Try again.');
       }
-      await signAndSubmitTx(xdr);
+      const outcome = await signAndSubmitTx(xdr);
+      if (outcome.status === 'success') {
+        setStatusTone('info');
+        setStatus(
+          'Fund submitted. Escrow balance updates after the transaction confirms on-chain.',
+        );
+        setDeployExplorer((prev) => ({
+          ...prev,
+          fundTxHash: outcome.hash,
+        }));
+        const ackRes = await upeerAuthedFetch('/api/escrow/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            submittedViaWallet: true,
+            txHash: outcome.hash,
+            signer: wallet.address,
+            orderId,
+            phase: 'fund',
+          }),
+        });
+        const ackData = await ackRes.json();
+        if (!ackRes.ok) {
+          throw new Error(
+            ackData.error ?? 'Fund tx sent but order state did not update.',
+          );
+        }
+        return outcome.hash;
+      } else if (outcome.status === 'error') {
+        throw new Error(
+          'message' in outcome && typeof outcome.message === 'string'
+            ? outcome.message
+            : 'Fund was not completed in your wallet.',
+        );
+      }
     }, 'Could not fund escrow. Try again.');
   };
 
@@ -432,8 +524,17 @@ function OrderDetailInner({ orderId, initial }: Props) {
     order.status === 'reserved' || order.status === 'escrow_pending';
   const showEscrowDeploy =
     escrowSetupPhase && isUsdcSeller && !escrowContractId;
+  const escrowMilestone = order.escrow?.milestone_state ?? 'idle';
+  const escrowFullyFunded = isEscrowFundedForDisplay(
+    escrowMilestone,
+    escrowOnChain,
+  );
+  const escrowFundPending = isEscrowFundPending(escrowMilestone, escrowOnChain);
   const showEscrowFund =
-    escrowSetupPhase && isUsdcSeller && Boolean(escrowContractId);
+    escrowSetupPhase &&
+    isUsdcSeller &&
+    Boolean(escrowContractId) &&
+    !shouldHideFundEscrowAction(escrowMilestone, escrowOnChain);
   const showEscrowRelease =
     isUsdcSeller &&
     Boolean(escrowContractId) &&
@@ -455,7 +556,12 @@ function OrderDetailInner({ orderId, initial }: Props) {
       </p>
 
       <div className="mt-8 grid gap-4 lg:mt-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)] lg:items-start">
-        <OrderSummary order={order} isMaker={isMaker} />
+        <OrderSummary
+          order={order}
+          isMaker={isMaker}
+          escrowOnChain={escrowOnChain}
+          escrowStatusError={escrowStatusError}
+        />
 
         <section className="ui-card flex flex-col px-5 py-5 sm:px-6 sm:py-6">
           <h2 className="text-base font-semibold tracking-tight">Next Step</h2>
@@ -561,7 +667,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
           ) : null}
 
           {showEscrowFund ? (
-            <div className="mt-6">
+            <div className="mt-6 space-y-3">
               <Button
                 type="button"
                 variant="secondary"
@@ -571,7 +677,25 @@ function OrderDetailInner({ orderId, initial }: Props) {
               >
                 Fund Escrow
               </Button>
+              <p className="text-xs text-[var(--foreground-tertiary)] text-pretty">
+                You will sign a wallet transaction for the full order size. Balance
+                appears in the escrow panel after confirmation.
+              </p>
             </div>
+          ) : null}
+
+          {escrowContractId && escrowFundPending && isUsdcSeller ? (
+            <p className="mt-6 text-sm text-[var(--foreground-secondary)] text-pretty">
+              Fund transaction submitted. Balance updates in the escrow panel once
+              Stellar confirms — you cannot fund again until then.
+            </p>
+          ) : null}
+
+          {escrowContractId && escrowFullyFunded && isUsdcSeller ? (
+            <p className="mt-6 text-sm text-[var(--foreground-secondary)] text-pretty">
+              Escrow is funded on-chain. Continue with fiat confirmation, then
+              approve and release.
+            </p>
           ) : null}
 
           {showEscrowRelease ? (
@@ -590,7 +714,11 @@ function OrderDetailInner({ orderId, initial }: Props) {
 
           {showEscrowWaiting ? (
             <p className="mt-6 text-sm text-[var(--foreground-secondary)] text-pretty">
-              Waiting for the USDC seller to deploy, fund, and release escrow.
+              {escrowFullyFunded
+                ? 'USDC is in escrow. Complete your fiat step when you are ready.'
+                : escrowFundPending || (escrowOnChain?.balance ?? 0) > 0
+                  ? 'Seller is funding escrow — balance updates in the escrow panel on the left.'
+                  : 'Waiting for the USDC seller to deploy and fund escrow.'}
             </p>
           ) : null}
 
@@ -628,6 +756,16 @@ function OrderDetailInner({ orderId, initial }: Props) {
               className="mt-2 block text-sm text-[var(--foreground-secondary)] hover:underline"
             >
               Deploy transaction on Stellar Expert
+            </a>
+          ) : null}
+          {deployExplorer?.fundTxHash ? (
+            <a
+              href={stellarExpertTxUrl(stellarNetwork, deployExplorer.fundTxHash)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 block text-sm text-[var(--foreground-secondary)] hover:underline"
+            >
+              Fund transaction on Stellar Expert
             </a>
           ) : null}
           {loadError ? (

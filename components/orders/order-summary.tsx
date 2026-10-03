@@ -16,11 +16,14 @@ import {
 import { acceptanceDeadline } from '@/lib/quotes/ttl';
 import { Avatar } from '@/components/ui/avatar';
 import { getStellarNetworkClient } from '@/lib/config/network-client';
+import type { EscrowOnChainSnapshot } from '@/lib/escrow/on-chain';
 import { EscrowStatus } from '@/components/escrow-status';
 
 type Props = {
   order: OrderDetail;
   isMaker: boolean;
+  escrowOnChain?: EscrowOnChainSnapshot | null;
+  escrowStatusError?: string | null;
 };
 
 const STEPS = [
@@ -71,7 +74,12 @@ function currentStepIndex(order: OrderDetail): number {
   }
 }
 
-export function OrderSummary({ order, isMaker }: Props) {
+export function OrderSummary({
+  order,
+  isMaker,
+  escrowOnChain = null,
+  escrowStatusError = null,
+}: Props) {
   const action = buyerActionLabel(order.offer.side);
   const deskName = order.offer.maker_display_name?.trim() || 'Desk';
   const price =
@@ -196,6 +204,10 @@ export function OrderSummary({ order, isMaker }: Props) {
           }
           contractId={order.escrow?.tw_contract_id}
           network={getStellarNetworkClient()}
+          expectedUsdc={order.quote.usdc_amount}
+          onChain={escrowOnChain}
+          milestoneState={order.escrow?.milestone_state}
+          statusError={escrowStatusError}
         />
       </div>
     </aside>

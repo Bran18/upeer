@@ -9,6 +9,7 @@ import {
   pickEscrowContractByEngagement,
   twGetEscrowsBySigner,
   twSendTransaction,
+  twUpdateFromTxHash,
 } from '@/lib/trustless-work/client';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
@@ -45,6 +46,22 @@ export async function POST(req: Request) {
       ? await twSendTransaction(body.signedXdr)
       : { status: 'submitted_via_wallet', hash: body.txHash ?? null };
 
+    const txHash =
+      body.txHash ??
+      (typeof result === 'object' &&
+      result !== null &&
+      typeof (result as { hash?: string }).hash === 'string'
+        ? (result as { hash: string }).hash
+        : null);
+
+    if (txHash) {
+      try {
+        await twUpdateFromTxHash(txHash);
+      } catch {
+        // non-fatal; status poll may retry sync
+      }
+    }
+
     if (
       !contractId &&
       body.phase === 'deploy' &&
@@ -69,10 +86,23 @@ export async function POST(req: Request) {
       if (body.phase) {
         patch.milestone_state = `${body.phase}_submitted`;
       }
-      await supabase
+      if (txHash) {
+        patch.last_tx_hash = txHash;
+      }
+      let { error: sessionUpdateError } = await supabase
         .from('escrow_sessions')
         .update(patch)
         .eq('order_id', body.orderId);
+      if (sessionUpdateError && txHash && patch.last_tx_hash) {
+        const { last_tx_hash: _drop, ...withoutTx } = patch;
+        ({ error: sessionUpdateError } = await supabase
+          .from('escrow_sessions')
+          .update(withoutTx)
+          .eq('order_id', body.orderId));
+      }
+      if (sessionUpdateError) {
+        throw new Error(sessionUpdateError.message);
+      }
 
       if (body.phase === 'release') {
         await supabase

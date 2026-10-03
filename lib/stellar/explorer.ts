@@ -18,3 +18,12 @@ export function stellarExpertTxUrl(
 ): string {
   return `${EXPLORER_BASE[network]}/tx/${txHash}`;
 }
+
+/** Read-only TW Escrow Viewer (V1 single-release), same surface as viewer.trustlesswork.com. */
+export function trustlessWorkViewerUrl(
+  network: StellarNetwork,
+  contractId: string,
+): string {
+  const segment = network === 'testnet' ? 'testnet' : 'mainnet';
+  return `https://viewer.trustlesswork.com/${segment}/v1/${contractId}`;
+}
