@@ -1,0 +1,2 @@
+comment on column public.profiles.payment_prefs is
+  'P2P fiat rails keyed by market. methods[]: { id, rail, currency, holderName, details }. details.phone = SINPE Móvil (8 digits CR) / Nequi-Daviplata (10 digits CO starting 3) / Yape (8 digits BO). details.alias = Mercado Pago / CBU alias (6-20). details.cbuCvu|cvu = 22 digits AR. details.iban = CR IBAN (22, starts CR). Chile bank: bankName, accountType, accountNumber, rut. Colombia bank: bankName, accountType, accountNumber, documentType, documentNumber.';

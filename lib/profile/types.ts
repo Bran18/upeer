@@ -1,3 +1,5 @@
+import type { PaymentPrefs } from '@/lib/profile/payment-prefs';
+
 export type PlatformIntent = 'buyer' | 'merchant' | 'both';
 
 export type MerchantStatus =
@@ -16,6 +18,7 @@ export type MeProfile = {
   merchantStatus: MerchantStatus;
   merchantId: string | null;
   payoutAddress: string | null;
+  paymentPrefs: PaymentPrefs;
   isOperator: boolean;
 };
 

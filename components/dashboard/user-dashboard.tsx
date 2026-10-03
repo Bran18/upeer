@@ -3,19 +3,17 @@
 import Link from 'next/link';
 import { DashboardHero } from '@/components/dashboard/dashboard-hero';
 import { ProfilePanel } from '@/components/dashboard/profile-panel';
-import { ProfileSettingsForm } from '@/components/dashboard/profile-settings-form';
 import { SetupChecklist } from '@/components/dashboard/setup-checklist';
 import { PollarRequired } from '@/components/pollar-required';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
 import {
   Card,
-  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { SwapPanel } from '@/components/app/swap-panel';
+import { SoroswapSection } from '@/components/dashboard/soroswap-section';
 import {
   buildSetupItems,
   primaryCtaForIntent,
@@ -108,27 +106,22 @@ function UserDashboardInner() {
         ) : null}
       </section>
 
-      <SwapPanel disabled={false} />
+      <SoroswapSection />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
         <SetupChecklist items={setupItems} />
         <ProfilePanel profile={profile} />
       </div>
 
-      <Card id="settings" className="scroll-mt-[calc(var(--site-header-height)+1rem)]">
-        <CardHeader>
-          <CardTitle>Settings</CardTitle>
-          <CardDescription>
-            Update your marketplace role and display name. Changes apply after you
-            save.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <ProfileSettingsForm />
-        </CardContent>
-      </Card>
-
       <p className="text-sm text-[var(--foreground-tertiary)] text-pretty">
+        Profile, payout, and fiat payment methods live in{' '}
+        <Link
+          href="/settings"
+          className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
+        >
+          Settings
+        </Link>
+        .{' '}
         Protocol integrations (Reflector, Trustless Work, Soroswap) are in{' '}
         <Link
           href="/app"

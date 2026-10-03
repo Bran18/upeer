@@ -1,5 +1,10 @@
 import type { PollarVerifiedSession } from '@/lib/pollar/server';
 import { isStellarAddress } from '@/lib/pollar/resolve-stellar-wallet';
+import {
+  normalizePaymentPrefs,
+  paymentPrefsSchema,
+  type PaymentPrefs,
+} from '@/lib/profile/payment-prefs';
 import type {
   MeProfile,
   MerchantStatus,
@@ -51,7 +56,7 @@ export async function getMeProfile(profileId: string): Promise<MeProfile | null>
   const profileResult = await supabase
     .from('profiles')
     .select(
-      'id, stellar_address, display_name, platform_intent, onboarding_completed_at, payout_address, is_operator',
+      'id, stellar_address, display_name, platform_intent, onboarding_completed_at, payout_address, payment_prefs, is_operator',
     )
     .eq('id', profileId)
     .maybeSingle();
@@ -80,6 +85,7 @@ export async function getMeProfile(profileId: string): Promise<MeProfile | null>
 
   const extended = row as ProfileRow & {
     payout_address?: string | null;
+    payment_prefs?: unknown;
     is_operator?: boolean;
   };
 
@@ -92,8 +98,27 @@ export async function getMeProfile(profileId: string): Promise<MeProfile | null>
     merchantStatus,
     merchantId: (merchantResult.data?.id as string | undefined) ?? null,
     payoutAddress: extended.payout_address ?? null,
+    paymentPrefs: normalizePaymentPrefs(extended.payment_prefs),
     isOperator: Boolean(extended.is_operator),
   };
+}
+
+export async function updateProfilePaymentPrefs(
+  profileId: string,
+  paymentPrefs: PaymentPrefs,
+): Promise<void> {
+  const parsed = paymentPrefsSchema.parse(paymentPrefs);
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      payment_prefs: parsed,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', profileId);
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function updateProfilePayoutAddress(

@@ -3,6 +3,12 @@
 import { usePollar } from '@pollar/react';
 import { useCallback, useEffect, useState } from 'react';
 import { PollarRequired } from '@/components/pollar-required';
+import { FiatMarketSelect } from '@/components/fiat/fiat-market-select';
+import {
+  DEFAULT_FIAT_CURRENCY,
+  marketForCurrency,
+  UPEER_COVERAGE_BLURB,
+} from '@/lib/fiat/coverage';
 import {
   exchangePollarSessionFromClient,
   readStoredSession,
@@ -41,8 +47,9 @@ function MerchantDashboardInner() {
   const [payoutAddress, setPayoutAddress] = useState('');
   const [offerForm, setOfferForm] = useState({
     side: 'sell_usdc' as 'sell_usdc' | 'buy_usdc',
-    fiatCurrency: 'COP',
-    pricePerUsdc: '4100',
+    fiatCurrency: DEFAULT_FIAT_CURRENCY,
+    pricePerUsdc:
+      marketForCurrency(DEFAULT_FIAT_CURRENCY)?.examplePricePerUsdc ?? '520',
     minUsdc: '50.0000000',
     maxUsdc: '5000.0000000',
     availableUsdc: '1000.0000000',
@@ -180,7 +187,7 @@ function MerchantDashboardInner() {
           <section className="panel-card space-y-4">
             <h3 className="text-headline text-sm">Create order</h3>
             <p className="text-sm text-muted">
-              Set price as fiat per 1 USDC (e.g. 4100 COP, 17.5 MXN).
+              Set price as local fiat per 1 USDC ({UPEER_COVERAGE_BLURB}).
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -201,20 +208,18 @@ function MerchantDashboardInner() {
                   <option value="buy_usdc">I buy USDC</option>
                 </select>
               </div>
-              <div>
-                <label className="field-label" htmlFor="offer-fiat">Fiat</label>
-                <input
-                  id="offer-fiat"
-                  name="fiatCurrency"
-                  className="field-input"
-                  value={offerForm.fiatCurrency}
-                  onChange={(e) =>
-                    setOfferForm((f) => ({ ...f, fiatCurrency: e.target.value }))
-                  }
-                  spellCheck={false}
-                  autoComplete="off"
-                />
-              </div>
+              <FiatMarketSelect
+                id="offer-fiat"
+                value={offerForm.fiatCurrency}
+                onChange={(currency) => {
+                  const market = marketForCurrency(currency);
+                  setOfferForm((f) => ({
+                    ...f,
+                    fiatCurrency: currency,
+                    pricePerUsdc: market?.examplePricePerUsdc ?? f.pricePerUsdc,
+                  }));
+                }}
+              />
               <div>
                 <label className="field-label" htmlFor="offer-price">
                   Price per USDC

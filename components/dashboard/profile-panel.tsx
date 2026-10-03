@@ -92,7 +92,7 @@ export function ProfilePanel({ profile }: { profile: MeProfile }) {
             Need to change your role or public name?
           </p>
           <Link
-            href="#settings"
+            href="/settings"
             className="mt-2 inline-flex text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
           >
             Go to settings

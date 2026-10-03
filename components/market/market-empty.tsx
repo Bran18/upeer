@@ -11,7 +11,7 @@ export function MarketEmpty({ filtered, onResetFilters }: Props) {
       <div className="ui-card px-6 py-12 text-center">
         <p className="text-base font-medium">No offers match these filters</p>
         <p className="mt-2 text-sm text-[var(--foreground-secondary)] text-pretty">
-          Try another fiat rail or show all desks.
+          Try another country (CRC, ARS, BOB, CLP, COP) or show all desks.
         </p>
         {onResetFilters ? (
           <button

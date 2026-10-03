@@ -4,14 +4,17 @@ import { resolveSession } from '@/lib/auth/resolve-session';
 import {
   getMeProfile,
   updateProfilePayoutAddress,
+  updateProfilePaymentPrefs,
   updateUserProfile,
 } from '@/lib/db/profiles';
+import { paymentPrefsSchema } from '@/lib/profile/payment-prefs';
 import { isSupabaseConfigured } from '@/lib/supabase/server';
 
 const patchSchema = z.object({
   platformIntent: z.enum(['buyer', 'merchant', 'both']).optional(),
   displayName: z.string().min(2).max(80).optional(),
   payoutAddress: z.string().min(56).max(56).optional(),
+  paymentPrefs: paymentPrefsSchema.optional(),
 });
 
 export async function GET(request: Request) {
@@ -62,22 +65,45 @@ export async function PATCH(request: Request) {
 
   try {
     const body = patchSchema.parse(await request.json());
-    if (!body.platformIntent && !body.displayName && !body.payoutAddress) {
+    if (
+      !body.platformIntent &&
+      !body.displayName &&
+      !body.payoutAddress &&
+      !body.paymentPrefs
+    ) {
       return NextResponse.json(
-        { error: 'Send displayName, platformIntent, or payoutAddress to update' },
+        {
+          error:
+            'Send displayName, platformIntent, payoutAddress, or paymentPrefs to update',
+        },
         { status: 400 },
       );
     }
 
     if (body.payoutAddress) {
       await updateProfilePayoutAddress(session.profileId, body.payoutAddress);
-      if (!body.platformIntent && !body.displayName) {
-        const profile = await getMeProfile(session.profileId);
-        if (!profile) {
-          return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-        }
-        return NextResponse.json({ profile });
+    }
+
+    if (body.paymentPrefs) {
+      await updateProfilePaymentPrefs(session.profileId, body.paymentPrefs);
+    }
+
+    const profileFields =
+      body.platformIntent !== undefined || body.displayName !== undefined;
+
+    if (!profileFields && (body.payoutAddress || body.paymentPrefs)) {
+      const profile = await getMeProfile(session.profileId);
+      if (!profile) {
+        return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
       }
+      return NextResponse.json({ profile });
+    }
+
+    if (!profileFields) {
+      return NextResponse.json(
+        { error: 'No profile fields to update' },
+        { status: 400 },
+      );
     }
 
     const needsName =

@@ -16,7 +16,6 @@ export function headerNavItems(
     ];
   }
   return [
-    { href: '/dashboard', label: 'Dashboard' },
     { href: '/market', label: 'Market' },
     { href: '/orders', label: 'Orders' },
     { href: '/orders/new', label: 'Post order' },
@@ -25,7 +24,8 @@ export function headerNavItems(
 
 export function accountMenuItems(profile: MeProfile | null | undefined): NavItem[] {
   const items: NavItem[] = [
-    { href: '/dashboard#settings', label: 'Settings' },
+    { href: '/dashboard', label: 'Dashboard' },
+    { href: '/settings', label: 'Settings' },
     { href: '/app', label: 'Developer tools' },
   ];
   if (profile?.isOperator) {

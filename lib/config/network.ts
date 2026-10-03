@@ -118,10 +118,9 @@ export function getNetworkConfig(): NetworkConfig {
 export const REFLECTOR_PULSE_DEFAULT_RESOLUTION_SECONDS = 300;
 
 export const DEFAULT_LATAM_SYMBOLS = [
-  'COP',
-  'MXN',
-  'BRL',
+  'CRC',
   'ARS',
-  'PEN',
+  'BOB',
   'CLP',
+  'COP',
 ] as const;

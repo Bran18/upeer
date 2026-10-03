@@ -1,5 +1,6 @@
 'use client';
 
+import { formatFiatBadge } from '@/lib/fiat/coverage';
 import type { MarketFilters, MarketSort, MarketSideFilter } from '@/lib/market/filters';
 import { cn } from '@/lib/cn';
 
@@ -86,7 +87,7 @@ export function MarketToolbar({
 
           {fiatOptions.length > 1 ? (
             <label className="flex items-center gap-2 text-sm">
-              <span className="text-[var(--foreground-tertiary)]">Fiat</span>
+              <span className="text-[var(--foreground-tertiary)]">Market</span>
               <select
                 value={filters.fiat}
                 onChange={(e) => onChange({ fiat: e.target.value })}
@@ -95,7 +96,7 @@ export function MarketToolbar({
                 <option value="all">All</option>
                 {fiatOptions.map((fiat) => (
                   <option key={fiat} value={fiat}>
-                    {fiat}
+                    {formatFiatBadge(fiat)}
                   </option>
                 ))}
               </select>

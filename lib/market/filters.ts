@@ -1,4 +1,5 @@
 import type { MarketOffer } from '@/lib/data/offers';
+import { isSupportedFiatCurrency } from '@/lib/fiat/coverage';
 
 export type MarketSideFilter = 'all' | 'sell_usdc' | 'buy_usdc';
 export type MarketSort = 'price' | 'liquidity' | 'name';
@@ -27,9 +28,15 @@ export function parseMarketFilters(
   const sort: MarketSort =
     sortRaw === 'liquidity' || sortRaw === 'name' ? sortRaw : 'price';
 
+  const fiatUpper = fiatRaw.toUpperCase();
+  const fiat =
+    fiatUpper === 'all' || isSupportedFiatCurrency(fiatUpper)
+      ? fiatUpper
+      : 'all';
+
   return {
     side,
-    fiat: fiatRaw.toUpperCase(),
+    fiat,
     sort,
   };
 }

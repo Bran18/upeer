@@ -4,6 +4,11 @@ import { usePollar } from '@pollar/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { PollarRequired } from '@/components/pollar-required';
+import { FiatMarketSelect } from '@/components/fiat/fiat-market-select';
+import {
+  DEFAULT_FIAT_CURRENCY,
+  marketForCurrency,
+} from '@/lib/fiat/coverage';
 import {
   exchangePollarSessionFromClient,
   readStoredSession,
@@ -24,8 +29,8 @@ function PostOrderFormInner() {
   const [status, setStatus] = useState<string | null>(null);
   const [form, setForm] = useState({
     side: 'sell_usdc' as 'sell_usdc' | 'buy_usdc',
-    fiatCurrency: 'COP',
-    pricePerUsdc: '4100',
+    fiatCurrency: DEFAULT_FIAT_CURRENCY,
+    pricePerUsdc: marketForCurrency(DEFAULT_FIAT_CURRENCY)?.examplePricePerUsdc ?? '520',
     minUsdc: '50.0000000',
     maxUsdc: '5000.0000000',
     availableUsdc: '1000.0000000',
@@ -107,22 +112,26 @@ function PostOrderFormInner() {
             <option value="buy_usdc">I buy USDC</option>
           </select>
         </div>
-        <div>
-          <label className="field-label" htmlFor="post-fiat">Fiat</label>
-          <input
-            id="post-fiat"
-            className="field-input"
-            value={form.fiatCurrency}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, fiatCurrency: e.target.value }))
-            }
-          />
-        </div>
+        <FiatMarketSelect
+          id="post-fiat"
+          value={form.fiatCurrency}
+          onChange={(currency) => {
+            const market = marketForCurrency(currency);
+            setForm((f) => ({
+              ...f,
+              fiatCurrency: currency,
+              pricePerUsdc: market?.examplePricePerUsdc ?? f.pricePerUsdc,
+            }));
+          }}
+        />
         <div>
           <label className="field-label" htmlFor="post-price">Price per USDC</label>
+          <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">
+            Local currency for {form.fiatCurrency} (peer-to-peer, off-chain).
+          </p>
           <input
             id="post-price"
-            className="field-input tabular-nums"
+            className="field-input tabular-nums mt-2"
             value={form.pricePerUsdc}
             onChange={(e) =>
               setForm((f) => ({ ...f, pricePerUsdc: e.target.value }))

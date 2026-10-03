@@ -2,6 +2,7 @@
 
 import type { PollarClient } from '@pollar/core';
 import { readPollarWalletHint } from '@/lib/pollar/access-token';
+import type { PaymentPrefs } from '@/lib/profile/payment-prefs';
 import type { MeProfile, PlatformIntent } from '@/lib/profile/types';
 
 export type UpeerSessionResponse = {
@@ -174,6 +175,8 @@ export async function completeOnboarding(
 export type UpdateMeProfileInput = {
   platformIntent?: PlatformIntent;
   displayName?: string;
+  payoutAddress?: string;
+  paymentPrefs?: PaymentPrefs;
 };
 
 export async function updateMeProfile(

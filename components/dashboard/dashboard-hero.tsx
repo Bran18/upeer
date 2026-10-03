@@ -52,8 +52,11 @@ export function DashboardHero({ profile, progress, nextItem }: DashboardHeroProp
             <Link href={primary.href} className="btn-primary">
               {primary.label}
             </Link>
-            <Link href="#settings" className="btn-secondary">
-              Edit profile
+            <Link href="#soroswap" className="btn-secondary">
+              Get USDC
+            </Link>
+            <Link href="/settings" className="btn-secondary">
+              Settings
             </Link>
           </div>
         </div>

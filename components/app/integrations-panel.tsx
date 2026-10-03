@@ -50,7 +50,7 @@ export function IntegrationsPanel() {
           {reflector?.feedHint === 'dex_or_cex' ? (
             <span className="mt-2 block text-amber-700 dark:text-amber-300">
               This oracle is not the FX feed—LATAM symbols may be empty. For
-              COP/MXN, set{' '}
+              CRC, ARS, BOB, CLP, or COP, set{' '}
               <code className="font-mono text-[10px]" translate="no">
                 REFLECTOR_PULSE_CONTRACT_ID
               </code>{' '}

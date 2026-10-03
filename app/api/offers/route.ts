@@ -6,11 +6,18 @@ import {
   sessionProfileId,
 } from '@/lib/auth/require-session';
 import { updateProfilePayoutAddress } from '@/lib/db/profiles';
+import { isSupportedFiatCurrency } from '@/lib/fiat/coverage';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const createSchema = z.object({
   side: z.enum(['sell_usdc', 'buy_usdc']),
-  fiatCurrency: z.string().min(3).max(8),
+  fiatCurrency: z
+    .string()
+    .min(3)
+    .max(4)
+    .refine((c) => isSupportedFiatCurrency(c), {
+      message: 'fiatCurrency must be CRC, ARS, BOB, CLP, or COP',
+    }),
   pricePerUsdc: z.union([z.string(), z.number()]),
   minUsdc: z.string(),
   maxUsdc: z.string(),

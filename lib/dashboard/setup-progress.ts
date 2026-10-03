@@ -30,6 +30,14 @@ export function buildSetupItems(profile: MeProfile): SetupItem[] {
 
   if (showBuyer) {
     items.push({
+      id: 'fund-usdc',
+      title: 'Fund USDC for escrow',
+      description: 'Swap testnet XLM to USDC before you trade on the market.',
+      status: 'action',
+      href: '#soroswap',
+      hrefLabel: 'Get USDC',
+    });
+    items.push({
       id: 'market',
       title: 'Browse open orders',
       description: 'Find a price you like and request a P2P trade.',
@@ -45,8 +53,19 @@ export function buildSetupItems(profile: MeProfile): SetupItem[] {
       title: 'Post an order',
       description: 'Set your price per USDC and wait for takers.',
       status: profile.payoutAddress ? 'done' : 'action',
-      href: '/orders/new',
-      hrefLabel: 'Post order',
+      href: profile.payoutAddress ? '/orders/new' : '/settings?tab=payout',
+      hrefLabel: profile.payoutAddress ? 'Post order' : 'Set payout',
+    });
+    items.push({
+      id: 'fiat-payments',
+      title: 'Fiat payment methods',
+      description:
+        profile.paymentPrefs.methods.length > 0
+          ? 'Buyers can pay you using your saved instructions.'
+          : 'Add bank, PIX, or other rails so buyers know how to pay you.',
+      status: profile.paymentPrefs.methods.length > 0 ? 'done' : 'action',
+      href: '/settings?tab=fiat',
+      hrefLabel: 'Add methods',
     });
   }
 
@@ -57,7 +76,7 @@ export function buildSetupItems(profile: MeProfile): SetupItem[] {
       ? 'Display name is set. Update anytime in settings.'
       : 'Add a display name if you sell or want a public label.',
     status: profile.displayName ? 'done' : 'action',
-    href: '#settings',
+    href: '/settings?tab=profile',
     hrefLabel: 'Edit settings',
   });
 

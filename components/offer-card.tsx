@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { ViewTransition } from 'react';
 import type { MarketOffer } from '@/lib/data/offers';
+import { formatFiatBadge } from '@/lib/fiat/coverage';
 import { NavLink } from '@/components/transition/nav-link';
 import { Avatar } from '@/components/ui/avatar';
 import {
@@ -106,7 +107,7 @@ export function OfferCard({ offer }: Props) {
 
       <div className="mt-5 flex flex-wrap items-center gap-1.5">
         <OfferTag tone={tagTone}>{action}</OfferTag>
-        <OfferTag tone="fiat">{offer.fiatCurrency}</OfferTag>
+        <OfferTag tone="fiat">{formatFiatBadge(offer.fiatCurrency)}</OfferTag>
         {offer.verified ? <OfferTag tone="verified">Verified</OfferTag> : null}
       </div>
     </NavLink>

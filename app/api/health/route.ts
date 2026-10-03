@@ -36,7 +36,7 @@ export async function GET() {
         ? 'Add SUPABASE_SERVICE_ROLE_KEY from Supabase Dashboard → Project Settings → API (server only, never NEXT_PUBLIC_).'
         : null,
       reflector.feedHint === 'dex_or_cex'
-        ? 'For LATAM fiat (COP/MXN), use testnet FX oracle CCSSOHTBL3LEWUCBBEB5NJFC2OKFRC74OWEIJIZLRJBGAAU4VMU5NV4W or mainnet FX CBKGPWGKSKZF52CFHMTRR23TBWTPMRDIYZ4O2P5VS65BMHYH4DXMCJZC.'
+        ? 'For supported fiat (CRC, ARS, BOB, CLP, COP), use testnet FX oracle CCSSOHTBL3LEWUCBBEB5NJFC2OKFRC74OWEIJIZLRJBGAAU4VMU5NV4W or mainnet FX CBKGPWGKSKZF52CFHMTRR23TBWTPMRDIYZ4O2P5VS65BMHYH4DXMCJZC.'
         : null,
       !process.env.UPEER_PLATFORM_ADDRESS
         ? 'Set UPEER_PLATFORM_ADDRESS (G…) for Trustless Work escrow deploy.'

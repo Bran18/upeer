@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { UPEER_COVERAGE_BLURB } from '@/lib/fiat/coverage';
 import type { MarketSummary } from '@/lib/market/summary';
 import { formatPricePerUsdc, formatUsdcAmount } from '@/lib/market/format';
 
@@ -44,8 +45,8 @@ export function MarketIntro({ summary, className }: Props) {
           Trade USDC peer to peer
         </h2>
         <p className="mt-5 max-w-xl text-[1.0625rem] leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-          Create orders at your price or take someone else&apos;s. Simple
-          USDC↔fiat trades on Stellar with on-chain escrow.
+          Create orders at your price or take someone else&apos;s. P2P USDC↔
+          local fiat in {UPEER_COVERAGE_BLURB}, with on-chain escrow on Stellar.
         </p>
       </div>
 
