@@ -110,11 +110,11 @@ export function WalletSendForm({ balances, onSent }: Props) {
   if (selectable.length === 0) {
     return (
       <p className="text-sm text-[var(--foreground-secondary)] text-pretty">
-        No spendable balance found. Fund your wallet with XLM or USDC first — use{' '}
-        <a href="/dashboard#soroswap" className="font-medium text-[var(--accent)] hover:underline">
-          Get USDC
-        </a>{' '}
-        on the dashboard.
+        No spendable balance found. Fund your wallet with XLM or USDC in{' '}
+        <a href="/wallet#fund" className="font-medium text-[var(--accent)] hover:underline">
+          Wallet
+        </a>
+        .
       </p>
     );
   }

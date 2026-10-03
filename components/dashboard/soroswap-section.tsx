@@ -12,33 +12,12 @@ import { cn } from '@/lib/cn';
 
 const PRESET_XLM = ['5', '10', '25', '100'] as const;
 
-const STEPS = [
-  {
-    n: '1',
-    title: 'You need USDC in your wallet',
-    body: 'P2P trades lock USDC in escrow. If your balance is low, swap XLM to USDC here first.',
-  },
-  {
-    n: '2',
-    title: 'Choose how much XLM to swap',
-    body: 'Pick a preset or type an amount. We handle the technical details when you confirm in your wallet.',
-  },
-  {
-    n: '3',
-    title: 'Go back to the market',
-    body: 'After the swap succeeds, open Market or Orders to trade with another person.',
-  },
-] as const;
-
-type Tab = 'swap' | 'help';
-
 type Props = {
   disabled?: boolean;
 };
 
 export function SoroswapSection({ disabled = false }: Props) {
   const { signAndSubmitTx, wallet, isAuthenticated, verified } = usePollar();
-  const [tab, setTab] = useState<Tab>('swap');
   const [xlmAmount, setXlmAmount] = useState('10');
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -139,184 +118,100 @@ export function SoroswapSection({ disabled = false }: Props) {
 
   return (
     <section
-      id="soroswap"
+      id="fund"
       className="scroll-mt-[calc(var(--site-header-height)+1rem)]"
-      aria-labelledby="soroswap-title"
+      aria-labelledby="fund-title"
     >
-      <div className="soroswap-hero">
-        <div className="relative z-[1] max-w-xl">
-          <p className="soroswap-hero-kicker">Wallet funding</p>
-          <h2 id="soroswap-title" className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Get USDC with Soroswap
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-white/85 text-pretty">
-            {isTestnet
-              ? 'On testnet, mint Soroswap test USDC into your wallet for escrow. XLM → USDC swaps may be unavailable when pools have no route.'
-              : 'Swap XLM into USDC so you can fund escrow on P2P trades. This is separate from buying or selling with another person.'}
-          </p>
-        </div>
-        <div className="soroswap-hero-art" aria-hidden>
-          <span className="soroswap-hero-coin">XLM</span>
-          <span className="soroswap-hero-arrow">→</span>
-          <span className="soroswap-hero-coin soroswap-hero-coin--usdc">USDC</span>
-        </div>
-      </div>
+      <h2 id="fund-title" className="text-sm font-medium">
+        Get USDC
+      </h2>
+      <p className="mt-1 text-sm text-[var(--foreground-secondary)] text-pretty">
+        {isTestnet
+          ? 'Mint test USDC into this wallet so you can complete a protected exchange. This is not a P2P trade.'
+          : 'Swap XLM into USDC in this wallet. This is not a P2P trade.'}
+      </p>
 
-      <div className="mt-4 flex flex-wrap gap-1 border-b border-[var(--line)] pb-px">
-        {(
-          [
-            { id: 'swap' as Tab, label: 'Swap' },
-            { id: 'help' as Tab, label: 'How it works' },
-          ] as const
-        ).map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setTab(item.id)}
-            className={cn(
-              'rounded-t-[var(--radius-ui)] px-4 py-2.5 text-sm font-medium transition-colors',
-              tab === item.id
-                ? 'bg-[var(--surface-elevated)] text-[var(--foreground)] shadow-[inset_0_-1px_0_var(--surface-elevated)]'
-                : 'text-[var(--foreground-secondary)] hover:text-[var(--foreground)]',
-            )}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="ui-card rounded-t-none border-t-0 px-5 py-6 sm:px-6">
+      <div className="mt-5 space-y-4">
         {swapReady === false ? (
-          <p className="rounded-[var(--radius-ui)] border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
-            Soroswap is not configured on this server. Ask your operator to set{' '}
-            <code className="text-xs">SOROSWAP_API_KEY</code> on the server.
+          <p className="text-sm text-[var(--foreground-secondary)]">
+            Funding is not configured on this server.
           </p>
         ) : null}
 
-        {tab === 'help' ? (
-          <ol className="grid gap-4 sm:grid-cols-3">
-            {STEPS.map((step) => (
-              <li
-                key={step.n}
-                className="rounded-[var(--radius-ui)] border border-[var(--line)] bg-[var(--fill)] p-4"
-              >
-                <p className="font-mono text-xs text-[var(--accent)]">{step.n}</p>
-                <p className="mt-2 text-sm font-medium">{step.title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-                  {step.body}
-                </p>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <div className="mx-auto max-w-lg space-y-5">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--foreground-tertiary)]">
-              Preferences
-            </p>
-
-            {isTestnet ? (
-              <p className="text-sm text-[var(--foreground-secondary)] text-pretty">
-                Testnet funding uses Soroswap&apos;s faucet API (same tokens as{' '}
-                <a
-                  href="https://faucet.soroswap.finance"
-                  className="text-[var(--accent)] hover:underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  faucet.soroswap.finance
-                </a>
-                ). No wallet signature is required for the mint.
-              </p>
-            ) : (
-              <div>
-                <label className="field-label" htmlFor="soroswap-xlm">
-                  How much XLM do you want to swap?
-                </label>
-                <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">
-                  Native Stellar lumens from your connected wallet.
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {PRESET_XLM.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setXlmAmount(preset)}
-                      className={cn(
-                        'nav-pill min-h-9 px-3 tabular-nums',
-                        xlmAmount === preset && 'nav-pill--active',
-                      )}
-                    >
-                      {preset} XLM
-                    </button>
-                  ))}
-                </div>
-                <input
-                  id="soroswap-xlm"
-                  name="xlmAmount"
-                  type="text"
-                  inputMode="decimal"
-                  autoComplete="off"
-                  spellCheck={false}
-                  className="field-input mt-3 tabular-nums"
-                  value={xlmAmount}
-                  onChange={(e) => setXlmAmount(e.target.value)}
-                  placeholder="e.g. 10"
-                />
-              </div>
-            )}
-
-            <div className="rounded-[var(--radius-ui)] border border-[var(--line)] bg-[var(--fill)] px-4 py-3 text-sm text-[var(--foreground-secondary)] text-pretty">
-              <strong className="font-medium text-[var(--foreground)]">
-                This does not complete a P2P trade.
-              </strong>{' '}
-              It only moves USDC into your wallet. To trade with someone, use{' '}
-              <Link href="/market" className="text-[var(--accent)] hover:underline">
-                Market
-              </Link>{' '}
-              or{' '}
-              <Link href="/orders" className="text-[var(--accent)] hover:underline">
-                Orders
-              </Link>
-              .
-            </div>
-
-            {!isAuthenticated || !verified ? (
-              <p className="text-sm text-amber-700 dark:text-amber-300">
-                Sign in with Pollar to swap.
-              </p>
-            ) : null}
-
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              {isTestnet ? (
+        {isTestnet ? null : (
+          <div>
+            <label className="field-label" htmlFor="soroswap-xlm">
+              XLM to swap
+            </label>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {PRESET_XLM.map((preset) => (
                 <button
+                  key={preset}
                   type="button"
-                  disabled={!canSwap || busy}
-                  onClick={() => void runMintUsdc()}
-                  className="btn-primary w-full sm:w-auto min-h-11 px-8"
+                  onClick={() => setXlmAmount(preset)}
+                  className={cn(
+                    'nav-pill min-h-9 px-3 tabular-nums',
+                    xlmAmount === preset && 'nav-pill--active',
+                  )}
                 >
-                  {busy ? 'Working…' : 'Mint test USDC'}
+                  {preset}
                 </button>
-              ) : null}
-              <button
-                type="button"
-                disabled={!canSwap || busy}
-                onClick={() => void runSwap()}
-                className={cn(
-                  'w-full sm:w-auto min-h-11 px-8',
-                  isTestnet ? 'btn-secondary' : 'btn-primary',
-                )}
-              >
-                {busy ? 'Working…' : 'Swap XLM for USDC'}
-              </button>
+              ))}
             </div>
-
-            {status ? (
-              <p className="text-sm text-[var(--foreground-secondary)]" role="status" aria-live="polite">
-                {status}
-              </p>
-            ) : null}
+            <input
+              id="soroswap-xlm"
+              name="xlmAmount"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              spellCheck={false}
+              className="field-input mt-3 tabular-nums"
+              value={xlmAmount}
+              onChange={(e) => setXlmAmount(e.target.value)}
+            />
           </div>
         )}
+
+        {!isAuthenticated || !verified ? (
+          <p className="text-sm text-[var(--foreground-secondary)]">
+            Sign in to fund this wallet.
+          </p>
+        ) : null}
+
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {isTestnet ? (
+            <button
+              type="button"
+              disabled={!canSwap || busy}
+              onClick={() => void runMintUsdc()}
+              className="btn-primary"
+            >
+              {busy ? 'Working…' : 'Mint test USDC'}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            disabled={!canSwap || busy}
+            onClick={() => void runSwap()}
+            className={isTestnet ? 'btn-secondary' : 'btn-primary'}
+          >
+            {busy ? 'Working…' : 'Swap XLM for USDC'}
+          </button>
+        </div>
+
+        {status ? (
+          <p className="text-sm text-[var(--foreground-secondary)]" role="status" aria-live="polite">
+            {status}
+          </p>
+        ) : null}
+
+        <p className="text-sm text-[var(--foreground-tertiary)]">
+          To exchange with a person, go to{' '}
+          <Link href="/exchange" className="font-medium text-[var(--accent)] hover:underline">
+            Exchange
+          </Link>
+          .
+        </p>
       </div>
     </section>
   );

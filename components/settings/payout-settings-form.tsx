@@ -66,7 +66,7 @@ export function PayoutSettingsForm() {
           Stellar payout address
         </label>
         <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">
-          Must match a wallet you control on the same network as UPEER (testnet).
+          Must match a wallet you control on the same network as upeer (testnet).
         </p>
         <input
           id="settings-payout"

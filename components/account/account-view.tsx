@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { PollarRequired } from '@/components/pollar-required';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { merchantNavItems } from '@/lib/nav/user-links';
 
 const ACCOUNT_AREAS = [
@@ -34,14 +34,9 @@ function AccountInner() {
 
   if (status === 'syncing') {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Loading account…</CardTitle>
-          <CardDescription role="status" aria-live="polite">
-            Syncing your profile.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <p className="text-sm text-[var(--foreground-secondary)]" role="status" aria-live="polite">
+        Loading your account…
+      </p>
     );
   }
 
@@ -49,15 +44,10 @@ function AccountInner() {
 
   return (
     <div className="space-y-8">
-      <header className="max-w-lg">
-        <h1 className="text-[clamp(1.85rem,5vw,2.5rem)] font-medium tracking-[-0.04em]">
-          Account
-        </h1>
-        <p className="mt-3 text-sm leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-          Identity, payment methods, wallet, and preferences — kept together so
-          exchange stays simple.
-        </p>
-      </header>
+      <ScreenHeader
+        title="Account"
+        description="Identity, payment methods, wallet, and preferences — kept together so exchange stays simple."
+      />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {ACCOUNT_AREAS.map((area) => (

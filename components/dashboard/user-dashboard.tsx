@@ -1,9 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { DashboardHero } from '@/components/dashboard/dashboard-hero';
-import { ProfilePanel } from '@/components/dashboard/profile-panel';
-import { SetupChecklist } from '@/components/dashboard/setup-checklist';
+import { CopyWalletButton } from '@/components/dashboard/copy-wallet-button';
 import { PollarRequired } from '@/components/pollar-required';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
 import {
@@ -13,26 +11,34 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { SoroswapSection } from '@/components/dashboard/soroswap-section';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import {
   buildSetupItems,
   primaryCtaForIntent,
-  setupProgress,
 } from '@/lib/dashboard/setup-progress';
+import { merchantNavItems, roleLabel } from '@/lib/nav/user-links';
+import type { MeProfile } from '@/lib/profile/types';
+
+function statusLine(profile: MeProfile) {
+  const methods = profile.paymentPrefs.methods.length;
+  const name = profile.displayName?.trim() || 'Not set';
+  const payout = profile.payoutAddress ? 'Set' : 'Not set';
+  return [
+    { label: 'Name', value: name },
+    { label: 'How you use upeer', value: roleLabel(profile.platformIntent) ?? '—' },
+    { label: 'Payment methods', value: methods === 0 ? 'None yet' : String(methods) },
+    { label: 'Payout', value: payout },
+  ];
+}
 
 function UserDashboardInner() {
   const { profile, status } = useUpeerSession();
 
   if (status === 'syncing') {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Loading your profile…</CardTitle>
-          <CardDescription role="status" aria-live="polite">
-            Syncing your wallet and preferences.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <p className="text-sm text-[var(--foreground-secondary)]" role="status" aria-live="polite">
+        Loading your account…
+      </p>
     );
   }
 
@@ -40,9 +46,9 @@ function UserDashboardInner() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Finish account setup</CardTitle>
+          <CardTitle>Finish setup</CardTitle>
           <CardDescription>
-            Choose how you use upeer so we can personalize the next steps.
+            Choose how you use upeer, then this page will show what is ready.
           </CardDescription>
         </CardHeader>
         <CardFooter>
@@ -54,75 +60,90 @@ function UserDashboardInner() {
     );
   }
 
-  const setupItems = buildSetupItems(profile);
-  const progress = setupProgress(setupItems);
-  const nextItem =
-    setupItems.find((item) => item.status === 'action') ??
-    setupItems.find((item) => item.status === 'upcoming') ??
-    null;
-
-  const intent = profile.platformIntent;
-  const primary = primaryCtaForIntent(intent);
-  const showBuyer = intent === 'buyer' || intent === 'both';
-  const showMerchant = intent === 'merchant' || intent === 'both';
-  const secondary = showMerchant
-    ? { href: '/merchant', label: 'Liquidity' }
-    : showBuyer
-      ? { href: '/exchange', label: 'Exchange' }
-      : null;
+  const setupItems = buildSetupItems(profile).filter((item) => item.status === 'action');
+  const primary = primaryCtaForIntent(profile.platformIntent);
+  const merchant = merchantNavItems(profile).length > 0;
+  const rows = statusLine(profile);
 
   return (
-    <div className="space-y-8">
-      <DashboardHero profile={profile} progress={progress} nextItem={nextItem} />
-
-      <section aria-label="Shortcuts" className="grid gap-3 sm:grid-cols-2">
-        <Link
-          href={primary.href}
-          className="ui-card group flex min-h-[5.5rem] flex-col justify-between p-4 transition-[border-color,transform] duration-200 hover:border-[var(--accent)] hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
-        >
-          <p className="text-sm font-medium">{primary.label}</p>
-          <p className="mt-1 text-xs text-[var(--foreground-secondary)] text-pretty">
-            {primary.description}
-          </p>
-          <span className="mt-3 text-xs font-medium text-[var(--accent)] group-hover:text-[var(--accent-hover)]">
-            Open →
-          </span>
-        </Link>
-        {secondary ? (
-          <Link
-            href={secondary.href}
-            className="ui-card group flex min-h-[5.5rem] flex-col justify-between p-4 transition-[border-color,transform] duration-200 hover:border-[var(--accent)] hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
-          >
-            <p className="text-sm font-medium">{secondary.label}</p>
-            <p className="mt-1 text-xs text-[var(--foreground-secondary)] text-pretty">
-              {secondary.href === '/merchant'
-                ? 'Offers, spreads, and settlement.'
-                : 'Get a quote and complete an exchange.'}
-            </p>
-            <span className="mt-3 text-xs font-medium text-[var(--accent)] group-hover:text-[var(--accent-hover)]">
-              Open →
-            </span>
+    <div>
+      <ScreenHeader
+        title={merchant ? 'Performance' : 'Ready to exchange'}
+        description={
+          merchant
+            ? 'A quiet view of what is set up. Posting and matching still happen in Exchange and Offers.'
+            : 'Your account is connected. Start from Exchange — this page stays out of the way.'
+        }
+        action={
+          <Link href={primary.href} className="btn-primary">
+            {primary.label}
           </Link>
-        ) : null}
+        }
+      />
+
+      <dl className="ui-card divide-y divide-[var(--line)]">
+        {rows.map((row) => (
+          <div
+            key={row.label}
+            className="flex items-baseline justify-between gap-4 px-5 py-4 sm:px-6"
+          >
+            <dt className="exchange-kicker">{row.label}</dt>
+            <dd className="text-sm font-medium text-right">{row.value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {setupItems.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="text-sm font-medium">Still needed</h2>
+          <ul className="mt-3 space-y-2">
+            {setupItems.map((item) => (
+              <li
+                key={item.id}
+                className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[var(--line)] py-3 last:border-b-0"
+              >
+                <div className="min-w-0 max-w-lg">
+                  <p className="text-sm">{item.title}</p>
+                  <p className="mt-1 text-xs text-[var(--foreground-secondary)] text-pretty">
+                    {item.description}
+                  </p>
+                </div>
+                {item.href && item.hrefLabel ? (
+                  <Link
+                    href={item.href}
+                    className="text-sm font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
+                  >
+                    {item.hrefLabel}
+                  </Link>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <section className="mt-8">
+        <h2 className="text-sm font-medium">Wallet</h2>
+        <p className="mt-1 text-sm text-[var(--foreground-secondary)] text-pretty">
+          Used to sign in. Counterparties see your name, not this address.
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <code
+            className="min-w-0 flex-1 truncate rounded-[var(--radius-ui)] border border-[var(--line)] bg-[var(--surface)] px-3 py-2 font-mono text-xs"
+            translate="no"
+          >
+            {profile.stellarAddress}
+          </code>
+          <CopyWalletButton address={profile.stellarAddress} />
+        </div>
+        <p className="mt-4 text-sm text-[var(--foreground-tertiary)]">
+          Balances and funding live in{' '}
+          <Link href="/wallet" className="font-medium text-[var(--accent)] hover:underline">
+            Wallet
+          </Link>
+          .
+        </p>
       </section>
-
-      <SoroswapSection />
-
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
-        <SetupChecklist items={setupItems} />
-        <ProfilePanel profile={profile} />
-      </div>
-
-      <p className="text-sm text-[var(--foreground-tertiary)] text-pretty">
-        Profile, payout, and fiat payment methods live in{' '}
-        <Link
-          href="/settings"
-          className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
-        >
-          Settings
-        </Link>
-        .
-      </p>
     </div>
   );
 }

@@ -65,10 +65,9 @@ export function ProfileAvatarField({ profile, onUpdated }: Props) {
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
       <Avatar label={label} src={profile.avatarUrl} size="xl" />
       <div className="min-w-0 flex-1 space-y-2">
-        <p className="text-sm font-medium text-[var(--foreground)]">Profile photo</p>
+        <p className="text-sm text-[var(--foreground)]">Photo</p>
         <p className="text-xs leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-          Shown in the header menu and on your public offers. Square images work best.
-          JPEG, PNG, WebP, or GIF up to 2 MB.
+          Shown next to your name. Square images work best, up to 2 MB.
         </p>
         <div className="flex flex-wrap gap-2">
           <input

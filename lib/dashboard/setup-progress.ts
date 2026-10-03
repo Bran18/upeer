@@ -30,14 +30,6 @@ export function buildSetupItems(profile: MeProfile): SetupItem[] {
 
   if (showBuyer) {
     items.push({
-      id: 'fund-usdc',
-      title: 'Fund USDC for escrow',
-      description: 'Swap testnet XLM to USDC before you trade on the market.',
-      status: 'action',
-      href: '#soroswap',
-      hrefLabel: 'Get USDC',
-    });
-    items.push({
       id: 'market',
       title: 'Start an exchange',
       description: 'Get a quote for the amount you want to buy or sell.',
@@ -50,11 +42,11 @@ export function buildSetupItems(profile: MeProfile): SetupItem[] {
   if (showMerchant) {
     items.push({
       id: 'post-order',
-      title: 'Post an order',
+      title: 'Post an offer',
       description: 'Set your price per USDC and wait for takers.',
       status: profile.payoutAddress ? 'done' : 'action',
       href: profile.payoutAddress ? '/orders/new' : '/settings?tab=payout',
-      hrefLabel: profile.payoutAddress ? 'Post order' : 'Set payout',
+      hrefLabel: profile.payoutAddress ? 'Post offer' : 'Set payout',
     });
     items.push({
       id: 'fiat-payments',
@@ -71,13 +63,13 @@ export function buildSetupItems(profile: MeProfile): SetupItem[] {
 
   items.push({
     id: 'profile',
-    title: 'Profile details',
-    description: profile.displayName
-      ? 'Display name is set. Update anytime in settings.'
-      : 'Add a display name if you sell or want a public label.',
+      title: 'Name',
+      description: profile.displayName
+        ? 'Your public name is set.'
+        : 'Add a name counterparties can recognize.',
     status: profile.displayName ? 'done' : 'action',
     href: '/settings?tab=profile',
-    hrefLabel: 'Edit settings',
+      hrefLabel: 'Edit',
   });
 
   return items;

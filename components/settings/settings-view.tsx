@@ -2,29 +2,42 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { ProfileSettingsForm } from '@/components/settings/profile-settings-form';
 import { PollarRequired } from '@/components/pollar-required';
 import { FiatPaymentSettingsForm } from '@/components/settings/fiat-payment-settings-form';
 import { PayoutSettingsForm } from '@/components/settings/payout-settings-form';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { UPEER_COVERAGE_BLURB } from '@/lib/fiat/coverage';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { onboardingComplete } from '@/lib/profile/types';
 import { cn } from '@/lib/cn';
 
 export const SETTINGS_TABS = [
-  { id: 'profile', label: 'Profile' },
-  { id: 'payout', label: 'USDC payout' },
-  { id: 'fiat', label: 'Fiat payments' },
+  { id: 'profile', label: 'Identity' },
+  { id: 'payout', label: 'Payout' },
+  { id: 'fiat', label: 'Payments' },
 ] as const;
 
 export type SettingsTabId = (typeof SETTINGS_TABS)[number]['id'];
+
+const COPY: Record<
+  SettingsTabId,
+  { title: string; description: string }
+> = {
+  profile: {
+    title: 'Identity',
+    description:
+      'Name, photo, and whether you buy, sell, or both. Counterparties see this — not your wallet.',
+  },
+  payout: {
+    title: 'Payout',
+    description: 'Where USDC should land when you sell.',
+  },
+  fiat: {
+    title: 'Payments',
+    description: 'How you send and receive local currency.',
+  },
+};
 
 function SettingsInner() {
   const searchParams = useSearchParams();
@@ -34,84 +47,43 @@ function SettingsInner() {
     : 'profile';
 
   const { profile, status } = useUpeerSession();
-
   const tabHref = useCallback((id: SettingsTabId) => `/settings?tab=${id}`, []);
-
-  const sectionLabel = useMemo(() => {
-    switch (tab) {
-      case 'profile':
-        return 'Profile';
-      case 'payout':
-        return 'USDC payout';
-      case 'fiat':
-        return 'Fiat payments';
-      default:
-        return 'Settings';
-    }
-  }, [tab]);
 
   if (status === 'syncing') {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Loading settings…</CardTitle>
-          <CardDescription role="status" aria-live="polite">
-            Syncing your account.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <p className="text-sm text-[var(--foreground-secondary)]" role="status" aria-live="polite">
+        Loading your account…
+      </p>
     );
   }
 
   if (!profile) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Sign in required</CardTitle>
-          <CardDescription>
-            Use Pollar in the header, then open settings again.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div>
+        <ScreenHeader
+          title="Identity"
+          description="Sign in to manage how you appear on upeer."
+        />
+      </div>
     );
   }
 
   const onboarded = onboardingComplete(profile);
+  const copy = COPY[tab];
 
   return (
-    <div className="space-y-0">
-      <div className="settings-hero">
-        <div className="relative z-[1] max-w-xl">
-          <p className="settings-hero-kicker">Account</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Preferences
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-            Identity, payout, and payment methods for {UPEER_COVERAGE_BLURB}.
-          </p>
-        </div>
-        <div className="settings-hero-art" aria-hidden>
-          <span className="h-10 w-10 rounded-[0.85rem] bg-[linear-gradient(135deg,var(--accent),var(--ice))] opacity-80" />
-        </div>
-      </div>
+    <div>
+      <ScreenHeader title={copy.title} description={copy.description} />
 
-      <div className="ui-card mt-4 overflow-hidden">
-        <nav
-          className="flex flex-wrap gap-0.5 border-b border-[var(--line)] px-3 pt-2 sm:px-5"
-          aria-label="Settings sections"
-        >
+      <div className="site-header-bar mb-6 inline-flex max-w-full">
+        <nav className="flex min-w-0 items-center" aria-label="Account sections">
           {SETTINGS_TABS.map((item) => {
             const active = tab === item.id;
             return (
               <Link
                 key={item.id}
                 href={tabHref(item.id)}
-                className={cn(
-                  '-mb-px border-b-2 px-4 py-3 text-sm font-medium transition-colors',
-                  active
-                    ? 'border-[var(--accent)] text-[var(--foreground)]'
-                    : 'border-transparent text-[var(--foreground-secondary)] hover:border-[var(--line)] hover:text-[var(--foreground)]',
-                )}
+                className={cn('nav-pill', active && 'nav-pill--active')}
                 aria-current={active ? 'page' : undefined}
               >
                 {item.label}
@@ -119,47 +91,41 @@ function SettingsInner() {
             );
           })}
         </nav>
+      </div>
 
-        <div className="px-5 py-6 sm:px-6">
-        <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--foreground-tertiary)]">
-          {sectionLabel}
-        </p>
-
-        <div className="mt-6">
-          {tab === 'profile' ? <ProfileSettingsForm /> : null}
-          {tab === 'payout' ? (
-            onboarded ? (
-              <PayoutSettingsForm />
-            ) : (
-              <p className="text-sm text-[var(--foreground-secondary)] text-pretty">
-                Complete{' '}
-                <Link href="/onboarding" className="font-medium text-[var(--accent)] hover:underline">
-                  onboarding
-                </Link>{' '}
-                before setting a USDC payout address.
-              </p>
-            )
-          ) : null}
-          {tab === 'fiat' ? (
-            onboarded ? (
-              <FiatPaymentSettingsForm />
-            ) : (
-              <p className="text-sm text-[var(--foreground-secondary)] text-pretty">
-                Complete{' '}
-                <Link href="/onboarding" className="font-medium text-[var(--accent)] hover:underline">
-                  onboarding
-                </Link>{' '}
-                before adding fiat payment methods.
-              </p>
-            )
-          ) : null}
-        </div>
-        </div>
+      <div className="ui-card px-5 py-6 sm:px-6">
+        {tab === 'profile' ? <ProfileSettingsForm /> : null}
+        {tab === 'payout' ? (
+          onboarded ? (
+            <PayoutSettingsForm />
+          ) : (
+            <p className="text-sm text-[var(--foreground-secondary)] text-pretty">
+              Complete{' '}
+              <Link href="/onboarding" className="font-medium text-[var(--accent)] hover:underline">
+                setup
+              </Link>{' '}
+              before setting a payout address.
+            </p>
+          )
+        ) : null}
+        {tab === 'fiat' ? (
+          onboarded ? (
+            <FiatPaymentSettingsForm />
+          ) : (
+            <p className="text-sm text-[var(--foreground-secondary)] text-pretty">
+              Complete{' '}
+              <Link href="/onboarding" className="font-medium text-[var(--accent)] hover:underline">
+                setup
+              </Link>{' '}
+              before adding payment methods.
+            </p>
+          )
+        ) : null}
       </div>
 
       <p className="mt-6 text-sm text-[var(--foreground-tertiary)]">
         <Link href="/account" className="font-medium text-[var(--accent)] hover:underline">
-          ← Back to account
+          ← Account
         </Link>
       </p>
     </div>
