@@ -45,9 +45,9 @@ Visit [http://localhost:3000](http://localhost:3000) and check [http://localhost
 1. **User A** — Sign in → `/orders/new` → set payout address, price, size → post.
 2. **User B** — `/market` → open listing → **Request trade**.
 3. **User A** — Notification → `/orders/[id]` → **Accept** (liquidity locks).
-4. **Funding party** — Deploy + fund escrow (Trustless Work).
-5. **Both** — Mark fiat sent / received (P2P).
-6. **Maker** — Approve milestone & release USDC.
+4. **USDC seller** — Deploy + fund escrow (Trustless Work). On `sell_usdc` listings that is the desk (maker); on `buy_usdc` listings that is the taker.
+5. **Both** — USDC buyer marks fiat sent; USDC seller marks fiat received (P2P).
+6. **USDC seller** — Approve milestone & release USDC to the buyer.
 
 ## Migrations
 

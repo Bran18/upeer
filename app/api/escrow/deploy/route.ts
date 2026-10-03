@@ -6,6 +6,7 @@ import {
   sessionProfileId,
 } from '@/lib/auth/require-session';
 import { getNetworkConfig } from '@/lib/config/network';
+import { p2pLegs } from '@/lib/escrow/p2p-legs';
 import {
   assertEscrowSigner,
   loadOrderEscrowContext,
@@ -58,25 +59,21 @@ export async function POST(req: Request) {
 
     const network = getNetworkConfig();
     const platform = operatorRole('UPEER_PLATFORM_ADDRESS');
-    const makerAddress = ctx.makerPayoutAddress;
-    if (!merchantAddressValid(makerAddress)) {
+    const legs = p2pLegs(ctx);
+    const sellerAddress = legs.usdcSellerAddress;
+    const buyerAddress = legs.usdcBuyerAddress;
+    if (!merchantAddressValid(sellerAddress)) {
       return NextResponse.json(
-        { error: 'Maker has no payout address on file' },
+        { error: 'USDC seller has no Stellar address on file for escrow' },
         { status: 400 },
       );
     }
-
-    const takerAddress = ctx.takerStellarAddress;
-    if (!merchantAddressValid(takerAddress)) {
+    if (!merchantAddressValid(buyerAddress)) {
       return NextResponse.json(
-        { error: 'Taker wallet address missing' },
+        { error: 'USDC buyer wallet address missing' },
         { status: 400 },
       );
     }
-
-    const isSell = ctx.side === 'sell_usdc';
-    const serviceProvider = isSell ? makerAddress! : takerAddress!;
-    const receiver = isSell ? takerAddress! : makerAddress!;
 
     const payload = {
       signer: body.signer,
@@ -84,12 +81,12 @@ export async function POST(req: Request) {
       title: `UPEER P2P ${ctx.engagementId.slice(0, 8)}`,
       description: `USDC escrow (${ctx.side})`,
       roles: {
-        approver: platform,
-        serviceProvider,
+        approver: sellerAddress!,
+        serviceProvider: sellerAddress!,
+        releaseSigner: sellerAddress!,
         platformAddress: platform,
-        releaseSigner: platform,
         disputeResolver: platform,
-        receiver,
+        receiver: buyerAddress!,
       },
       amount: ctx.usdcAmount,
       platformFee: Number(process.env.UPEER_PLATFORM_FEE_BPS ?? '50'),

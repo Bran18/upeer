@@ -5,6 +5,11 @@ import { usePollar } from '@pollar/react';
 import type { OrderDetail } from '@/lib/db/orders';
 import { buyerActionLabel } from '@/lib/market/format';
 import { orderCanBeAccepted } from '@/lib/quotes/ttl';
+import {
+  isUsdcBuyerProfile,
+  isUsdcSellerProfile,
+  p2pLegs,
+} from '@/lib/escrow/p2p-legs';
 import { extractUnsignedXdr } from '@/lib/trustless-work/client';
 import { OrderSummary } from '@/components/orders/order-summary';
 import { PollarRequired } from '@/components/pollar-required';
@@ -101,6 +106,23 @@ function OrderDetailInner({ orderId, initial }: Props) {
 
   const isMaker = Boolean(profileId && order?.maker_profile_id === profileId);
   const isTaker = Boolean(profileId && order?.taker_profile_id === profileId);
+
+  const p2pInput =
+    order && profileId
+      ? {
+          side: order.offer.side,
+          makerProfileId: order.maker_profile_id ?? '',
+          takerProfileId: order.taker_profile_id ?? '',
+          makerPayoutAddress: null,
+          takerStellarAddress: null,
+        }
+      : null;
+  const isUsdcSeller = Boolean(
+    p2pInput && profileId && isUsdcSellerProfile(p2pInput, profileId),
+  );
+  const isUsdcBuyer = Boolean(
+    p2pInput && profileId && isUsdcBuyerProfile(p2pInput, profileId),
+  );
 
   const runAction = async (
     work: () => Promise<void>,
@@ -217,6 +239,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          orderId,
           signer: wallet.address,
           escrowContractId: order.escrow?.tw_contract_id,
         }),
@@ -250,6 +273,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          orderId,
           signer: wallet.address,
           escrowContractId: order.escrow?.tw_contract_id,
         }),
@@ -264,6 +288,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          orderId,
           signer: wallet.address,
           escrowContractId: order.escrow?.tw_contract_id,
         }),
@@ -329,8 +354,19 @@ function OrderDetailInner({ orderId, initial }: Props) {
     order.status === 'reserved' ||
     order.status === 'escrow_pending' ||
     order.status === 'fiat_pending';
-  const showEscrow =
-    order.status === 'reserved' || order.status === 'escrow_pending';
+  const showEscrowSetup =
+    (order.status === 'reserved' || order.status === 'escrow_pending') &&
+    isUsdcSeller;
+  const showEscrowRelease =
+    isUsdcSeller &&
+    Boolean(order.escrow?.tw_contract_id) &&
+    Boolean(order.fiat_confirmation.makerReceivedAt) &&
+    (order.status === 'escrow_pending' || order.status === 'fiat_pending');
+  const showEscrowWaiting =
+    (order.status === 'reserved' ||
+      order.status === 'escrow_pending' ||
+      order.status === 'fiat_pending') &&
+    !isUsdcSeller;
 
   return (
     <div>
@@ -347,7 +383,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
         <section className="ui-card flex flex-col px-5 py-5 sm:px-6 sm:py-6">
           <h2 className="text-base font-semibold tracking-tight">Next Step</h2>
           <p className="mt-1 text-sm text-[var(--foreground-secondary)] text-pretty">
-            {nextStepCopy(order, isMaker, isTaker, canAccept)}
+            {nextStepCopy(order, profileId, isMaker, isTaker, canAccept)}
           </p>
 
           {canAccept ? (
@@ -404,7 +440,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
           {showFiat ? (
             <div className="mt-6 space-y-3">
               <p className="text-sm font-medium">Fiat Confirmation</p>
-              {isTaker ? (
+              {isUsdcBuyer ? (
                 <Button
                   type="button"
                   variant="secondary"
@@ -417,7 +453,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
                     : 'Mark Fiat Sent'}
                 </Button>
               ) : null}
-              {isMaker ? (
+              {isUsdcSeller ? (
                 <Button
                   type="button"
                   variant="secondary"
@@ -435,7 +471,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
             </div>
           ) : null}
 
-          {showEscrow ? (
+          {showEscrowSetup ? (
             <div className="mt-6 flex flex-col gap-3">
               <Button
                 type="button"
@@ -454,17 +490,27 @@ function OrderDetailInner({ orderId, initial }: Props) {
                   Fund Escrow
                 </Button>
               ) : null}
-              {isMaker ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={busy}
-                  onClick={() => approveRelease()}
-                >
-                  Approve &amp; Release
-                </Button>
-              ) : null}
             </div>
+          ) : null}
+
+          {showEscrowRelease ? (
+            <div className="mt-6">
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                disabled={busy}
+                onClick={() => approveRelease()}
+              >
+                Approve &amp; Release USDC
+              </Button>
+            </div>
+          ) : null}
+
+          {showEscrowWaiting ? (
+            <p className="mt-6 text-sm text-[var(--foreground-secondary)] text-pretty">
+              Waiting for the USDC seller to deploy, fund, and release escrow.
+            </p>
           ) : null}
 
           {status ? (
@@ -497,10 +543,25 @@ function OrderDetailInner({ orderId, initial }: Props) {
 
 function nextStepCopy(
   order: OrderDetail,
+  profileId: string | null,
   isMaker: boolean,
   isTaker: boolean,
   canAccept: boolean,
 ): string {
+  const legs =
+    profileId && order.maker_profile_id && order.taker_profile_id
+      ? p2pLegs({
+          side: order.offer.side,
+          makerProfileId: order.maker_profile_id,
+          takerProfileId: order.taker_profile_id,
+          makerPayoutAddress: null,
+          takerStellarAddress: null,
+        })
+      : null;
+  const isSeller =
+    legs && profileId ? legs.usdcSellerProfileId === profileId : false;
+  const isBuyer =
+    legs && profileId ? legs.usdcBuyerProfileId === profileId : false;
   if (canAccept && isMaker) {
     return 'Accept to lock this take on your desk, or decline to release the quote.';
   }
@@ -516,11 +577,17 @@ function nextStepCopy(
   if (order.status === 'cancelled') {
     return 'This take expired. Ask the taker to request the trade again.';
   }
+  if (isBuyer) {
+    return 'Send fiat to your counterparty when ready, then mark it sent. USDC stays in escrow until the seller releases.';
+  }
+  if (isSeller) {
+    return 'Deploy and fund escrow with USDC, confirm when fiat arrives, then approve and release.';
+  }
   if (isTaker) {
-    return 'Send fiat to the desk when you are ready, then mark it sent. Escrow protects the USDC leg.';
+    return 'Complete fiat confirmation and wait for the USDC seller to move escrow forward.';
   }
   if (isMaker) {
-    return 'Confirm when fiat arrives, then deploy, fund, and release escrow.';
+    return 'Complete the next step on your side of this trade.';
   }
   return 'Follow escrow and fiat confirmation until this order is released.';
 }

@@ -6,6 +6,7 @@ import {
 } from '@/lib/auth/require-session';
 import { createNotification } from '@/lib/db/notifications';
 import type { FiatConfirmation } from '@/lib/db/orders';
+import { p2pLegs } from '@/lib/escrow/p2p-legs';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const bodySchema = z.object({
@@ -30,7 +31,18 @@ export async function POST(req: Request, { params }: Params) {
 
   const { data: order, error } = await supabase
     .from('orders')
-    .select('id, maker_profile_id, taker_profile_id, fiat_confirmation, status')
+    .select(
+      `
+      id,
+      maker_profile_id,
+      taker_profile_id,
+      fiat_confirmation,
+      status,
+      quotes!inner (
+        offers!inner ( side )
+      )
+    `,
+    )
     .eq('id', id)
     .single();
 
@@ -38,21 +50,35 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
 
-  const isMaker = order.maker_profile_id === session.profileId;
-  const isTaker = order.taker_profile_id === session.profileId;
-  if (!isMaker && !isTaker) {
+  const makerId = order.maker_profile_id as string;
+  const takerId = order.taker_profile_id as string;
+  const profileId = session.profileId;
+  if (profileId !== makerId && profileId !== takerId) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  if (step === 'fiat_sent' && !isTaker) {
+  const rawQuotes = order.quotes;
+  const quote = (Array.isArray(rawQuotes) ? rawQuotes[0] : rawQuotes) as {
+    offers: { side: string } | { side: string }[];
+  };
+  const offer = Array.isArray(quote.offers) ? quote.offers[0] : quote.offers;
+  const legs = p2pLegs({
+    side: offer.side as 'sell_usdc' | 'buy_usdc',
+    makerProfileId: makerId,
+    takerProfileId: takerId,
+    makerPayoutAddress: null,
+    takerStellarAddress: null,
+  });
+
+  if (step === 'fiat_sent' && profileId !== legs.usdcBuyerProfileId) {
     return NextResponse.json(
-      { error: 'Only the taker can confirm fiat sent' },
+      { error: 'Only the USDC buyer can confirm fiat sent' },
       { status: 403 },
     );
   }
-  if (step === 'fiat_received' && !isMaker) {
+  if (step === 'fiat_received' && profileId !== legs.usdcSellerProfileId) {
     return NextResponse.json(
-      { error: 'Only the maker can confirm fiat received' },
+      { error: 'Only the USDC seller can confirm fiat received' },
       { status: 403 },
     );
   }
@@ -86,7 +112,9 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   const notifyId =
-    step === 'fiat_sent' ? order.maker_profile_id : order.taker_profile_id;
+    step === 'fiat_sent'
+      ? legs.usdcSellerProfileId
+      : legs.usdcBuyerProfileId;
   if (notifyId) {
     await createNotification({
       profileId: notifyId,
@@ -96,7 +124,7 @@ export async function POST(req: Request, { params }: Params) {
       body:
         step === 'fiat_sent'
           ? 'Counterparty marked the fiat leg as sent.'
-          : 'Maker confirmed fiat received.',
+          : 'USDC seller confirmed fiat received.',
       href: `/orders/${id}`,
       metadata: { orderId: id, step },
     });

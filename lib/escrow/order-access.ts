@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/supabase/server';
+import { p2pLegs } from '@/lib/escrow/p2p-legs';
 
 export type OrderEscrowContext = {
   orderId: string;
@@ -83,26 +84,16 @@ export function assertEscrowSigner(
   ctx: OrderEscrowContext,
   profileId: string,
   signerAddress: string,
-  phase: 'deploy' | 'fund' | 'approve' | 'release',
+  _phase: 'deploy' | 'fund' | 'approve' | 'release',
 ): void {
-  const isSell = ctx.side === 'sell_usdc';
-  const makerAddr = ctx.makerPayoutAddress;
-  const takerAddr = ctx.takerStellarAddress;
+  const legs = p2pLegs(ctx);
 
-  if (phase === 'deploy' || phase === 'fund') {
-    const expectedFunders = isSell ? makerAddr : takerAddr;
-    if (expectedFunders && signerAddress !== expectedFunders) {
-      throw new Error('Signer must be the party funding escrow for this order');
-    }
-    if (profileId !== (isSell ? ctx.makerProfileId : ctx.takerProfileId)) {
-      throw new Error('Only the funding party can deploy or fund escrow');
-    }
-    return;
+  if (profileId !== legs.usdcSellerProfileId) {
+    throw new Error('Only the USDC seller can perform escrow operations');
   }
 
-  if (phase === 'approve' || phase === 'release') {
-    if (profileId !== ctx.makerProfileId) {
-      throw new Error('Only the maker can approve fiat confirmation steps');
-    }
+  const expectedSigner = legs.usdcSellerAddress;
+  if (expectedSigner && signerAddress !== expectedSigner) {
+    throw new Error('Signer must be the USDC seller wallet for this order');
   }
 }
