@@ -5,7 +5,7 @@ import { DirectionalTransition } from '@/components/transition/directional-trans
 export default function NewOrderPage() {
   return (
     <DirectionalTransition>
-      <AppPage width="content">
+      <AppPage width="wide">
         <PostOrderForm />
       </AppPage>
     </DirectionalTransition>

@@ -20,9 +20,10 @@ const OPTIONS: { value: PostOrderSide; title: string; description: string }[] = 
 type Props = {
   value: PostOrderSide;
   onChange: (side: PostOrderSide) => void;
+  compact?: boolean;
 };
 
-export function PostOrderSidePills({ value, onChange }: Props) {
+export function PostOrderSidePills({ value, onChange, compact = false }: Props) {
   return (
     <div
       className="grid gap-2 sm:grid-cols-2"
@@ -39,7 +40,7 @@ export function PostOrderSidePills({ value, onChange }: Props) {
             aria-checked={selected}
             onClick={() => onChange(option.value)}
             className={cn(
-              'rounded-[var(--radius-ui)] border px-4 py-3 text-left transition-colors touch-manipulation',
+              'rounded-[var(--radius-ui)] border px-3 py-2.5 text-left transition-colors touch-manipulation sm:px-4 sm:py-3',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]',
               selected
                 ? 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_12%,transparent)]'
@@ -49,9 +50,11 @@ export function PostOrderSidePills({ value, onChange }: Props) {
             <span className="block text-sm font-medium text-[var(--foreground)]">
               {option.title}
             </span>
-            <span className="mt-1 block text-xs leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-              {option.description}
-            </span>
+            {compact ? null : (
+              <span className="mt-1 block text-xs leading-relaxed text-[var(--foreground-secondary)] text-pretty">
+                {option.description}
+              </span>
+            )}
           </button>
         );
       })}
