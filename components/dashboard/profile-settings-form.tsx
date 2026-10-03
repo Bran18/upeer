@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { RolePills } from '@/components/dashboard/role-pills';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/toaster';
 import type { PlatformIntent } from '@/lib/profile/types';
 import { updateMeProfile } from '@/lib/upeer-api';
 
@@ -14,9 +15,9 @@ export function ProfileSettingsForm() {
 
   const [intent, setIntent] = useState<PlatformIntent | null>(null);
   const [displayName, setDisplayName] = useState('');
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     if (status !== 'ready' || !profile) {
@@ -32,17 +33,18 @@ export function ProfileSettingsForm() {
     event.preventDefault();
     if (!intent) {
       setError('Choose how you use UPEER, then save again.');
+      toast.error('Choose a role', 'Pick buyer, seller, or both, then save.');
       return;
     }
     if (needsMerchantName && displayName.trim().length < 2) {
       setError('Add a merchant display name (at least 2 characters).');
       displayNameRef.current?.focus();
+      toast.error('Display name needed', 'Sellers need a name buyers can recognize.');
       return;
     }
 
     setBusy(true);
     setError(null);
-    setSaved(false);
     try {
       await updateMeProfile({
         platformIntent: intent,
@@ -51,13 +53,14 @@ export function ProfileSettingsForm() {
           : displayName.trim() || undefined,
       });
       await refreshProfile();
-      setSaved(true);
+      toast.success('Profile saved', 'Your marketplace role and name are up to date.');
     } catch (err) {
-      setError(
+      const message =
         err instanceof Error
           ? err.message
-          : 'Could not save your profile. Try again.',
-      );
+          : 'Could not save your profile. Try again.';
+      setError(message);
+      toast.error('Could not save', message);
     } finally {
       setBusy(false);
     }
@@ -80,7 +83,6 @@ export function ProfileSettingsForm() {
             onChange={(next) => {
               setIntent(next);
               setError(null);
-              setSaved(false);
             }}
           />
         </div>
@@ -106,7 +108,6 @@ export function ProfileSettingsForm() {
           value={displayName}
           onChange={(e) => {
             setDisplayName(e.target.value);
-            setSaved(false);
           }}
           placeholder="e.g. Andes Liquidity…"
           className="field-input"
@@ -116,12 +117,6 @@ export function ProfileSettingsForm() {
       {error ? (
         <p id={errorId} className="text-sm text-red-800 dark:text-red-200" role="alert">
           {error}
-        </p>
-      ) : null}
-
-      {saved ? (
-        <p className="text-sm text-[var(--foreground-secondary)]" aria-live="polite">
-          Profile saved.
         </p>
       ) : null}
 

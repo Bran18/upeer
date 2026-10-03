@@ -4,6 +4,7 @@ import { PollarProvider } from '@pollar/react';
 import type { ReactNode } from 'react';
 import { OnboardingGate } from '@/components/session/onboarding-gate';
 import { UpeerSessionProvider } from '@/components/session/upeer-session-provider';
+import { ToasterProvider } from '@/components/ui/toaster';
 import { getStellarNetworkClient } from '@/lib/config/network-client';
 
 const publishableKey = process.env.NEXT_PUBLIC_POLLAR_PUBLISHABLE_KEY ?? '';
@@ -23,10 +24,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
   if (!publishableKey) {
     return (
-      <>
+      <ToasterProvider>
         {banner}
         {children}
-      </>
+      </ToasterProvider>
     );
   }
 
@@ -38,9 +39,11 @@ export function AppProviders({ children }: { children: ReactNode }) {
       }}
     >
       <UpeerSessionProvider>
-        <OnboardingGate />
-        {banner}
-        {children}
+        <ToasterProvider>
+          <OnboardingGate />
+          {banner}
+          {children}
+        </ToasterProvider>
       </UpeerSessionProvider>
     </PollarProvider>
   );

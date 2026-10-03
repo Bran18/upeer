@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/toaster';
 import { updateMeProfile } from '@/lib/upeer-api';
 
 const STELLAR_G_REGEX = /^G[ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]{55}$/;
@@ -10,9 +11,9 @@ const STELLAR_G_REGEX = /^G[ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]{55}$/;
 export function PayoutSettingsForm() {
   const { profile, refreshProfile, status } = useUpeerSession();
   const [payoutAddress, setPayoutAddress] = useState('');
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     if (status !== 'ready' || !profile) {
@@ -26,17 +27,20 @@ export function PayoutSettingsForm() {
     const trimmed = payoutAddress.trim();
     if (!STELLAR_G_REGEX.test(trimmed)) {
       setError('Enter a valid Stellar public key (starts with G, 56 characters).');
+      toast.error('Invalid payout address', 'It must start with G and be 56 characters.');
       return;
     }
     setBusy(true);
     setError(null);
-    setSaved(false);
     try {
       await updateMeProfile({ payoutAddress: trimmed });
       await refreshProfile();
-      setSaved(true);
+      toast.success('Payout address saved', 'Escrow can release USDC to this wallet.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save payout address.');
+      const message =
+        err instanceof Error ? err.message : 'Could not save payout address.';
+      setError(message);
+      toast.error('Could not save', message);
     } finally {
       setBusy(false);
     }
@@ -74,7 +78,6 @@ export function PayoutSettingsForm() {
           value={payoutAddress}
           onChange={(e) => {
             setPayoutAddress(e.target.value);
-            setSaved(false);
           }}
           placeholder="G…"
         />
@@ -83,11 +86,6 @@ export function PayoutSettingsForm() {
       {error ? (
         <p className="text-sm text-red-800 dark:text-red-200" role="alert">
           {error}
-        </p>
-      ) : null}
-      {saved ? (
-        <p className="text-sm text-[var(--foreground-secondary)]" aria-live="polite">
-          Payout address saved.
         </p>
       ) : null}
 

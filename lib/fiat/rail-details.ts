@@ -496,3 +496,35 @@ export function sanitizeDetails(
 export function emptyDetails(): PaymentDetails {
   return {};
 }
+
+export function destinationPreview(
+  rail: PaymentRail,
+  details: PaymentDetails,
+): string {
+  switch (rail) {
+    case 'sinpe':
+    case 'nequi':
+    case 'daviplata':
+    case 'yape':
+      return details.phone?.trim() || 'Mobile number missing';
+    case 'mercado_pago':
+      return details.alias?.trim() || 'Alias missing';
+    case 'cvu_cbu':
+      return details.alias?.trim() || details.cbuCvu?.trim() || 'Alias or CBU missing';
+    case 'bank_transfer':
+      return (
+        details.iban?.trim() ||
+        details.accountNumber?.trim() ||
+        details.bankName?.trim() ||
+        'Account details missing'
+      );
+    case 'chile_wallet':
+      return details.rut?.trim() || 'RUT missing';
+    case 'cash':
+      return details.meetingPlace?.trim() || 'Meeting place missing';
+    case 'other':
+      return details.destination?.trim() || 'Destination missing';
+    default:
+      return 'Incomplete';
+  }
+}

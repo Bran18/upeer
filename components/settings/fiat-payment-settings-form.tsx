@@ -2,15 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { IconChevronDown } from '@/components/ui/icons/chevron';
+import { useToast } from '@/components/ui/toaster';
 import { FiatMarketSelect } from '@/components/fiat/fiat-market-select';
 import {
   DEFAULT_FIAT_CURRENCY,
+  formatFiatBadge,
+  PAYMENT_RAIL_OPTIONS,
   railsForCurrency,
   type PaymentRail,
   UPEER_COVERAGE_BLURB,
 } from '@/lib/fiat/coverage';
 import {
+  destinationPreview,
   emptyDetails,
   fieldsForRail,
   sanitizeDetails,
@@ -37,10 +43,26 @@ function ensureRailForCurrency(
   return options[0]?.value ?? 'bank_transfer';
 }
 
+function railLabel(rail: PaymentRail): string {
+  return PAYMENT_RAIL_OPTIONS.find((option) => option.value === rail)?.label ?? rail;
+}
+
+function isIncomplete(method: FiatPaymentMethod): boolean {
+  return Boolean(
+    validateRailDetails(
+      method.rail,
+      method.currency,
+      method.details,
+      method.holderName,
+    ),
+  );
+}
+
 export function FiatPaymentSettingsForm() {
+  const toast = useToast();
   const { profile, refreshProfile, status } = useUpeerSession();
   const [prefs, setPrefs] = useState<PaymentPrefs>(EMPTY_PAYMENT_PREFS);
-  const [saved, setSaved] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -48,7 +70,12 @@ export function FiatPaymentSettingsForm() {
     if (status !== 'ready' || !profile) {
       return;
     }
-    setPrefs(profile.paymentPrefs ?? EMPTY_PAYMENT_PREFS);
+    const next = profile.paymentPrefs ?? EMPTY_PAYMENT_PREFS;
+    setPrefs(next);
+    const preferred =
+      next.methods.find((m) => m.id === next.primaryMethodId) ?? next.methods[0];
+    const incomplete = next.methods.find((m) => isIncomplete(m));
+    setOpenId((incomplete ?? preferred)?.id ?? null);
   }, [status, profile]);
 
   function updateMethod(id: string, patch: Partial<FiatPaymentMethod>) {
@@ -70,7 +97,6 @@ export function FiatPaymentSettingsForm() {
         };
       }),
     }));
-    setSaved(false);
     setError(null);
   }
 
@@ -78,12 +104,9 @@ export function FiatPaymentSettingsForm() {
     setPrefs((prev) => ({
       ...prev,
       methods: prev.methods.map((m) =>
-        m.id === id
-          ? { ...m, details: { ...m.details, [key]: value } }
-          : m,
+        m.id === id ? { ...m, details: { ...m.details, [key]: value } } : m,
       ),
     }));
-    setSaved(false);
     setError(null);
   }
 
@@ -94,7 +117,7 @@ export function FiatPaymentSettingsForm() {
         prev.primaryMethodId === id ? (methods[0]?.id ?? null) : prev.primaryMethodId;
       return { primaryMethodId, methods };
     });
-    setSaved(false);
+    setOpenId((current) => (current === id ? null : current));
   }
 
   function addMethod() {
@@ -103,7 +126,8 @@ export function FiatPaymentSettingsForm() {
       primaryMethodId: prev.primaryMethodId ?? method.id,
       methods: [...prev.methods, method],
     }));
-    setSaved(false);
+    setOpenId(method.id);
+    setError(null);
   }
 
   async function handleSave(event: React.FormEvent) {
@@ -119,21 +143,30 @@ export function FiatPaymentSettingsForm() {
       );
       if (message) {
         setError(message);
+        setOpenId(method.id);
+        toast.error('Could not save', message);
         return;
       }
       methods.push({ ...method, details });
     }
     setBusy(true);
     setError(null);
-    setSaved(false);
     try {
       await updateMeProfile({
         paymentPrefs: { ...prefs, methods },
       });
       await refreshProfile();
-      setSaved(true);
+      toast.success(
+        'Payment methods saved',
+        methods.length === 1
+          ? 'Buyers will see this destination on P2P trades.'
+          : `${methods.length} methods are ready for P2P trades.`,
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save payment methods.');
+      const message =
+        err instanceof Error ? err.message : 'Could not save payment methods.';
+      setError(message);
+      toast.error('Could not save', message);
     } finally {
       setBusy(false);
     }
@@ -165,15 +198,18 @@ export function FiatPaymentSettingsForm() {
           </Button>
         </div>
       ) : (
-        <ul className="mx-auto flex max-w-2xl flex-col gap-4">
+        <ul className="mx-auto flex max-w-2xl flex-col gap-3">
           {prefs.methods.map((method) => (
             <MethodCard
               key={method.id}
               method={method}
+              open={openId === method.id}
               preferred={prefs.primaryMethodId === method.id}
+              onToggle={() =>
+                setOpenId((current) => (current === method.id ? null : method.id))
+              }
               onPrefer={() => {
                 setPrefs((prev) => ({ ...prev, primaryMethodId: method.id }));
-                setSaved(false);
               }}
               onRemove={() => removeMethod(method.id)}
               onChange={(patch) => updateMethod(method.id, patch)}
@@ -184,9 +220,12 @@ export function FiatPaymentSettingsForm() {
       )}
 
       {prefs.methods.length > 0 ? (
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto flex max-w-2xl flex-wrap gap-3">
           <Button type="button" variant="secondary" onClick={addMethod}>
             Add another method
+          </Button>
+          <Button type="submit" disabled={busy} aria-busy={busy}>
+            {busy ? 'Saving…' : 'Save payment methods'}
           </Button>
         </div>
       ) : null}
@@ -196,171 +235,194 @@ export function FiatPaymentSettingsForm() {
           {error}
         </p>
       ) : null}
-      {saved ? (
-        <p
-          className="text-center text-sm text-[var(--foreground-secondary)]"
-          aria-live="polite"
-        >
-          Payment methods saved.
-        </p>
-      ) : null}
-
-      {prefs.methods.length > 0 ? (
-        <div className="mx-auto max-w-lg">
-          <Button type="submit" disabled={busy} fullWidth aria-busy={busy}>
-            {busy ? 'Saving…' : 'Save payment methods'}
-          </Button>
-        </div>
-      ) : null}
     </form>
   );
 }
 
 function MethodCard({
   method,
+  open,
   preferred,
+  onToggle,
   onPrefer,
   onRemove,
   onChange,
   onDetail,
 }: {
   method: FiatPaymentMethod;
+  open: boolean;
   preferred: boolean;
+  onToggle: () => void;
   onPrefer: () => void;
   onRemove: () => void;
   onChange: (patch: Partial<FiatPaymentMethod>) => void;
   onDetail: (key: RailDetailKey, value: string) => void;
 }) {
   const fields = fieldsForRail(method.rail, method.currency);
+  const incomplete = isIncomplete(method);
+  const panelId = `method-panel-${method.id}`;
 
   return (
-    <li className="rounded-[var(--radius-ui)] border border-[var(--line)] bg-[var(--fill)] p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="inline-flex items-center gap-2 text-sm">
-          <input
-            type="radio"
-            name="primaryMethod"
-            checked={preferred}
-            onChange={onPrefer}
-          />
-          <span>Preferred method</span>
-        </label>
+    <li className="overflow-hidden rounded-[var(--radius-ui)] border border-[var(--line)] bg-[var(--fill)]">
+      <div className="flex items-stretch gap-1">
         <button
           type="button"
-          className="text-xs text-red-700 dark:text-red-300"
+          className="flex min-w-0 flex-1 items-start gap-3 px-4 py-3.5 text-left"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={onToggle}
+        >
+          <IconChevronDown
+            open={open}
+            className="mt-0.5 text-[var(--foreground-tertiary)]"
+          />
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium">{railLabel(method.rail)}</span>
+              <Badge variant="muted">{formatFiatBadge(method.currency)}</Badge>
+              {preferred ? <Badge variant="accent">Preferred</Badge> : null}
+              {incomplete ? <Badge variant="muted">Needs details</Badge> : null}
+            </span>
+            <span className="mt-1 block truncate text-sm text-[var(--foreground-secondary)]">
+              {method.holderName.trim() || 'No holder name'} ·{' '}
+              {destinationPreview(method.rail, method.details)}
+            </span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className="shrink-0 px-3 text-xs text-red-700 dark:text-red-300"
           onClick={onRemove}
         >
           Remove
         </button>
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <FiatMarketSelect
-          id={`currency-${method.id}`}
-          value={method.currency}
-          onChange={(currency) => onChange({ currency })}
-          label="Market"
-          hint=""
-        />
-        <div>
-          <label className="field-label" htmlFor={`rail-${method.id}`}>
-            How they pay you
+      {open ? (
+        <div id={panelId} className="border-t border-[var(--line)] px-4 py-4">
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="primaryMethod"
+              checked={preferred}
+              onChange={onPrefer}
+            />
+            <span>Use this as the preferred method</span>
           </label>
-          <select
-            id={`rail-${method.id}`}
-            className="field-input mt-2"
-            value={method.rail}
-            onChange={(e) =>
-              onChange({ rail: e.target.value as PaymentRail })
-            }
-          >
-            {railsForCurrency(method.currency).map((rail) => (
-              <option key={rail.value} value={rail.value}>
-                {rail.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
 
-      <div className="mt-4">
-        <label className="field-label" htmlFor={`holder-${method.id}`}>
-          Account holder name
-        </label>
-        <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">
-          Legal name the payer should see when they confirm the transfer.
-        </p>
-        <input
-          id={`holder-${method.id}`}
-          className="field-input mt-2"
-          maxLength={80}
-          value={method.holderName}
-          onChange={(e) => onChange({ holderName: e.target.value })}
-          placeholder="Name on the account"
-          autoComplete="name"
-        />
-      </div>
-
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        {fields.map((field) => (
-          <div
-            key={field.key}
-            className={field.key === 'meetingPlace' || field.key === 'destination' ? 'sm:col-span-2' : undefined}
-          >
-            <label className="field-label" htmlFor={`${field.key}-${method.id}`}>
-              {field.label}
-            </label>
-            {field.hint ? (
-              <p className="mt-1 text-xs text-[var(--foreground-tertiary)] text-pretty">
-                {field.hint}
-              </p>
-            ) : null}
-            {field.options ? (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <FiatMarketSelect
+              id={`currency-${method.id}`}
+              value={method.currency}
+              onChange={(currency) => onChange({ currency })}
+              label="Market"
+              hint=""
+            />
+            <div>
+              <label className="field-label" htmlFor={`rail-${method.id}`}>
+                How they pay you
+              </label>
               <select
-                id={`${field.key}-${method.id}`}
+                id={`rail-${method.id}`}
                 className="field-input mt-2"
-                value={method.details[field.key] ?? ''}
-                onChange={(e) => onDetail(field.key, e.target.value)}
-                required={field.required}
+                value={method.rail}
+                onChange={(e) =>
+                  onChange({ rail: e.target.value as PaymentRail })
+                }
               >
-                <option value="">Select…</option>
-                {field.options.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {railsForCurrency(method.currency).map((rail) => (
+                  <option key={rail.value} value={rail.value}>
+                    {rail.label}
                   </option>
                 ))}
               </select>
-            ) : (
-              <input
-                id={`${field.key}-${method.id}`}
-                className="field-input mt-2"
-                value={method.details[field.key] ?? ''}
-                onChange={(e) => onDetail(field.key, e.target.value)}
-                placeholder={field.placeholder}
-                inputMode={field.inputMode}
-                maxLength={field.maxLength}
-                autoComplete="off"
-                spellCheck={false}
-                required={field.required}
-              />
-            )}
+            </div>
           </div>
-        ))}
-      </div>
 
-      <div className="mt-4">
-        <label className="field-label" htmlFor={`note-${method.id}`}>
-          Extra note (optional)
-        </label>
-        <textarea
-          id={`note-${method.id}`}
-          className={cn('field-input mt-2 min-h-[4.5rem] resize-y')}
-          maxLength={400}
-          value={method.details.note ?? ''}
-          onChange={(e) => onDetail('note', e.target.value)}
-          placeholder="Reference text, branch, or anything the payer should add."
-        />
-      </div>
+          <div className="mt-4">
+            <label className="field-label" htmlFor={`holder-${method.id}`}>
+              Account holder name
+            </label>
+            <p className="mt-1 text-xs text-[var(--foreground-tertiary)]">
+              Legal name the payer should see when they confirm the transfer.
+            </p>
+            <input
+              id={`holder-${method.id}`}
+              className="field-input mt-2"
+              maxLength={80}
+              value={method.holderName}
+              onChange={(e) => onChange({ holderName: e.target.value })}
+              placeholder="Name on the account"
+              autoComplete="name"
+            />
+          </div>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {fields.map((field) => (
+              <div
+                key={field.key}
+                className={
+                  field.key === 'meetingPlace' || field.key === 'destination'
+                    ? 'sm:col-span-2'
+                    : undefined
+                }
+              >
+                <label className="field-label" htmlFor={`${field.key}-${method.id}`}>
+                  {field.label}
+                </label>
+                {field.hint ? (
+                  <p className="mt-1 text-xs text-[var(--foreground-tertiary)] text-pretty">
+                    {field.hint}
+                  </p>
+                ) : null}
+                {field.options ? (
+                  <select
+                    id={`${field.key}-${method.id}`}
+                    className="field-input mt-2"
+                    value={method.details[field.key] ?? ''}
+                    onChange={(e) => onDetail(field.key, e.target.value)}
+                    required={field.required}
+                  >
+                    <option value="">Select…</option>
+                    {field.options.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    id={`${field.key}-${method.id}`}
+                    className="field-input mt-2"
+                    value={method.details[field.key] ?? ''}
+                    onChange={(e) => onDetail(field.key, e.target.value)}
+                    placeholder={field.placeholder}
+                    inputMode={field.inputMode}
+                    maxLength={field.maxLength}
+                    autoComplete="off"
+                    spellCheck={false}
+                    required={field.required}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4">
+            <label className="field-label" htmlFor={`note-${method.id}`}>
+              Extra note (optional)
+            </label>
+            <textarea
+              id={`note-${method.id}`}
+              className={cn('field-input mt-2 min-h-[4.5rem] resize-y')}
+              maxLength={400}
+              value={method.details.note ?? ''}
+              onChange={(e) => onDetail('note', e.target.value)}
+              placeholder="Reference text, branch, or anything the payer should add."
+            />
+          </div>
+        </div>
+      ) : null}
     </li>
   );
 }
