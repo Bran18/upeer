@@ -48,7 +48,7 @@ export function PostOrderStepNav({ step }: Props) {
                 </span>
                 <span
                   className={cn(
-                    'max-w-full truncate text-center text-[0.7rem] font-medium leading-tight sm:text-left sm:text-xs',
+                    'text-center text-[0.7rem] font-medium leading-tight sm:text-left sm:text-xs',
                     current
                       ? 'text-[var(--foreground)]'
                       : done
@@ -56,8 +56,7 @@ export function PostOrderStepNav({ step }: Props) {
                         : 'text-[var(--foreground-secondary)]',
                   )}
                 >
-                  <span className="sm:hidden">{shortLabel}</span>
-                  <span className="hidden sm:inline">{label}</span>
+                  {shortLabel}
                 </span>
               </div>
               {index < STEPS.length - 1 ? (

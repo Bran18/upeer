@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition, ViewTransition } from 'react';
 import { FiatMarketSelect } from '@/components/fiat/fiat-market-select';
-import {
-  postOrderSizeFieldError,
-  PostOrderSizeFields,
-} from '@/components/orders/post-order-size-fields';
+import { PostOrderSizeFields } from '@/components/orders/post-order-size-fields';
 import { PostOrderPreview } from '@/components/orders/post-order-preview';
+import { PostOrderReviewStep } from '@/components/orders/post-order-review-step';
+import {
+  PostOrderEditFooter,
+  PostOrderReviewFooter,
+} from '@/components/orders/post-order-wizard-footer';
 import {
   PostOrderStepNav,
   type PostOrderStep,
@@ -19,36 +21,24 @@ import {
   type PostOrderSide,
 } from '@/components/orders/post-order-side-pills';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toaster';
 import {
   DEFAULT_FIAT_CURRENCY,
   marketForCurrency,
   UPEER_COVERAGE_BLURB,
 } from '@/lib/fiat/coverage';
-import {
-  formatPricePerUsdc,
-  formatUsdcAmount,
-  orderSideLabel,
-} from '@/lib/market/format';
 import type { MeProfile } from '@/lib/profile/types';
+import {
+  maxUsdcForApi,
+  minUsdcForApi,
+  type PostOrderFormState,
+  validatePostOrderStep,
+} from '@/lib/orders/post-order-wizard';
 import {
   exchangePollarSessionFromClient,
   readStoredSession,
   upeerAuthedFetch,
 } from '@/lib/upeer-api';
-
-const STELLAR_G_REGEX = /^G[ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]{55}$/;
-
-type FormState = {
-  side: PostOrderSide;
-  fiatCurrency: string;
-  pricePerUsdc: string;
-  minUsdc: string;
-  maxUsdc: string;
-  availableUsdc: string;
-  payoutAddress: string;
-};
 
 function hasFiatMethodForCurrency(profile: MeProfile, currency: string): boolean {
   const code = currency.toUpperCase();
@@ -56,6 +46,8 @@ function hasFiatMethodForCurrency(profile: MeProfile, currency: string): boolean
     (method) => method.currency.toUpperCase() === code,
   );
 }
+
+const STELLAR_G_REGEX = /^G[ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]{55}$/;
 
 function PostOrderStepPanel({
   title,
@@ -79,56 +71,6 @@ function PostOrderStepPanel({
   );
 }
 
-function validatePostOrderStep(
-  step: PostOrderStep,
-  form: FormState,
-  payoutReady: boolean,
-  payoutDraft: string,
-): string | null {
-  if (step === 1) {
-    const price = Number(form.pricePerUsdc);
-    if (!Number.isFinite(price) || price <= 0) {
-      return 'Enter a valid price per USDC (greater than zero).';
-    }
-    return null;
-  }
-  if (step === 2) {
-    return postOrderSizeFieldError({
-      availableUsdc: form.availableUsdc,
-      minUsdc: form.minUsdc,
-      maxUsdc: form.maxUsdc,
-    });
-  }
-  if (step === 3) {
-    if (!payoutReady) {
-      return 'Set a valid Stellar payout address (G…, 56 characters).';
-    }
-    if (payoutDraft && !STELLAR_G_REGEX.test(payoutDraft)) {
-      return 'Payout address must be a valid Stellar public key.';
-    }
-    return null;
-  }
-  const price = Number(form.pricePerUsdc);
-  if (!Number.isFinite(price) || price <= 0) {
-    return 'Enter a valid price per USDC (greater than zero).';
-  }
-  const sizeError = postOrderSizeFieldError({
-    availableUsdc: form.availableUsdc,
-    minUsdc: form.minUsdc,
-    maxUsdc: form.maxUsdc,
-  });
-  if (sizeError) {
-    return sizeError;
-  }
-  if (!payoutReady) {
-    return 'Set a valid Stellar payout address (G…, 56 characters).';
-  }
-  if (payoutDraft && !STELLAR_G_REGEX.test(payoutDraft)) {
-    return 'Payout address must be a valid Stellar public key.';
-  }
-  return null;
-}
-
 export function PostOrderView() {
   const router = useRouter();
   const toast = useToast();
@@ -139,8 +81,9 @@ export function PostOrderView() {
   const [formError, setFormError] = useState<string | null>(null);
   const [overridePayout, setOverridePayout] = useState(false);
   const [step, setStep] = useState<PostOrderStep>(1);
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
 
-  const [form, setForm] = useState<FormState>(() => ({
+  const [form, setForm] = useState<PostOrderFormState>(() => ({
     side: 'sell_usdc',
     fiatCurrency: DEFAULT_FIAT_CURRENCY,
     pricePerUsdc:
@@ -160,6 +103,7 @@ export function PostOrderView() {
     : false;
 
   const showPayoutField = !savedPayout || overridePayout;
+  const isReview = step === 4;
 
   const setupAlerts = useMemo(() => {
     const alerts: { id: string; message: string; href: string; label: string }[] = [];
@@ -194,40 +138,53 @@ export function PostOrderView() {
     return session;
   };
 
-  const goToStep = (next: PostOrderStep) => {
+  const goToEditStep = (next: 1 | 2 | 3) => {
     setFormError(null);
+    setReviewConfirmed(false);
     setStep(next);
   };
 
-  const handleContinue = () => {
+  const enterReview = () => {
+    setFormError(null);
+    setReviewConfirmed(false);
+    setStep(4);
+  };
+
+  const handleContinueEdit = () => {
     const validationError = validatePostOrderStep(step, form, payoutReady, payoutDraft);
     if (validationError) {
       setFormError(validationError);
       toast.error('Check this step', validationError);
       return;
     }
-    if (step < 4) {
-      goToStep((step + 1) as PostOrderStep);
-    }
-  };
-
-  const handleBack = () => {
-    if (step > 1) {
-      goToStep((step - 1) as PostOrderStep);
-    }
-  };
-
-  function handleFormSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    if (step < 4) {
-      handleContinue();
+    if (step === 3) {
+      enterReview();
       return;
     }
-    void submitOrder();
+    setFormError(null);
+    setStep((step + 1) as PostOrderStep);
+  };
+
+  const handleBackFromEdit = () => {
+    if (step > 1) {
+      setFormError(null);
+      setStep((step - 1) as PostOrderStep);
+    }
+  };
+
+  const handleBackFromReview = () => {
+    setFormError(null);
+    setReviewConfirmed(false);
+    setStep(3);
+  };
+
+  function handleEditFormSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    handleContinueEdit();
   }
 
   async function submitOrder() {
-    if (step !== 4) {
+    if (!reviewConfirmed || step !== 4) {
       return;
     }
     setFormError(null);
@@ -294,8 +251,11 @@ export function PostOrderView() {
     1: `Set side and price per USDC for ${UPEER_COVERAGE_BLURB}.`,
     2: 'Choose how much USDC is on this listing and the size of each trade.',
     3: 'Set where escrow sends USDC when you sell.',
-    4: 'Review your listing. Nothing goes live until you post.',
+    4: 'Review your listing. Nothing goes live until you confirm and post.',
   };
+
+  const cardClass =
+    'ui-card flex flex-col px-5 py-5 sm:px-6 sm:py-6';
 
   return (
     <div className="space-y-0">
@@ -330,282 +290,211 @@ export function PostOrderView() {
         </ul>
       ) : null}
 
-      <div
-        className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,280px)] lg:items-start"
-      >
-        <form
-          onSubmit={handleFormSubmit}
-          className="ui-card flex flex-col px-5 py-5 sm:px-6 sm:py-6"
-          noValidate
-        >
-          <PostOrderStepNav step={step} />
+      <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,280px)] lg:items-start">
+        {isReview ? (
+          <section className={cardClass}>
+            <PostOrderStepNav step={step} />
+            <div className="mt-5 min-h-0 flex-1">
+              <PostOrderReviewStep
+                form={form}
+                effectivePayout={effectivePayout}
+                onEditStep={goToEditStep}
+              />
+            </div>
+            {formError ? (
+              <p className="mt-4 text-sm text-red-600 dark:text-red-300" role="alert">
+                {formError}
+              </p>
+            ) : null}
+            <PostOrderReviewFooter
+              submitting={submitting}
+              reviewConfirmed={reviewConfirmed}
+              onBack={handleBackFromReview}
+              onConfirmReview={() => setReviewConfirmed(true)}
+              onPost={() => void submitOrder()}
+            />
+          </section>
+        ) : (
+          <form
+            onSubmit={handleEditFormSubmit}
+            className={cardClass}
+            noValidate
+          >
+            <PostOrderStepNav step={step} />
 
-          <div className="mt-5 min-h-0 flex-1">
-            {step === 1 ? (
-              <div className="space-y-5">
+            <div className="mt-5 min-h-0 flex-1">
+              {step === 1 ? (
+                <div className="space-y-5">
+                  <PostOrderStepPanel
+                    title="Trade direction"
+                    description="Sell USDC for fiat, or buy USDC with fiat."
+                  >
+                    <PostOrderSidePills
+                      compact
+                      value={form.side}
+                      onChange={(side) => setForm((f) => ({ ...f, side }))}
+                    />
+                  </PostOrderStepPanel>
+                  <PostOrderStepPanel
+                    title="Pricing & market"
+                    description="Local currency per 1 USDC."
+                  >
+                    <div className="space-y-4">
+                      <FiatMarketSelect
+                        id="post-fiat"
+                        value={form.fiatCurrency}
+                        hint=""
+                        onChange={(currency) => {
+                          const market = marketForCurrency(currency);
+                          setForm((f) => ({
+                            ...f,
+                            fiatCurrency: currency,
+                            pricePerUsdc:
+                              market?.examplePricePerUsdc ?? f.pricePerUsdc,
+                          }));
+                        }}
+                      />
+                      <div>
+                        <label className="field-label" htmlFor="post-price">
+                          Price per 1 USDC ({form.fiatCurrency})
+                        </label>
+                        <input
+                          id="post-price"
+                          name="pricePerUsdc"
+                          type="text"
+                          inputMode="decimal"
+                          autoComplete="off"
+                          spellCheck={false}
+                          className="field-input tabular-nums mt-2"
+                          value={form.pricePerUsdc}
+                          onChange={(e) =>
+                            setForm((f) => ({
+                              ...f,
+                              pricePerUsdc: e.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </PostOrderStepPanel>
+                </div>
+              ) : null}
+
+              {step === 2 ? (
                 <PostOrderStepPanel
-                  title="Trade direction"
-                  description="Sell USDC for fiat, or buy USDC with fiat."
+                  title="How much USDC?"
+                  description="Set the total you want on the market, then the size of each individual trade."
                 >
-                  <PostOrderSidePills
-                    compact
-                    value={form.side}
-                    onChange={(side) => setForm((f) => ({ ...f, side }))}
+                  <PostOrderSizeFields
+                    values={{
+                      availableUsdc: form.availableUsdc,
+                      minUsdc: form.minUsdc,
+                      maxUsdc: form.maxUsdc,
+                    }}
+                    onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
                   />
                 </PostOrderStepPanel>
+              ) : null}
+
+              {step === 3 ? (
                 <PostOrderStepPanel
-                  title="Pricing & market"
-                  description="Local currency per 1 USDC."
+                  title="USDC payout"
+                  description="Escrow releases sold USDC to this Stellar address."
                 >
-                  <div className="space-y-4">
-                    <FiatMarketSelect
-                      id="post-fiat"
-                      value={form.fiatCurrency}
-                      hint=""
-                      onChange={(currency) => {
-                        const market = marketForCurrency(currency);
-                        setForm((f) => ({
-                          ...f,
-                          fiatCurrency: currency,
-                          pricePerUsdc: market?.examplePricePerUsdc ?? f.pricePerUsdc,
-                        }));
-                      }}
-                    />
-                    <div>
-                      <label className="field-label" htmlFor="post-price">
-                        Price per 1 USDC ({form.fiatCurrency})
-                      </label>
-                      <input
-                        id="post-price"
-                        name="pricePerUsdc"
-                        type="text"
-                        inputMode="decimal"
-                        autoComplete="off"
-                        spellCheck={false}
-                        className="field-input tabular-nums mt-2"
-                        value={form.pricePerUsdc}
-                        onChange={(e) =>
-                          setForm((f) => ({ ...f, pricePerUsdc: e.target.value }))
-                        }
-                      />
-                    </div>
-                  </div>
-                </PostOrderStepPanel>
-              </div>
-            ) : null}
-
-            {step === 2 ? (
-              <PostOrderStepPanel
-                title="How much USDC?"
-                description="Set the total you want on the market, then the size of each individual trade."
-              >
-                <PostOrderSizeFields
-                  values={{
-                    availableUsdc: form.availableUsdc,
-                    minUsdc: form.minUsdc,
-                    maxUsdc: form.maxUsdc,
-                  }}
-                  onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
-                />
-              </PostOrderStepPanel>
-            ) : null}
-
-            {step === 3 ? (
-              <PostOrderStepPanel
-                title="USDC payout"
-                description="Escrow releases sold USDC to this Stellar address."
-              >
-                {savedPayout && !showPayoutField ? (
-                  <div className="space-y-2">
-                    <p className="font-mono text-sm text-[var(--foreground)]" translate="no">
-                      {savedPayout}
-                    </p>
-                    <p className="text-xs text-[var(--foreground-tertiary)]">
-                      Saved in{' '}
-                      <Link
-                        href="/settings?tab=payout"
-                        className="text-[var(--accent)] hover:underline"
+                  {savedPayout && !showPayoutField ? (
+                    <div className="space-y-2">
+                      <p
+                        className="font-mono text-sm text-[var(--foreground)]"
+                        translate="no"
                       >
-                        settings
-                      </Link>
-                      .{' '}
-                      <button
-                        type="button"
-                        className="text-[var(--accent)] hover:underline"
-                        onClick={() => {
-                          setOverridePayout(true);
-                          setForm((f) => ({ ...f, payoutAddress: '' }));
-                        }}
-                      >
-                        Use a different address for this order
-                      </button>
-                    </p>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="field-label" htmlFor="post-payout">
-                      Stellar payout address
-                    </label>
-                    <input
-                      id="post-payout"
-                      name="payoutAddress"
-                      type="text"
-                      spellCheck={false}
-                      autoComplete="off"
-                      translate="no"
-                      className="field-input mt-2 font-mono text-sm"
-                      placeholder="G…"
-                      value={form.payoutAddress}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, payoutAddress: e.target.value }))
-                      }
-                    />
-                    {savedPayout ? (
-                      <button
-                        type="button"
-                        className="mt-2 text-xs text-[var(--accent)] hover:underline"
-                        onClick={() => {
-                          setOverridePayout(false);
-                          setForm((f) => ({ ...f, payoutAddress: '' }));
-                        }}
-                      >
-                        Use saved address ({savedPayout.slice(0, 6)}…)
-                      </button>
-                    ) : (
-                      <p className="mt-2 text-xs text-[var(--foreground-tertiary)]">
-                        Or{' '}
+                        {savedPayout}
+                      </p>
+                      <p className="text-xs text-[var(--foreground-tertiary)]">
+                        Saved in{' '}
                         <Link
                           href="/settings?tab=payout"
                           className="text-[var(--accent)] hover:underline"
                         >
-                          save a default in settings
+                          settings
                         </Link>
-                        .
+                        .{' '}
+                        <button
+                          type="button"
+                          className="text-[var(--accent)] hover:underline"
+                          onClick={() => {
+                            setOverridePayout(true);
+                            setForm((f) => ({ ...f, payoutAddress: '' }));
+                          }}
+                        >
+                          Use a different address for this order
+                        </button>
                       </p>
-                    )}
-                  </div>
-                )}
-              </PostOrderStepPanel>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="field-label" htmlFor="post-payout">
+                        Stellar payout address
+                      </label>
+                      <input
+                        id="post-payout"
+                        name="payoutAddress"
+                        type="text"
+                        spellCheck={false}
+                        autoComplete="off"
+                        translate="no"
+                        className="field-input mt-2 font-mono text-sm"
+                        placeholder="G…"
+                        value={form.payoutAddress}
+                        onChange={(e) =>
+                          setForm((f) => ({
+                            ...f,
+                            payoutAddress: e.target.value,
+                          }))
+                        }
+                      />
+                      {savedPayout ? (
+                        <button
+                          type="button"
+                          className="mt-2 text-xs text-[var(--accent)] hover:underline"
+                          onClick={() => {
+                            setOverridePayout(false);
+                            setForm((f) => ({ ...f, payoutAddress: '' }));
+                          }}
+                        >
+                          Use saved address ({savedPayout.slice(0, 6)}…)
+                        </button>
+                      ) : (
+                        <p className="mt-2 text-xs text-[var(--foreground-tertiary)]">
+                          Or{' '}
+                          <Link
+                            href="/settings?tab=payout"
+                            className="text-[var(--accent)] hover:underline"
+                          >
+                            save a default in settings
+                          </Link>
+                          .
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </PostOrderStepPanel>
+              ) : null}
+            </div>
+
+            {formError ? (
+              <p className="mt-4 text-sm text-red-600 dark:text-red-300" role="alert">
+                {formError}
+              </p>
             ) : null}
 
-            {step === 4 ? (
-              <PostOrderStepPanel
-                title="Review listing"
-                description="Check everything below. Use Back to change trade, amount, or payout."
-              >
-                <dl className="space-y-4 text-sm">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <dt className="text-[var(--foreground-tertiary)]">Side</dt>
-                    <dd className="text-right font-medium text-[var(--foreground)]">
-                      {orderSideLabel(form.side)}
-                      <button
-                        type="button"
-                        className="ml-2 text-xs font-medium text-[var(--accent)] hover:underline"
-                        onClick={() => goToStep(1)}
-                      >
-                        Edit
-                      </button>
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <dt className="text-[var(--foreground-tertiary)]">Price</dt>
-                    <dd className="text-right font-medium tabular-nums text-[var(--foreground)]">
-                      {formatPricePerUsdc(form.fiatCurrency, form.pricePerUsdc)}
-                      <button
-                        type="button"
-                        className="ml-2 text-xs font-medium text-[var(--accent)] hover:underline"
-                        onClick={() => goToStep(1)}
-                      >
-                        Edit
-                      </button>
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <dt className="text-[var(--foreground-tertiary)]">Listing size</dt>
-                    <dd className="text-right font-medium tabular-nums text-[var(--foreground)]">
-                      {formatUsdcAmount(form.availableUsdc)} USDC
-                      <button
-                        type="button"
-                        className="ml-2 text-xs font-medium text-[var(--accent)] hover:underline"
-                        onClick={() => goToStep(2)}
-                      >
-                        Edit
-                      </button>
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <dt className="text-[var(--foreground-tertiary)]">Per trade</dt>
-                    <dd className="text-right font-medium tabular-nums text-[var(--foreground)]">
-                      {formatUsdcAmount(form.minUsdc)} – {formatUsdcAmount(form.maxUsdc)} USDC
-                      <button
-                        type="button"
-                        className="ml-2 text-xs font-medium text-[var(--accent)] hover:underline"
-                        onClick={() => goToStep(2)}
-                      >
-                        Edit
-                      </button>
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <dt className="text-[var(--foreground-tertiary)]">Payout</dt>
-                    <dd className="max-w-[min(100%,16rem)] text-right font-mono text-xs text-[var(--foreground)]">
-                      {effectivePayout}
-                      <button
-                        type="button"
-                        className="ml-2 font-sans text-xs font-medium text-[var(--accent)] hover:underline"
-                        onClick={() => goToStep(3)}
-                      >
-                        Edit
-                      </button>
-                    </dd>
-                  </div>
-                </dl>
-              </PostOrderStepPanel>
-            ) : null}
-          </div>
-
-          {formError ? (
-            <p className="mt-4 text-sm text-red-600 dark:text-red-300" role="alert">
-              {formError}
-            </p>
-          ) : null}
-
-          <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-[var(--line)] pt-5">
-            {step > 1 ? (
-              <Button type="button" variant="secondary" onClick={handleBack} disabled={submitting}>
-                Back
-              </Button>
-            ) : (
-              <Link
-                href="/market"
-                className="inline-flex min-h-11 items-center px-1 text-sm font-medium text-[var(--foreground-secondary)] hover:text-[var(--foreground)]"
-              >
-                Cancel
-              </Link>
-            )}
-            {step < 4 ? (
-              <Button
-                key="continue"
-                type="button"
-                onClick={handleContinue}
-                className="ml-auto"
-              >
-                Continue
-              </Button>
-            ) : (
-              <Button
-                key="post"
-                type="button"
-                disabled={submitting}
-                aria-busy={submitting}
-                className="ml-auto"
-                onClick={() => void submitOrder()}
-              >
-                {submitting ? 'Posting…' : 'Post to market'}
-              </Button>
-            )}
-          </div>
-        </form>
+            <PostOrderEditFooter
+              step={step}
+              submitting={submitting}
+              onBack={handleBackFromEdit}
+              onContinue={handleContinueEdit}
+            />
+          </form>
+        )}
 
         <ViewTransition update="auto" default="none">
           <div className="lg:sticky lg:top-24">
@@ -631,17 +520,4 @@ export function PostOrderView() {
       </p>
     </div>
   );
-}
-
-/** API stores decimal strings; keep user-friendly integers when whole. */
-function minUsdcForApi(value: string): string {
-  const n = Number(value);
-  if (!Number.isFinite(n)) {
-    return value;
-  }
-  return n.toFixed(7);
-}
-
-function maxUsdcForApi(value: string): string {
-  return minUsdcForApi(value);
 }
