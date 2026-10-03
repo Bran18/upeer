@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'upeer — Exchange directly',
+    default: 'upeer — A market of people',
     template: '%s · upeer',
   },
   description:

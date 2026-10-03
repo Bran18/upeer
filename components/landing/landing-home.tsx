@@ -12,30 +12,28 @@ export function LandingHome() {
             you + peer
           </p>
           <h1 className="mt-4 text-[clamp(2.25rem,7vw,4.25rem)] font-medium leading-[0.94] tracking-[-0.045em] text-balance">
-            Exchange directly.
-            <br />
-            Without the complexity.
+          Exchange with people.
           </h1>
           <p className="mt-5 max-w-md text-[1.0625rem] leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-            Buy and sell USDC with local currency through verified merchants.
-            Transparent quotes. Protected transfers. No advertisement hunting.
+            Local currency for USDC, or the other way. You match a peer, take a
+            quote, and settle with protection.
           </p>
           <dl className="mt-8 grid gap-4 sm:grid-cols-3">
             <div>
-              <dt className="exchange-kicker">What you have</dt>
-              <dd className="mt-1 text-sm text-[var(--foreground)]">Local currency or USDC</dd>
+              <dt className="exchange-kicker">Peers</dt>
+              <dd className="mt-1 text-sm text-[var(--foreground)]">Around the market</dd>
             </div>
             <div>
-              <dt className="exchange-kicker">What you want</dt>
-              <dd className="mt-1 text-sm text-[var(--foreground)]">The other side</dd>
+              <dt className="exchange-kicker">Match</dt>
+              <dd className="mt-1 text-sm text-[var(--foreground)]">Through the center</dd>
             </div>
             <div>
-              <dt className="exchange-kicker">How much</dt>
-              <dd className="mt-1 text-sm text-[var(--foreground)]">A quote you can take</dd>
+              <dt className="exchange-kicker">Quote</dt>
+              <dd className="mt-1 text-sm text-[var(--foreground)]">Yours to take</dd>
             </div>
           </dl>
           <div className="mt-8">
-            <GlowButton href="/exchange">Start exchanging</GlowButton>
+            <GlowButton href="/exchange">Get a quote</GlowButton>
           </div>
         </div>
       </div>

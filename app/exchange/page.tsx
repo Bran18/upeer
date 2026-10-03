@@ -11,8 +11,8 @@ export default async function ExchangePage() {
     <DirectionalTransition>
       <AppPage width="narrow" className="!pt-10 sm:!pt-14">
         <ScreenHeader
-          title="What do you want to exchange?"
-          description="Tell upeer what you have, what you want, and how much. We match liquidity and return a quote you can execute."
+          title="Get a quote"
+          description="Choose what you want. We match a peer and lock the price."
         />
         <ExchangeWidget offers={offers} />
       </AppPage>
