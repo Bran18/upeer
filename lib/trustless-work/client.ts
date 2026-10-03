@@ -8,7 +8,17 @@ export type TwUnsignedResponse = {
   escrowContractId?: string;
   status?: string;
   message?: string;
+  error?: string;
+  title?: string;
+  detail?: string;
 };
+
+function twErrorMessage(
+  data: TwUnsignedResponse,
+  fallback: string,
+): string {
+  return data.message ?? data.error ?? data.detail ?? data.title ?? fallback;
+}
 
 const SOROBAN_CONTRACT_ID = /^C[A-Z0-9]{55}$/;
 
@@ -161,9 +171,9 @@ export async function twApproveMilestone(
     method: 'POST',
     body: JSON.stringify(body),
   });
-  const data = (await res.json()) as TwUnsignedResponse & { message?: string };
+  const data = (await res.json()) as TwUnsignedResponse;
   if (!res.ok) {
-    throw new Error(data.message ?? `Approve failed (${res.status})`);
+    throw new Error(twErrorMessage(data, `Approve failed (${res.status})`));
   }
   return data;
 }
@@ -175,9 +185,9 @@ export async function twReleaseFunds(
     method: 'POST',
     body: JSON.stringify(body),
   });
-  const data = (await res.json()) as TwUnsignedResponse & { message?: string };
+  const data = (await res.json()) as TwUnsignedResponse;
   if (!res.ok) {
-    throw new Error(data.message ?? `Release failed (${res.status})`);
+    throw new Error(twErrorMessage(data, `Release failed (${res.status})`));
   }
   return data;
 }

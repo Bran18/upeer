@@ -163,6 +163,26 @@ export function parseEscrowOnChainSnapshot(
     row.disputed ?? flags.disputed ?? flags.isDisputed,
   );
 
+  const milestones = row.milestones ?? nested?.milestones;
+  let approved = Boolean(
+    row.approved ?? flags.approved ?? flags.isApproved,
+  );
+  if (Array.isArray(milestones) && milestones.length > 0) {
+    approved =
+      approved ||
+      milestones.every((milestone) => {
+        const ms = asRecord(milestone);
+        if (!ms) {
+          return false;
+        }
+        if (ms.approved === true) {
+          return true;
+        }
+        const status = ms.status;
+        return typeof status === 'string' && status.toLowerCase() === 'approved';
+      });
+  }
+
   return {
     balance,
     amount,
@@ -171,6 +191,7 @@ export function parseEscrowOnChainSnapshot(
       (amount > 0 ? balance >= amount * 0.999 : balance > 0),
     released,
     disputed,
+    approved: approved || undefined,
   };
 }
 

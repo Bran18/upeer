@@ -86,8 +86,29 @@ export async function POST(req: Request, { params }: Params) {
   const confirmation = (order.fiat_confirmation ?? {}) as FiatConfirmation;
   const now = new Date().toISOString();
   if (step === 'fiat_sent') {
+    if (confirmation.takerPaidAt) {
+      return NextResponse.json(
+        { error: 'Fiat sent was already confirmed for this order' },
+        { status: 409 },
+      );
+    }
     confirmation.takerPaidAt = now;
   } else {
+    if (!confirmation.takerPaidAt) {
+      return NextResponse.json(
+        {
+          error:
+            'The USDC buyer must mark fiat sent before you can confirm receipt',
+        },
+        { status: 400 },
+      );
+    }
+    if (confirmation.makerReceivedAt) {
+      return NextResponse.json(
+        { error: 'Fiat received was already confirmed for this order' },
+        { status: 409 },
+      );
+    }
     confirmation.makerReceivedAt = now;
   }
 

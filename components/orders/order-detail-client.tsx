@@ -28,6 +28,7 @@ import {
   extractUnsignedXdr,
 } from '@/lib/trustless-work/client';
 import { OrderSummary } from '@/components/orders/order-summary';
+import { WalletActionProgress } from '@/components/orders/wallet-action-progress';
 import { PollarRequired } from '@/components/pollar-required';
 import { Button } from '@/components/ui/button';
 import {
@@ -69,6 +70,11 @@ function OrderDetailInner({ orderId, initial }: Props) {
   const [status, setStatus] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<'error' | 'info'>('info');
   const [busy, setBusy] = useState(false);
+  const [actionProgress, setActionProgress] = useState<{
+    headline: string;
+    detail: string;
+    walletHint?: boolean;
+  } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [confirmDecline, setConfirmDecline] = useState(false);
   const [deployExplorer, setDeployExplorer] = useState<{
@@ -83,6 +89,18 @@ function OrderDetailInner({ orderId, initial }: Props) {
   );
   const refreshInFlight = useRef(false);
   const stellarNetwork = getStellarNetworkClient();
+
+  useEffect(() => {
+    if (!busy) {
+      return;
+    }
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [busy]);
 
   const ensureSession = useCallback(async () => {
     let session = readStoredSession();
@@ -262,14 +280,28 @@ function OrderDetailInner({ orderId, initial }: Props) {
     p2pInput && profileId && isUsdcBuyerProfile(p2pInput, profileId),
   );
 
+  const reportProgress = (
+    detail: string,
+    headline = 'Working on this trade',
+    walletHint = false,
+  ) => {
+    setActionProgress({ headline, detail, walletHint });
+  };
+
   const runAction = async (
     work: () => Promise<void | string>,
     fallback: string,
+    options?: { headline?: string; initialDetail?: string },
   ) => {
     setBusy(true);
     setStatus(null);
+    setActionProgress({
+      headline: options?.headline ?? 'Working on this trade',
+      detail: options?.initialDetail ?? 'Please wait…',
+    });
     try {
       const syncTxHash = await work();
+      reportProgress('Updating order status…');
       await refreshOrder(
         typeof syncTxHash === 'string'
           ? { syncTxHash, force: true }
@@ -280,6 +312,7 @@ function OrderDetailInner({ orderId, initial }: Props) {
       setStatus(e instanceof Error ? e.message : fallback);
     } finally {
       setBusy(false);
+      setActionProgress(null);
     }
   };
 
@@ -334,8 +367,10 @@ function OrderDetailInner({ orderId, initial }: Props) {
       setStatusTone('error');
       return;
     }
-    void runAction(async () => {
+    void runAction(
+      async () => {
       await ensureSession();
+      reportProgress('Preparing the deploy transaction…', 'Deploy escrow');
       const res = await upeerAuthedFetch('/api/escrow/deploy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -354,8 +389,14 @@ function OrderDetailInner({ orderId, initial }: Props) {
       const contractId =
         extractDeployContractId(data as Record<string, unknown>) ??
         (typeof data.contractId === 'string' ? data.contractId : null);
+      reportProgress(
+        'Sign the deploy transaction in Pollar',
+        'Deploy escrow',
+        true,
+      );
       const outcome = await signAndSubmitTx(xdr);
       if (outcome.status === 'success') {
+        reportProgress('Recording escrow on UPEER…', 'Deploy escrow');
         setStatusTone('info');
         setStatus(
           contractId
@@ -384,7 +425,15 @@ function OrderDetailInner({ orderId, initial }: Props) {
         }
         return outcome.hash;
       }
-    }, 'Could not deploy escrow. Try again.');
+      throw new Error(
+        'message' in outcome && typeof outcome.message === 'string'
+          ? outcome.message
+          : 'Deploy was not completed in your wallet.',
+      );
+    },
+      'Could not deploy escrow. Try again.',
+      { headline: 'Deploy escrow', initialDetail: 'Starting…' },
+    );
   };
 
   const fundEscrow = () => {
@@ -393,8 +442,10 @@ function OrderDetailInner({ orderId, initial }: Props) {
       setStatusTone('error');
       return;
     }
-    void runAction(async () => {
+    void runAction(
+      async () => {
       await ensureSession();
+      reportProgress('Preparing the fund transaction…', 'Fund escrow');
       const res = await upeerAuthedFetch('/api/escrow/fund', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -412,8 +463,10 @@ function OrderDetailInner({ orderId, initial }: Props) {
       if (!xdr) {
         throw new Error('No fund XDR returned. Try again.');
       }
+      reportProgress('Sign the fund transaction in Pollar', 'Fund escrow', true);
       const outcome = await signAndSubmitTx(xdr);
       if (outcome.status === 'success') {
+        reportProgress('Recording fund on UPEER…', 'Fund escrow');
         setStatusTone('info');
         setStatus(
           'Fund submitted. Escrow balance updates after the transaction confirms on-chain.',
@@ -461,7 +514,10 @@ function OrderDetailInner({ orderId, initial }: Props) {
             : 'Fund was not completed in your wallet.',
         );
       }
-    }, 'Could not fund escrow. Try again.');
+    },
+      'Could not fund escrow. Try again.',
+      { headline: 'Fund escrow', initialDetail: 'Starting…' },
+    );
   };
 
   const approveRelease = () => {
@@ -475,31 +531,85 @@ function OrderDetailInner({ orderId, initial }: Props) {
       setStatusTone('error');
       return;
     }
-    void runAction(async () => {
+    void runAction(
+      async () => {
       await ensureSession();
-      const approveRes = await upeerAuthedFetch('/api/escrow/approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const escrowBody = {
+        orderId,
+        signer: wallet.address,
+        escrowContractId: order.escrow?.tw_contract_id,
+      };
+
+      reportProgress('Checking escrow status…', 'Approve & release USDC');
+      const statusBefore = await fetchEscrowStatus(orderId);
+      const milestoneAlreadyApproved = Boolean(statusBefore.snapshot?.approved);
+
+      if (!milestoneAlreadyApproved) {
+        reportProgress(
+          'Preparing milestone approval…',
+          'Approve & release USDC',
+        );
+        const approveRes = await upeerAuthedFetch('/api/escrow/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(escrowBody),
+        });
+        const approveData = await approveRes.json();
+        if (!approveRes.ok) {
+          throw new Error(
+            approveData.error ?? 'Could not approve release. Try again.',
+          );
+        }
+
+        const approveXdr = extractUnsignedXdr(approveData);
+        if (!approveXdr) {
+          throw new Error('No approve transaction returned. Try again.');
+        }
+        reportProgress(
+          'Sign the approval in Pollar (step 1 of 2)',
+          'Approve & release USDC',
+          true,
+        );
+        const approveOutcome = await signAndSubmitTx(approveXdr);
+        if (approveOutcome.status !== 'success') {
+          throw new Error(
+            'message' in approveOutcome &&
+              typeof approveOutcome.message === 'string'
+              ? approveOutcome.message
+              : 'Approve was not completed in your wallet.',
+          );
+        }
+        reportProgress('Recording approval…', 'Approve & release USDC');
+        await upeerAuthedFetch('/api/escrow/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            submittedViaWallet: true,
+            txHash: approveOutcome.hash,
+            signer: wallet.address,
+            orderId,
+            phase: 'approve',
+          }),
+        });
+        await waitForEscrowMilestoneApproved(
           orderId,
-          signer: wallet.address,
-          escrowContractId: order.escrow?.tw_contract_id,
-        }),
-      });
-      const approveData = await approveRes.json();
-      if (!approveRes.ok) {
-        throw new Error(
-          approveData.error ?? 'Could not approve release. Try again.',
+          approveOutcome.hash,
+          (attempt) => {
+            reportProgress(
+              attempt === 0
+                ? 'Waiting for Stellar to confirm approval…'
+                : `Still confirming approval on Stellar (${attempt + 1})…`,
+              'Approve & release USDC',
+            );
+          },
         );
       }
+
+      reportProgress('Preparing USDC release…', 'Approve & release USDC');
       const releaseRes = await upeerAuthedFetch('/api/escrow/release', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId,
-          signer: wallet.address,
-          escrowContractId: order.escrow?.tw_contract_id,
-        }),
+        body: JSON.stringify(escrowBody),
       });
       const releaseData = await releaseRes.json();
       if (!releaseRes.ok) {
@@ -507,16 +617,45 @@ function OrderDetailInner({ orderId, initial }: Props) {
           releaseData.error ?? 'Could not release escrow. Try again.',
         );
       }
-      const xdr =
-        releaseData.unsignedTransaction ??
-        releaseData.xdr ??
-        approveData.unsignedTransaction;
-      if (xdr) {
-        await signAndSubmitTx(xdr);
+
+      const releaseXdr = extractUnsignedXdr(releaseData);
+      if (!releaseXdr) {
+        throw new Error('No release transaction returned. Try again.');
       }
+      reportProgress(
+        'Sign the release in Pollar (step 2 of 2)',
+        'Approve & release USDC',
+        true,
+      );
+      const releaseOutcome = await signAndSubmitTx(releaseXdr);
+      if (releaseOutcome.status !== 'success') {
+        throw new Error(
+          'message' in releaseOutcome && typeof releaseOutcome.message === 'string'
+            ? releaseOutcome.message
+            : 'Release was not completed in your wallet.',
+        );
+      }
+      reportProgress('Finishing release…', 'Approve & release USDC');
+      await upeerAuthedFetch('/api/escrow/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submittedViaWallet: true,
+          txHash: releaseOutcome.hash,
+          signer: wallet.address,
+          orderId,
+          phase: 'release',
+        }),
+      });
       setStatus('Release submitted.');
       setStatusTone('info');
-    }, 'Could not release escrow. Try again.');
+    },
+      'Could not release escrow. Try again.',
+      {
+        headline: 'Approve & release USDC',
+        initialDetail: 'Starting…',
+      },
+    );
   };
 
   if (!isAuthenticated || !verified) {
@@ -606,7 +745,23 @@ function OrderDetailInner({ orderId, initial }: Props) {
           escrowStatusError={escrowStatusError}
         />
 
-        <section className="ui-card flex flex-col px-5 py-5 sm:px-6 sm:py-6">
+        <section className="relative ui-card flex flex-col px-5 py-5 sm:px-6 sm:py-6">
+          {busy && actionProgress ? (
+            <div
+              className="absolute inset-0 z-20 flex items-center justify-center rounded-[inherit] bg-[var(--background)]/75 px-4 backdrop-blur-[2px]"
+              aria-hidden={false}
+            >
+              <WalletActionProgress
+                headline={actionProgress.headline}
+                detail={actionProgress.detail}
+                walletHint={actionProgress.walletHint}
+              />
+            </div>
+          ) : null}
+          <div
+            className={busy ? 'pointer-events-none select-none opacity-40' : undefined}
+            aria-hidden={busy ? true : undefined}
+          >
           <h2 className="text-base font-semibold tracking-tight">Next Step</h2>
           <p className="mt-1 text-sm text-[var(--foreground-secondary)] text-pretty">
             {nextStepCopy(order, profileId, isMaker, isTaker, canAccept)}
@@ -680,19 +835,29 @@ function OrderDetailInner({ orderId, initial }: Props) {
                 </Button>
               ) : null}
               {isUsdcSeller ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  fullWidth
-                  disabled={
-                    busy || Boolean(order.fiat_confirmation.makerReceivedAt)
-                  }
-                  onClick={() => void confirm('fiat_received')}
-                >
-                  {order.fiat_confirmation.makerReceivedAt
-                    ? 'Fiat Marked Received'
-                    : 'Mark Fiat Received'}
-                </Button>
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    fullWidth
+                    disabled={
+                      busy ||
+                      !order.fiat_confirmation.takerPaidAt ||
+                      Boolean(order.fiat_confirmation.makerReceivedAt)
+                    }
+                    onClick={() => void confirm('fiat_received')}
+                  >
+                    {order.fiat_confirmation.makerReceivedAt
+                      ? 'Fiat Marked Received'
+                      : 'Mark Fiat Received'}
+                  </Button>
+                  {!order.fiat_confirmation.takerPaidAt &&
+                  !order.fiat_confirmation.makerReceivedAt ? (
+                    <p className="text-xs text-[var(--foreground-tertiary)] text-pretty">
+                      Available after your counterparty marks fiat sent.
+                    </p>
+                  ) : null}
+                </>
               ) : null}
             </div>
           ) : null}
@@ -820,9 +985,49 @@ function OrderDetailInner({ orderId, initial }: Props) {
               {loadError}
             </p>
           ) : null}
+          </div>
         </section>
       </div>
     </div>
+  );
+}
+
+type EscrowStatusPayload = {
+  snapshot?: { approved?: boolean; released?: boolean } | null;
+};
+
+async function fetchEscrowStatus(
+  orderId: string,
+  txHash?: string,
+): Promise<EscrowStatusPayload> {
+  const params = new URLSearchParams({ orderId });
+  if (txHash) {
+    params.set('txHash', txHash);
+  }
+  const res = await upeerAuthedFetch(`/api/escrow/status?${params}`);
+  return (await res.json()) as EscrowStatusPayload;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForEscrowMilestoneApproved(
+  orderId: string,
+  approveTxHash: string,
+  onPoll?: (attempt: number) => void,
+): Promise<void> {
+  const maxAttempts = 25;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    onPoll?.(attempt);
+    const data = await fetchEscrowStatus(orderId, approveTxHash);
+    if (data.snapshot?.approved || data.snapshot?.released) {
+      return;
+    }
+    await delay(Math.min(1500 + attempt * 250, 4000));
+  }
+  throw new Error(
+    'Milestone approval is still confirming on Stellar. Wait a moment, then try Approve & Release again.',
   );
 }
 
@@ -892,6 +1097,9 @@ function nextStepCopy(
     return 'Send fiat to your counterparty when ready, then mark it sent. USDC stays in escrow until the seller releases.';
   }
   if (isSeller) {
+    if (!order.fiat_confirmation.takerPaidAt) {
+      return 'Deploy and fund escrow with USDC. You can confirm fiat received only after the buyer marks fiat sent.';
+    }
     return 'Deploy and fund escrow with USDC, confirm when fiat arrives, then approve and release.';
   }
   if (isTaker) {

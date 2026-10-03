@@ -42,8 +42,8 @@ export async function POST(req: Request) {
     assertEscrowSigner(ctx, profileId, body.signer, 'release');
 
     const tw = await twReleaseFunds({
-      signer: body.signer,
-      escrowContractId: body.escrowContractId,
+      contractId: body.escrowContractId,
+      releaseSigner: body.signer,
     });
     return NextResponse.json({
       ...tw,
