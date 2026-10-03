@@ -42,7 +42,7 @@ export function OfferCard({ offer, usdcRating, usdcIssuer }: Props) {
       <NavLink
         href={`/trade/${offer.id}`}
         direction="forward"
-        className="mt-4 flex min-h-[44px] w-full items-center justify-center rounded-full bg-[var(--accent)] px-5 text-[0.875rem] font-medium text-[var(--accent-ink)] hover:bg-[var(--accent-hover)] sm:mt-5 sm:inline-flex sm:w-auto"
+        className="mt-4 flex min-h-[44px] w-full items-center justify-center bg-[var(--accent)] px-5 text-[0.75rem] font-medium uppercase tracking-[0.16em] text-[var(--accent-ink)] hover:bg-[var(--accent-hover)] sm:mt-5 sm:inline-flex sm:w-auto"
       >
         Start Trade
       </NavLink>

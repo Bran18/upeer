@@ -10,19 +10,27 @@ export default function OnboardingPage() {
       <AppPage width="narrow">
         <PollarRequired
           fallback={
-            <p className="text-body text-sm">
-              Sign in with Pollar from the header to continue onboarding.
-            </p>
+            <div className="surface-card p-6">
+              <p className="text-headline text-sm">Wallet not configured</p>
+              <p className="text-body mt-2 text-sm text-pretty">
+                Set{' '}
+                <code className="font-mono text-xs" translate="no">
+                  NEXT_PUBLIC_POLLAR_PUBLISHABLE_KEY
+                </code>{' '}
+                to enable Pollar sign-in, then reload this page.
+              </p>
+            </div>
           }
         >
           <PageHeader
-            eyebrow="Welcome"
+            titleId="onboarding-page-title"
+            eyebrow="Setup"
             title="How Will You Use UPEER?"
-            description="One wallet, one profile—pick buyer, merchant, or both and we'll route you to the right tools."
+            description="Pick buyer, merchant, or both, then save your profile. You'll continue on your dashboard to manage verification and settings."
           />
-          <div className="mt-10">
+          <section aria-labelledby="onboarding-page-title">
             <OnboardingFlow />
-          </div>
+          </section>
         </PollarRequired>
       </AppPage>
     </DirectionalTransition>

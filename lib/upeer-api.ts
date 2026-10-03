@@ -171,6 +171,33 @@ export async function completeOnboarding(
   return { profile: data.profile, redirectTo: data.redirectTo };
 }
 
+export type UpdateMeProfileInput = {
+  platformIntent?: PlatformIntent;
+  displayName?: string;
+};
+
+export async function updateMeProfile(
+  input: UpdateMeProfileInput,
+): Promise<MeProfile> {
+  const res = await fetch('/api/me', {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getUpeerAuthHeaders(),
+    },
+    credentials: 'include',
+    body: JSON.stringify(input),
+  });
+  const data = (await res.json()) as { profile?: MeProfile; error?: string };
+  if (!res.ok) {
+    throw new Error(data.error ?? 'Failed to update profile');
+  }
+  if (!data.profile) {
+    throw new Error('Profile missing in response');
+  }
+  return data.profile;
+}
+
 export async function logoutUpeerSession(): Promise<void> {
   await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
   clearStoredSession();

@@ -121,25 +121,91 @@ export async function completeProfileOnboarding(
     const merchantName =
       input.displayName?.trim() ||
       `Merchant ${profileId.slice(0, 8)}`;
-
-    const { error: merchantError } = await supabase.from('merchants').upsert(
-      {
-        profile_id: profileId,
-        display_name: merchantName,
-        status: 'pending',
-        updated_at: now,
-      },
-      { onConflict: 'profile_id' },
-    );
-
-    if (merchantError) {
-      throw new Error(merchantError.message);
-    }
+    await ensureMerchantRow(profileId, merchantName);
   }
 
   const profile = await getMeProfile(profileId);
   if (!profile) {
     throw new Error('Profile not found after onboarding');
+  }
+  return profile;
+}
+
+async function ensureMerchantRow(
+  profileId: string,
+  displayName: string,
+): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  const now = new Date().toISOString();
+  const { error } = await supabase.from('merchants').upsert(
+    {
+      profile_id: profileId,
+      display_name: displayName,
+      status: 'pending',
+      updated_at: now,
+    },
+    { onConflict: 'profile_id' },
+  );
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function updateUserProfile(
+  profileId: string,
+  input: {
+    platformIntent?: PlatformIntent;
+    displayName?: string;
+  },
+): Promise<MeProfile> {
+  const supabase = getSupabaseAdmin();
+  const now = new Date().toISOString();
+  const patch: Record<string, unknown> = { updated_at: now };
+
+  if (input.displayName !== undefined) {
+    const trimmed = input.displayName.trim();
+    if (trimmed.length < 2) {
+      throw new Error('Display name must be at least 2 characters');
+    }
+    patch.display_name = trimmed;
+  }
+
+  if (input.platformIntent !== undefined) {
+    patch.platform_intent = input.platformIntent;
+  }
+
+  if (Object.keys(patch).length === 1) {
+    throw new Error('No profile fields to update');
+  }
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update(patch)
+    .eq('id', profileId);
+
+  if (profileError) {
+    throw new Error(profileError.message);
+  }
+
+  const intent =
+    input.platformIntent ??
+    (await getMeProfile(profileId))?.platformIntent ??
+    null;
+
+  const needsMerchant =
+    intent === 'merchant' || intent === 'both';
+
+  if (needsMerchant) {
+    const name =
+      input.displayName?.trim() ||
+      (await getMeProfile(profileId))?.displayName ||
+      `Merchant ${profileId.slice(0, 8)}`;
+    await ensureMerchantRow(profileId, name);
+  }
+
+  const profile = await getMeProfile(profileId);
+  if (!profile) {
+    throw new Error('Profile not found after update');
   }
   return profile;
 }

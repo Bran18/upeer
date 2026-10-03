@@ -21,15 +21,9 @@ export function onboardingComplete(profile: MeProfile): boolean {
   return profile.onboardingCompletedAt != null && profile.platformIntent != null;
 }
 
-export function defaultPathForIntent(intent: PlatformIntent): string {
-  switch (intent) {
-    case 'buyer':
-      return '/market';
-    case 'merchant':
-      return '/merchant';
-    case 'both':
-      return '/app';
-    default:
-      return '/market';
-  }
+/** Where users land after onboarding or when revisiting setup. */
+export const USER_HOME_PATH = '/dashboard';
+
+export function defaultPathForIntent(_intent: PlatformIntent): string {
+  return USER_HOME_PATH;
 }

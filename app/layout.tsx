@@ -2,8 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import '@pollar/react/styles.css';
 import { AppProviders } from '@/components/providers/app-providers';
-import { SiteHeader } from '@/components/site-header';
-import { SiteFooter } from '@/components/site-footer';
+import { SiteShell } from '@/components/site-shell';
 import './globals.css';
 
 const geistSans = Geist({
@@ -23,10 +22,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fbfbfd' },
-    { media: '(prefers-color-scheme: dark)', color: '#000000' },
-  ],
+  themeColor: '#070b14',
 };
 
 export default function RootLayout({
@@ -38,6 +34,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
+      style={{ colorScheme: 'dark' }}
     >
       <body className="flex min-h-[100dvh] flex-col bg-[var(--background)] text-[var(--foreground)]">
         <a
@@ -48,15 +45,7 @@ export default function RootLayout({
         </a>
         <AppProviders>
           <div className="page-noise pointer-events-none fixed inset-0 z-[1]" aria-hidden />
-          <SiteHeader />
-          <main
-            id="main-content"
-            className="relative z-[2] flex-1 scroll-mt-[72px]"
-            tabIndex={-1}
-          >
-            {children}
-          </main>
-          <SiteFooter />
+          <SiteShell>{children}</SiteShell>
         </AppProviders>
       </body>
     </html>
