@@ -1,35 +1,109 @@
 'use client';
 
+import { useCallback, useMemo } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ViewTransition } from 'react';
+import { MarketEmpty } from '@/components/market/market-empty';
+import { MarketToolbar } from '@/components/market/market-toolbar';
 import { OfferCard } from '@/components/offer-card';
 import type { MarketOffer } from '@/lib/data/offers';
+import {
+  DEFAULT_MARKET_FILTERS,
+  filterAndSortOffers,
+  filtersToSearchParams,
+  parseMarketFilters,
+  type MarketFilters,
+} from '@/lib/market/filters';
 
 type Props = {
   offers: MarketOffer[];
   usdcIssuer: string;
   usdcRating?: number;
+  initialFilters?: MarketFilters;
 };
 
-export function OfferList({ offers, usdcIssuer, usdcRating }: Props) {
+export function OfferList({
+  offers,
+  usdcIssuer,
+  usdcRating,
+  initialFilters,
+}: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const filters = useMemo(() => {
+    if (searchParams.toString()) {
+      return parseMarketFilters(
+        Object.fromEntries(searchParams.entries()),
+      );
+    }
+    return initialFilters ?? DEFAULT_MARKET_FILTERS;
+  }, [searchParams, initialFilters]);
+
+  const fiatOptions = useMemo(
+    () => [...new Set(offers.map((o) => o.fiatCurrency))].sort(),
+    [offers],
+  );
+
+  const visibleOffers = useMemo(
+    () => filterAndSortOffers(offers, filters),
+    [offers, filters],
+  );
+
+  const updateFilters = useCallback(
+    (patch: Partial<MarketFilters>) => {
+      const next = { ...filters, ...patch };
+      const params = filtersToSearchParams(next);
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
+    },
+    [filters, pathname, router],
+  );
+
+  const resetFilters = useCallback(() => {
+    router.replace(pathname, { scroll: false });
+  }, [pathname, router]);
+
   if (offers.length === 0) {
-    return (
-      <p className="text-body mt-10 rounded-[var(--radius-card)] border border-dashed border-[var(--line)] px-6 py-14 text-center">
-        No live offers yet. Check back shortly—or publish one as a merchant.
-      </p>
-    );
+    return <MarketEmpty filtered={false} />;
   }
 
   return (
-    <div className="mt-4 space-y-4">
-      {offers.map((offer) => (
-        <ViewTransition key={offer.id}>
-          <OfferCard
-            offer={offer}
-            usdcIssuer={usdcIssuer}
-            usdcRating={usdcRating}
-          />
-        </ViewTransition>
-      ))}
+    <div className="space-y-6">
+      <MarketToolbar
+        filters={filters}
+        fiatOptions={fiatOptions}
+        resultCount={visibleOffers.length}
+        totalCount={offers.length}
+        onChange={updateFilters}
+      />
+
+      {visibleOffers.length === 0 ? (
+        <MarketEmpty filtered={true} onResetFilters={resetFilters} />
+      ) : (
+        <ul className="grid list-none gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {visibleOffers.map((offer) => (
+            <li key={offer.id}>
+              <ViewTransition>
+                <OfferCard
+                  offer={offer}
+                  usdcIssuer={usdcIssuer}
+                  usdcRating={usdcRating}
+                />
+              </ViewTransition>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className="text-xs leading-relaxed text-[var(--foreground-tertiary)] text-pretty">
+        Testnet only. Quotes use Reflector references plus merchant spread.
+        Escrow is on-chain; fiat settlement happens off-chain with the desk. A
+        milestone approval is not a bank transfer.
+      </p>
     </div>
   );
 }

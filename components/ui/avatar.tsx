@@ -13,13 +13,14 @@ function initialsFromLabel(label: string): string {
 
 type AvatarProps = {
   label: string;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
 };
 
 const SIZE = {
   sm: 'h-8 w-8 text-[0.6875rem]',
   md: 'h-9 w-9 text-xs',
+  lg: 'h-11 w-11 text-sm',
 };
 
 export function Avatar({ label, size = 'md', className }: AvatarProps) {

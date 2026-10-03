@@ -2,8 +2,10 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+import { LandingMarketPanel } from '@/components/landing/landing-market-panel';
 import { SceneSubcopy } from '@/components/landing/scene-subcopy';
 import { NavLink } from '@/components/transition/nav-link';
+import type { MarketSummary } from '@/lib/market/summary';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useScrollSections } from '@/hooks/use-scroll-sections';
@@ -15,11 +17,19 @@ const ExperienceScene = dynamic(
   { ssr: false },
 );
 
-function ScenePanel({ scene }: { scene: LandingScene }) {
+function ScenePanel({
+  scene,
+  marketSummary,
+}: {
+  scene: LandingScene;
+  marketSummary: MarketSummary;
+}) {
+  if (scene.id === 'market') {
+    return <LandingMarketPanel summary={marketSummary} />;
+  }
+
   return (
-    <div
-      className={`xp-copy-col${scene.steps ? ' xp-copy-col--steps' : ''}`}
-    >
+    <div className="xp-copy-col">
       <h1 className={`xp-words xp-words--${scene.align}`}>
         {scene.lines.map((line) => (
           <span key={line}>{line}</span>
@@ -35,7 +45,11 @@ function ScenePanel({ scene }: { scene: LandingScene }) {
   );
 }
 
-export function LandingExperience() {
+type LandingExperienceProps = {
+  marketSummary: MarketSummary;
+};
+
+export function LandingExperience({ marketSummary }: LandingExperienceProps) {
   const reduceMotion = useReducedMotion();
   const compact = !useBreakpoint('(min-width: 768px)');
   const [loaded, setLoaded] = useState(false);
@@ -94,15 +108,21 @@ export function LandingExperience() {
           {LANDING_SCENES.map((item) => (
             <section key={item.id} className="xp-reduced-scene">
               <div className="experience-frame">
-                {item.lines.map((line) => (
-                  <p key={line}>{line}</p>
-                ))}
-                <SceneSubcopy scene={item} />
-                {item.cta ? (
-                  <NavLink href={item.cta.href} className="xp-cta">
-                    {item.cta.label}
-                  </NavLink>
-                ) : null}
+                {item.id === 'market' ? (
+                  <LandingMarketPanel summary={marketSummary} />
+                ) : (
+                  <>
+                    {item.lines.map((line) => (
+                      <p key={line}>{line}</p>
+                    ))}
+                    <SceneSubcopy scene={item} />
+                    {item.cta ? (
+                      <NavLink href={item.cta.href} className="xp-cta">
+                        {item.cta.label}
+                      </NavLink>
+                    ) : null}
+                  </>
+                )}
               </div>
             </section>
           ))}
@@ -141,11 +161,13 @@ export function LandingExperience() {
           <section
             key={scene.id}
             ref={setSectionRef(i)}
-            className={`xp-scroll-section${scene.steps ? ' xp-scroll-section--steps' : ''}`}
-            aria-label={scene.lines.join(' ')}
+            className={`xp-scroll-section${scene.id === 'market' ? ' xp-scroll-section--market' : ''}`}
+            aria-label={
+              scene.id === 'market' ? 'OTC marketplace' : scene.lines.join(' ')
+            }
           >
             <div className="experience-frame">
-              <ScenePanel scene={scene} />
+              <ScenePanel scene={scene} marketSummary={marketSummary} />
             </div>
           </section>
         ))}

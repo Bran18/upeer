@@ -26,28 +26,9 @@ export const LANDING_SCENES: readonly LandingScene[] = [
       'Lock the quote, fund on-chain escrow, settle fiat with the desk.',
   },
   {
-    id: 'steps',
-    lines: ['P2P', 'IN A FEW STEPS'],
+    id: 'market',
+    lines: ['Market'],
     align: 'left',
-    hint: 'Three moves. No mystery wallet in the middle.',
-    steps: [
-      {
-        n: '01',
-        label: 'Quote',
-        body: 'Reflector prices the leg. Your spread is fixed before anyone sends USDC.',
-      },
-      {
-        n: '02',
-        label: 'Escrow',
-        body: 'USDC waits in Trustless Work until the milestone is approved.',
-      },
-      {
-        n: '03',
-        label: 'Settle',
-        body: 'You pay fiat with the desk. On-chain proof is not a bank transfer.',
-      },
-    ],
-    cta: { href: '/market', label: 'Browse the market' },
   },
 ] as const;
 
