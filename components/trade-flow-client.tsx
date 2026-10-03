@@ -14,20 +14,21 @@ import {
 
 type Props = {
   offer: MarketOffer;
+  initialUsdc?: string;
 };
 
-export function TradeFlowClient({ offer }: Props) {
+export function TradeFlowClient({ offer, initialUsdc }: Props) {
   return (
     <PollarRequired>
-      <TradeFlowClientInner offer={offer} />
+      <TradeFlowClientInner offer={offer} initialUsdc={initialUsdc} />
     </PollarRequired>
   );
 }
 
-function TradeFlowClientInner({ offer }: Props) {
+function TradeFlowClientInner({ offer, initialUsdc }: Props) {
   const router = useRouter();
   const { isAuthenticated, verified, getClient } = usePollar();
-  const [usdcAmount, setUsdcAmount] = useState('100.0000000');
+  const [usdcAmount, setUsdcAmount] = useState(initialUsdc ?? '100.0000000');
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -104,13 +105,13 @@ function TradeFlowClientInner({ offer }: Props) {
         disabled={!canTrade || busy}
         onClick={() => void requestTrade()}
       >
-        Request trade
+        Continue
       </button>
       {status ? (
         <p className="text-sm text-muted" role="status">{status}</p>
       ) : null}
       <p className="text-xs text-[var(--foreground-tertiary)]">
-        The maker must accept before escrow. Fiat settles P2P off-chain.
+        The merchant accepts, then USDC is protected until the local transfer is confirmed.
       </p>
     </div>
   );

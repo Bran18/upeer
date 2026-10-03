@@ -7,9 +7,9 @@ export default function OrdersPage() {
     <DirectionalTransition>
       <AppPage width="content">
         <header className="mb-8">
-          <h1 className="text-2xl font-medium tracking-tight">Your trades</h1>
+          <h1 className="text-2xl font-medium tracking-tight">Activity</h1>
           <p className="mt-2 text-sm text-[var(--foreground-secondary)]">
-            Incoming requests and trades you started on the market.
+            Current and previous exchanges.
           </p>
         </header>
         <OrdersListClient />

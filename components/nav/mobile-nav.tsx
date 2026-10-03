@@ -12,6 +12,7 @@ import { useDismissible } from '@/hooks/use-dismissible';
 import { cn } from '@/lib/cn';
 import {
   accountMenuLinks,
+  merchantNavItems,
   navLinksForSession,
   resolveUserIdentity,
 } from '@/lib/nav/user-links';
@@ -67,6 +68,9 @@ export function MobileNav({ overlay = false }: MobileNavProps) {
   const accountLinks = isAuthenticated
     ? accountMenuLinks(session?.profile)
     : [];
+  const merchantLinks = isAuthenticated
+    ? merchantNavItems(session?.profile)
+    : [];
 
   const linkClass = (href: string) => {
     const active = pathname === href || pathname.startsWith(`${href}/`);
@@ -119,8 +123,8 @@ export function MobileNav({ overlay = false }: MobileNavProps) {
               ) : (
                 <>
                   <p className="text-sm font-semibold">Navigate</p>
-                  <p className="text-xs text-[var(--foreground-secondary)] text-pretty">
-                    Buy, sell, and manage your account
+                  <p className="px-3 py-1 text-xs text-[var(--foreground-secondary)] text-pretty">
+                    Exchange, activity, and your account
                   </p>
                 </>
               )}
@@ -136,6 +140,23 @@ export function MobileNav({ overlay = false }: MobileNavProps) {
                   {link.label}
                 </Link>
               ))}
+              {merchantLinks.length > 0 ? (
+                <>
+                  <p className="px-3 pb-1 pt-3 text-[0.6875rem] uppercase tracking-[0.16em] text-[var(--foreground-tertiary)]">
+                    Merchant
+                  </p>
+                  {merchantLinks.map((link) => (
+                    <Link
+                      key={`${link.href}-${link.label}`}
+                      href={link.href}
+                      className={linkClass(link.href)}
+                      onClick={close}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </>
+              ) : null}
             </nav>
             {isAuthenticated ? (
               <div className="border-t border-[var(--line)] p-2">

@@ -16,13 +16,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'UPEER — USDC OTC on Stellar',
+  title: {
+    default: 'upeer — Exchange directly',
+    template: '%s · upeer',
+  },
   description:
-    'Verified merchants, Reflector quotes, Trustless Work escrow. Trade USDC peer to peer on Stellar.',
+    'Buy and sell USDC with local currency through verified merchants. Transparent quotes. Protected transfers.',
 };
 
 export const viewport: Viewport = {
-  themeColor: '#070b14',
+  themeColor: '#0c0f0e',
 };
 
 export default function RootLayout({

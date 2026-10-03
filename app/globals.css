@@ -1,25 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --background-secondary: #111111;
-  --foreground: #f4f4f4;
-  --foreground-secondary: #a3a3a3;
-  --foreground-tertiary: #6e6e6e;
-  --surface: #141414;
-  --surface-elevated: #1a1a1a;
-  --line: rgba(255, 255, 255, 0.12);
-  --fill: rgba(255, 255, 255, 0.06);
-  --accent: #0a84ff;
-  --accent-hover: #409cff;
-  --accent-ink: #ffffff;
-  --accent-muted: rgba(10, 132, 255, 0.18);
-  --radius-card: 0.25rem;
-  --radius-ui: 0.75rem;
-  --radius-button: 0.5rem;
-  --shadow-elevated: none;
+  --background: #0c0f0e;
+  --background-secondary: #111615;
+  --foreground: #eef4f2;
+  --foreground-secondary: #8b9693;
+  --foreground-tertiary: #66716e;
+  --surface: #151a19;
+  --surface-elevated: #1b211f;
+  --line: rgba(232, 247, 242, 0.1);
+  --fill: rgba(232, 247, 242, 0.045);
+  --accent: #2ee6c7;
+  --accent-hover: #5ff0d6;
+  --accent-ink: #06241f;
+  --accent-muted: rgba(46, 230, 199, 0.14);
+  --ice: #c9f4ff;
+  --radius-card: 1.25rem;
+  --radius-ui: 1rem;
+  --radius-button: 0.85rem;
+  --shadow-elevated: 0 18px 50px rgba(0, 0, 0, 0.28);
   --shadow-menu: 0 18px 50px rgba(0, 0, 0, 0.45);
-  --material: rgba(10, 10, 10, 0.72);
+  --material: rgba(12, 15, 14, 0.78);
   color-scheme: dark;
 
   --duration-exit: 280ms;
@@ -36,20 +37,22 @@
 
 @media (prefers-color-scheme: light) {
   :root {
-    --background: #f4f4f4;
-    --background-secondary: #ececec;
-    --foreground: #111111;
-    --foreground-secondary: #5c5c5c;
-    --foreground-tertiary: #8a8a8a;
+    --background: #f3f6f5;
+    --background-secondary: #e7eeeb;
+    --foreground: #121615;
+    --foreground-secondary: #5a6562;
+    --foreground-tertiary: #7b8683;
     --surface: #ffffff;
     --surface-elevated: #ffffff;
-    --line: rgba(0, 0, 0, 0.12);
-    --fill: rgba(0, 0, 0, 0.04);
-    --accent: #0071e3;
-    --accent-hover: #0077ed;
+    --line: rgba(18, 22, 21, 0.1);
+    --fill: rgba(18, 22, 21, 0.04);
+    --accent: #0f9d8a;
+    --accent-hover: #12b49d;
     --accent-ink: #ffffff;
-    --accent-muted: rgba(0, 113, 227, 0.12);
-    --material: rgba(244, 244, 244, 0.78);
+    --accent-muted: rgba(15, 157, 138, 0.12);
+    --ice: #d7f3f8;
+    --material: rgba(243, 246, 245, 0.82);
+    --shadow-elevated: 0 16px 40px rgba(18, 22, 21, 0.06);
     color-scheme: light;
   }
 }
@@ -169,14 +172,10 @@ select {
   gap: 1.5rem;
   overflow: hidden;
   border-radius: var(--radius-ui);
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent) 92%, #003d7a),
-    var(--accent)
-  );
+  border: 1px solid var(--line);
+  background: var(--surface-elevated);
   padding: 1.5rem 1.25rem;
-  color: var(--accent-ink);
+  color: var(--foreground);
 }
 
 @media (min-width: 640px) {
@@ -190,7 +189,8 @@ select {
 .settings-hero-kicker {
   display: inline-block;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--accent-muted);
+  color: var(--accent);
   padding: 0.2rem 0.65rem;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -472,14 +472,9 @@ select {
 .apple-aurora {
   background:
     radial-gradient(
-      ellipse 90% 70% at 70% 20%,
-      rgba(0, 113, 227, 0.14),
+      ellipse 80% 60% at 78% 8%,
+      rgba(46, 230, 199, 0.1),
       transparent 55%
-    ),
-    radial-gradient(
-      ellipse 60% 50% at 20% 80%,
-      rgba(48, 209, 88, 0.08),
-      transparent 50%
     ),
     linear-gradient(180deg, var(--background) 0%, var(--background-secondary) 100%);
 }
@@ -590,11 +585,11 @@ select {
 .hero-liquid {
   background-image: linear-gradient(
     105deg,
-    #0071e3 0%,
-    #64d2ff 32%,
-    #0a84ff 52%,
-    #7dd3fc 78%,
-    #0071e3 100%
+    #14c4a8 0%,
+    #2ee6c7 32%,
+    #c9f4ff 52%,
+    #2ee6c7 78%,
+    #14c4a8 100%
   );
   background-size: 220% 100%;
   -webkit-background-clip: text;
@@ -795,13 +790,13 @@ select {
 }
 
 .offer-tag--buy {
-  background: rgba(139, 92, 246, 0.18);
-  color: rgb(196, 181, 253);
+  background: var(--accent-muted);
+  color: var(--accent);
 }
 
 .offer-tag--sell {
-  background: rgba(245, 158, 11, 0.18);
-  color: rgb(253, 224, 171);
+  background: var(--fill);
+  color: var(--foreground-secondary);
 }
 
 .offer-tag--fiat {
@@ -1550,5 +1545,158 @@ html.experience-lock body {
   .xp-words {
     animation: none;
   }
+}
+
+.exchange-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.exchange-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 1px solid var(--line);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-elevated);
+}
+
+.exchange-card::before {
+  content: '';
+  position: absolute;
+  inset: auto -20% -40% auto;
+  width: 70%;
+  height: 55%;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--accent) 16%, transparent),
+    transparent 70%
+  );
+}
+
+.exchange-sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  padding: 0.45rem;
+  background: var(--fill);
+}
+
+.exchange-side {
+  min-height: 2.75rem;
+  border-radius: 1.15rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--foreground-secondary);
+}
+
+.exchange-side[aria-checked='true'] {
+  background: var(--surface-elevated);
+  color: var(--foreground);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.exchange-legs {
+  position: relative;
+  padding: 0.35rem 0.45rem 0.55rem;
+}
+
+.exchange-leg {
+  position: relative;
+  padding: 1.1rem 1.15rem 1.15rem;
+  border-radius: 1.35rem;
+}
+
+.exchange-leg--pay {
+  background: color-mix(in srgb, var(--background) 55%, var(--surface-elevated));
+}
+
+.exchange-leg--receive {
+  margin-top: 0.85rem;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.exchange-join {
+  position: relative;
+  z-index: 2;
+  height: 0;
+}
+
+.exchange-join-mark {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 2.35rem;
+  height: 2.35rem;
+  transform: translate(-50%, -50%) rotate(-28deg);
+  border-radius: 0.8rem;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--ice) 100%);
+  box-shadow:
+    0 0 0 6px var(--surface-elevated),
+    0 10px 24px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.exchange-join-mark::after {
+  content: '';
+  position: absolute;
+  inset: 0.42rem;
+  border-radius: 0.42rem;
+  background: var(--surface-elevated);
+}
+
+.exchange-kicker {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--foreground-tertiary);
+}
+
+.exchange-amount {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: clamp(1.75rem, 6vw, 2.35rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  color: var(--foreground);
+}
+
+.exchange-amount:focus {
+  outline: none;
+}
+
+.exchange-amount:focus-visible {
+  box-shadow: 0 1px 0 var(--accent);
+}
+
+.exchange-asset {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 0.25rem 0.7rem 0.25rem 0.55rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.exchange-meta {
+  padding: 0 1.15rem 1.15rem;
+}
+
+.exchange-hint {
+  min-height: 1.25rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--foreground-tertiary);
 }
 

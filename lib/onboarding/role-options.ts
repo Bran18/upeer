@@ -12,34 +12,34 @@ export const ONBOARDING_ROLE_OPTIONS: readonly RoleOptionConfig[] = [
   {
     intent: 'buyer',
     title: 'Buy USDC',
-    tag: 'Buyer',
-    description: 'Find verified merchants and lock executable OTC quotes.',
+    tag: 'Buy',
+    description: 'Pay local currency. Receive USDC from a verified merchant.',
     bullets: [
-      'Browse offers in your fiat currency',
-      'Settle the digital leg via Trustless Work escrow',
-      'Track orders from quote to release',
+      'Get a quote without browsing ads',
+      'Pay with a method you already use',
+      'Follow the exchange through to completion',
     ],
   },
   {
     intent: 'merchant',
     title: 'Sell USDC',
-    tag: 'Merchant',
-    description: 'List inventory, set spreads, and serve buyers on UPEER.',
+    tag: 'Sell',
+    description: 'Provide liquidity in your market and receive local currency.',
     bullets: [
-      'Apply for verification (testnet is manual)',
-      'Publish sell-side offers with Reflector references',
-      'Receive USDC leg through escrow milestones',
+      'Post offers at your price',
+      'Get matched automatically',
+      'Keep payouts on an address you control',
     ],
   },
   {
     intent: 'both',
-    title: 'Buy & Sell',
+    title: 'Buy & sell',
     tag: 'Both',
-    description: 'Operate on both sides of the marketplace.',
+    description: 'Use upeer from either side of an exchange.',
     bullets: [
-      'Buyer market plus merchant desk tools',
-      'One wallet and one profile across flows',
-      'Manage everything from your dashboard',
+      'One account for both directions',
+      'Merchant tools stay in Account',
+      'Same quote experience either way',
     ],
   },
 ] as const;
@@ -51,5 +51,5 @@ export function onboardingSubmitLabel(busy: boolean, hasIntent: boolean): string
   if (!hasIntent) {
     return 'Choose a role to save';
   }
-  return 'Save Profile & Go to Dashboard';
+  return 'Save and start exchanging';
 }

@@ -17,7 +17,7 @@ export function QuoteCard({
 }: Props) {
   return (
     <div className="gradient-border-card p-4 sm:p-5">
-      <h3 className="text-sm font-medium text-subtle">Order summary</h3>
+      <h3 className="text-sm font-medium text-subtle">Quote</h3>
       <p className="mt-2 text-xl font-semibold tabular-nums break-words sm:text-2xl">
         {usdcAmount} USDC → {fiatAmount} {fiatCurrency}
       </p>

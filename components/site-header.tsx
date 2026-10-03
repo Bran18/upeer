@@ -29,7 +29,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
             href="/"
             translate="no"
             className="shrink-0 rounded-[var(--radius-ui)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]"
-            aria-label="UPEER home"
+            aria-label="upeer home"
           >
             <SiteLogo priority className="h-8 w-auto sm:h-9" />
           </Link>

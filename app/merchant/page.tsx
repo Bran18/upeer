@@ -9,9 +9,9 @@ export default function MerchantPage() {
     <DirectionalTransition>
       <AppPage width="narrow">
         <PageHeader
-          eyebrow="Supply"
-          title="Merchant Desk"
-          description="Apply for verification, set payout rails, and publish USDC offers. Testnet approval is manual."
+          eyebrow="Merchant"
+          title="Liquidity"
+          description="Offers, payout rails, and how you supply the network. Additional tools stay here — not in the main nav."
         />
         <div className="space-y-10">
           <MerchantApplyForm />

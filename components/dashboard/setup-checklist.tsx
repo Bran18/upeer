@@ -23,7 +23,7 @@ export function SetupChecklist({ items }: { items: SetupItem[] }) {
       <CardHeader>
         <CardTitle>Your checklist</CardTitle>
         <CardDescription>
-          Finish these steps to get the most out of UPEER. Upcoming items will unlock
+          Finish these steps to get the most out of upeer. Upcoming items will unlock
           as integrations go live.
         </CardDescription>
       </CardHeader>

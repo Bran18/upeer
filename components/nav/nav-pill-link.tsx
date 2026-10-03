@@ -8,11 +8,21 @@ type NavPillLinkProps = {
   href: string;
   label: string;
   overlay?: boolean;
+  match?: string[];
 };
 
-export function NavPillLink({ href, label, overlay = false }: NavPillLinkProps) {
+export function NavPillLink({
+  href,
+  label,
+  overlay = false,
+  match,
+}: NavPillLinkProps) {
   const pathname = usePathname();
-  const active = pathname === href || pathname.startsWith(`${href}/`);
+  const prefixes = match ?? [href];
+  const active = prefixes.some(
+    (path) =>
+      pathname === path || (path !== '/' && pathname.startsWith(`${path}/`)),
+  );
 
   return (
     <Link

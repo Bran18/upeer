@@ -31,15 +31,15 @@ export default async function MarketPage({ searchParams }: PageProps) {
     <DirectionalTransition>
       <AppPage width="content" className="!pt-8 sm:!pt-10">
         <header className="mb-8 max-w-2xl">
-          <p className="text-[0.6875rem] font-medium uppercase tracking-[0.28em] text-[var(--foreground-tertiary)]">
-            Open orders
+        <p className="text-[0.6875rem] font-medium uppercase tracking-[0.28em] text-[var(--foreground-tertiary)]">
+            Offers
           </p>
           <h1 className="mt-2 text-[clamp(1.75rem,4vw,2.5rem)] font-medium tracking-[-0.03em] text-balance">
-            Market
+            Open offers
           </h1>
           <p className="mt-3 text-[0.9375rem] leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-            Each row is an order at a set price per USDC. Take one or post your
-            own from the merchant console.
+            Optional. Most people start from Exchange and let upeer match
+            liquidity. Browse here if you want to pick a merchant yourself.
           </p>
         </header>
         <OfferList

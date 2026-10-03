@@ -7,28 +7,23 @@ import { SiteHeader } from '@/components/site-header';
 
 export function SiteShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isLanding = pathname === '/';
+  const isHome = pathname === '/';
 
   useEffect(() => {
-    document.documentElement.classList.toggle('experience-lock', isLanding);
-    return () => document.documentElement.classList.remove('experience-lock');
-  }, [isLanding]);
+    document.documentElement.classList.remove('experience-lock');
+  }, [pathname]);
 
   return (
     <>
-      <SiteHeader overlay={isLanding} />
+      <SiteHeader />
       <main
         id="main-content"
-        className={
-          isLanding
-            ? 'relative z-[2] min-h-[100dvh] scroll-mt-0'
-            : 'relative z-[2] flex-1 scroll-mt-[var(--site-header-height)]'
-        }
+        className="relative z-[2] flex-1 scroll-mt-[var(--site-header-height)]"
         tabIndex={-1}
       >
         {children}
       </main>
-      <SiteFooter landing={isLanding} />
+      <SiteFooter landing={isHome} />
     </>
   );
 }

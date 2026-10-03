@@ -82,18 +82,16 @@ function SettingsInner() {
     <div className="space-y-0">
       <div className="settings-hero">
         <div className="relative z-[1] max-w-xl">
-          <p className="settings-hero-kicker">Configuration</p>
+          <p className="settings-hero-kicker">Account</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Settings
+            Preferences
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-white/85 text-pretty">
-            Your name, photo, USDC payout, and fiat rails for{' '}
-            {UPEER_COVERAGE_BLURB}. Start on the Profile tab to set how you appear
-            in the app.
+          <p className="mt-2 text-sm leading-relaxed text-[var(--foreground-secondary)] text-pretty">
+            Identity, payout, and payment methods for {UPEER_COVERAGE_BLURB}.
           </p>
         </div>
         <div className="settings-hero-art" aria-hidden>
-          <span className="settings-hero-icon">⚙️</span>
+          <span className="h-10 w-10 rounded-[0.85rem] bg-[linear-gradient(135deg,var(--accent),var(--ice))] opacity-80" />
         </div>
       </div>
 
@@ -160,8 +158,8 @@ function SettingsInner() {
       </div>
 
       <p className="mt-6 text-sm text-[var(--foreground-tertiary)]">
-        <Link href="/dashboard" className="font-medium text-[var(--accent)] hover:underline">
-          ← Back to dashboard
+        <Link href="/account" className="font-medium text-[var(--accent)] hover:underline">
+          ← Back to account
         </Link>
       </p>
     </div>

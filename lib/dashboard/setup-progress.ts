@@ -20,7 +20,7 @@ export function buildSetupItems(profile: MeProfile): SetupItem[] {
       id: 'didid',
       title: 'Identity verification (DIDID)',
       description:
-        'KYC and verifiable credentials for OTC compliance. Available soon.',
+        'Identity checks for higher limits. Available soon.',
       status: 'upcoming',
     },
   ];
@@ -39,11 +39,11 @@ export function buildSetupItems(profile: MeProfile): SetupItem[] {
     });
     items.push({
       id: 'market',
-      title: 'Browse open orders',
-      description: 'Find a price you like and request a P2P trade.',
+      title: 'Start an exchange',
+      description: 'Get a quote for the amount you want to buy or sell.',
       status: 'action',
-      href: '/market',
-      hrefLabel: 'Open market',
+      href: '/exchange',
+      hrefLabel: 'Start exchange',
     });
   }
 
@@ -99,27 +99,27 @@ export function primaryCtaForIntent(intent: PlatformIntent): {
   switch (intent) {
     case 'buyer':
       return {
-        href: '/market',
-        label: 'Browse market',
-        description: 'Find a desk and lock a quote.',
+        href: '/exchange',
+        label: 'Start exchange',
+        description: 'Say what you have, what you want, and how much.',
       };
     case 'merchant':
       return {
         href: '/orders/new',
-        label: 'Post order',
+        label: 'Post an offer',
         description: 'List USDC at your price.',
       };
     case 'both':
       return {
-        href: '/orders',
-        label: 'Your trades',
-        description: 'Manage incoming requests and active escrows.',
+        href: '/exchange',
+        label: 'Start exchange',
+        description: 'Buy or sell from the same quote.',
       };
     default:
       return {
-        href: '/market',
-        label: 'Browse market',
-        description: 'Start with live OTC offers.',
+        href: '/exchange',
+        label: 'Start exchange',
+        description: 'Begin with a transparent quote.',
       };
   }
 }

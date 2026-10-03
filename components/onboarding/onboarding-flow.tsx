@@ -73,7 +73,7 @@ export function OnboardingFlow() {
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!intent) {
-      setError('Choose how you want to use UPEER, then try again.');
+      setError('Choose how you want to use upeer, then try again.');
       roleGroupRef.current?.focus();
       return;
     }
@@ -116,7 +116,7 @@ export function OnboardingFlow() {
         <CardHeader>
           <CardTitle>Connecting your wallet…</CardTitle>
           <CardDescription>
-            Linking your Pollar session to UPEER. This usually takes a few seconds.
+            Linking your Pollar session to upeer. This usually takes a few seconds.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -145,7 +145,7 @@ export function OnboardingFlow() {
             Connection failed
           </CardTitle>
           <CardDescription>
-            We could not link your wallet to UPEER. Retry the connection, or sign
+            We could not link your wallet to upeer. Retry the connection, or sign
             out and sign in again.
           </CardDescription>
         </CardHeader>
@@ -183,7 +183,7 @@ export function OnboardingFlow() {
 
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         <fieldset className="m-0 border-0 p-0">
-          <legend className="sr-only">How you will use UPEER</legend>
+          <legend className="sr-only">How you will use upeer</legend>
           <p className="text-[0.6875rem] font-medium uppercase tracking-[0.22em] text-[var(--foreground-tertiary)]">
             Step 1 — Choose your role
           </p>

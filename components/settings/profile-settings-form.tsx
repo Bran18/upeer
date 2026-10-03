@@ -41,7 +41,7 @@ export function ProfileSettingsForm() {
     const trimmed = displayName.trim();
 
     if (onboarded && !intent) {
-      setError('Choose how you use UPEER, then save again.');
+      setError('Choose how you use upeer, then save again.');
       toast.error('Choose a role', 'Pick buyer, seller, or both, then save.');
       return;
     }

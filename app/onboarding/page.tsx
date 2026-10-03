@@ -25,8 +25,8 @@ export default function OnboardingPage() {
           <PageHeader
             titleId="onboarding-page-title"
             eyebrow="Setup"
-            title="How Will You Use UPEER?"
-            description="Pick buyer, merchant, or both, then save your profile. You'll continue on your dashboard to manage verification and settings."
+            title="How will you use upeer?"
+            description="Buy, sell, or both. Then start an exchange — upeer handles matching, quotes, and protection."
           />
           <section aria-labelledby="onboarding-page-title">
             <OnboardingFlow />

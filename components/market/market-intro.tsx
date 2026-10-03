@@ -45,8 +45,9 @@ export function MarketIntro({ summary, className }: Props) {
           Trade USDC peer to peer
         </h2>
         <p className="mt-5 max-w-xl text-[1.0625rem] leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-          Create orders at your price or take someone else&apos;s. P2P USDC↔
-          local fiat in {UPEER_COVERAGE_BLURB}, with on-chain escrow on Stellar.
+          Create orders at your price or take someone else&apos;s. USDC and
+          local currency in {UPEER_COVERAGE_BLURB}, with protection on every
+          transfer.
         </p>
       </div>
 

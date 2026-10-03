@@ -45,7 +45,7 @@ export function OnboardingGate() {
         role="status"
         aria-live="polite"
       >
-        Connecting your Pollar wallet to UPEER…
+        Connecting your Pollar wallet to upeer…
       </div>
     );
   }

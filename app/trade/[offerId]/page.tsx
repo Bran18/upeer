@@ -6,24 +6,30 @@ import { NavLink } from '@/components/transition/nav-link';
 import { AppPage } from '@/components/ui/app-page';
 import { getOfferById } from '@/lib/data/offers';
 
-type Props = { params: Promise<{ offerId: string }> };
+type Props = {
+  params: Promise<{ offerId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-export default async function TradePage({ params }: Props) {
-  const { offerId } = await params;
+export default async function TradePage({ params, searchParams }: Props) {
+  const [{ offerId }, query] = await Promise.all([params, searchParams]);
   const offer = await getOfferById(offerId);
   if (!offer) {
     notFound();
   }
 
+  const usdcRaw = query.usdc;
+  const initialUsdc = typeof usdcRaw === 'string' ? usdcRaw : undefined;
+
   return (
     <DirectionalTransition>
       <AppPage width="narrow">
         <NavLink
-          href="/market"
+          href="/exchange"
           direction="back"
           className="text-sm font-medium text-[var(--accent)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
         >
-          ← Back to Market
+          ← Back to Exchange
         </NavLink>
         <ViewTransition
           name={`merchant-${offer.id}`}
@@ -31,16 +37,14 @@ export default async function TradePage({ params }: Props) {
           default="none"
         >
           <h1 className="text-title-2 mt-6 text-balance">
-            Trade with {offer.merchantName}
+            Confirm your exchange
           </h1>
         </ViewTransition>
         <p className="text-body mt-3 text-[0.9375rem] text-pretty">
-          {offer.side === 'sell_usdc'
-            ? 'Sell order — you buy USDC at their listed price and pay fiat P2P.'
-            : 'Buy order — you sell USDC at their listed price and receive fiat P2P.'}
+          Matched with {offer.merchantName}. Review the quote, then continue.
         </p>
         <div className="panel-card mt-8 sm:mt-10">
-          <TradeFlowClient offer={offer} />
+          <TradeFlowClient offer={offer} initialUsdc={initialUsdc} />
         </div>
       </AppPage>
     </DirectionalTransition>

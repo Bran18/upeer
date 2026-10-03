@@ -17,6 +17,8 @@ export function navLinksForSession(
   return headerNavItems(isAuthenticated, isOnboarded);
 }
 
+export { merchantNavItems } from '@/lib/nav/site-nav';
+
 export function accountMenuLinks(profile: MeProfile | null | undefined): NavLinkItem[] {
   return accountMenuItems(profile);
 }

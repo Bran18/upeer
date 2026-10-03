@@ -37,7 +37,7 @@ export function ProfilePanel({ profile }: { profile: MeProfile }) {
     <Card className="h-fit lg:sticky lg:top-[calc(var(--site-header-height)+1rem)]">
       <CardHeader>
         <CardTitle>Account</CardTitle>
-        <CardDescription>Wallet and profile on UPEER.</CardDescription>
+        <CardDescription>Wallet and profile on upeer.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5 pt-0">
         <div>

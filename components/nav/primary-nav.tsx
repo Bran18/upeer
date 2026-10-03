@@ -36,6 +36,7 @@ export function PrimaryNav({ overlay = false, className = '' }: PrimaryNavProps)
           href={link.href}
           label={link.label}
           overlay={overlay}
+          match={link.match}
         />
       ))}
     </nav>

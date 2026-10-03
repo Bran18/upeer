@@ -5,26 +5,17 @@ import { footerLinks } from '@/lib/nav/user-links';
 
 const LINKS = footerLinks();
 
-const STACK = [
-  { name: 'Pollar', role: 'Login & wallet' },
-  { name: 'Reflector', role: 'FX reference' },
-  { name: 'Trustless Work', role: 'Escrow' },
-  { name: 'Soroswap', role: 'Optional swap' },
-] as const;
-
 export function SiteFooter({ landing = false }: { landing?: boolean }) {
-  const muted = landing ? 'text-white/70' : 'text-[var(--foreground-secondary)]';
-  const faint = landing ? 'text-white/45' : 'text-[var(--foreground-tertiary)]';
-  const linkHover = landing ? 'hover:text-white' : 'hover:text-[var(--foreground)]';
+  const muted = landing
+    ? 'text-[var(--foreground-secondary)]'
+    : 'text-[var(--foreground-secondary)]';
+  const faint = 'text-[var(--foreground-tertiary)]';
+  const linkHover = 'hover:text-[var(--foreground)]';
 
   return (
     <footer
       id="site-footer"
-      className={`relative z-[2] border-t pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-10 sm:pt-12 ${
-        landing
-          ? 'border-white/10 bg-[#070b14] text-[#f4f4f4]'
-          : 'border-[var(--line)]'
-      }`}
+      className="relative z-[2] border-t border-[var(--line)] pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-10 sm:pt-12"
     >
       <div className="page-shell grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
         <div className="sm:col-span-2 lg:col-span-1">
@@ -32,17 +23,18 @@ export function SiteFooter({ landing = false }: { landing?: boolean }) {
             href="/"
             translate="no"
             className="inline-block rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]"
-            aria-label="UPEER home"
+            aria-label="upeer home"
           >
-            <SiteLogo className="h-10 w-auto" />
+            <SiteLogo className="h-auto" markClassName="h-8 w-8" />
           </Link>
           <p className={`mt-4 max-w-sm text-sm leading-relaxed ${muted}`}>
-            USDC OTC on Stellar. Quotes you can lock. Escrow you can verify.
+            A P2P liquidity network. Exchange local currency and USDC without
+            building the complexity yourself.
           </p>
         </div>
         <div>
           <p className={`text-[0.6875rem] uppercase tracking-[0.22em] ${faint}`}>
-            Go
+            Product
           </p>
           <ul className="mt-4 space-y-2">
             {LINKS.map((link) => (
@@ -60,26 +52,16 @@ export function SiteFooter({ landing = false }: { landing?: boolean }) {
         </div>
         <div>
           <p className={`text-[0.6875rem] uppercase tracking-[0.22em] ${faint}`}>
-            Stack
+            Developers
           </p>
-          <ul className="mt-4 space-y-2">
-            {STACK.map((item) => (
-              <li
-                key={item.name}
-                className="flex flex-col gap-0.5 text-sm sm:flex-row sm:justify-between sm:gap-4"
-                translate="no"
-              >
-                <span>{item.name}</span>
-                <span className={`${faint} sm:text-right`}>
-                  {item.role}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <p className={`mt-4 max-w-xs text-sm leading-relaxed ${muted}`}>
+            APIs and SDKs for wallets and fintechs are coming. The merchant
+            network stays with upeer.
+          </p>
         </div>
       </div>
       <p className={`page-shell mt-10 text-[0.75rem] sm:mt-12 ${faint}`}>
-        Testnet only. Fiat settles off-chain. A declaration is not a payment.
+        Testnet. Fiat settles between you and a verified merchant.
       </p>
     </footer>
   );

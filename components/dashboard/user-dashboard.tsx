@@ -42,7 +42,7 @@ function UserDashboardInner() {
         <CardHeader>
           <CardTitle>Finish account setup</CardTitle>
           <CardDescription>
-            Choose how you trade on UPEER so we can personalize your dashboard.
+            Choose how you use upeer so we can personalize the next steps.
           </CardDescription>
         </CardHeader>
         <CardFooter>
@@ -66,9 +66,9 @@ function UserDashboardInner() {
   const showBuyer = intent === 'buyer' || intent === 'both';
   const showMerchant = intent === 'merchant' || intent === 'both';
   const secondary = showMerchant
-    ? { href: '/merchant', label: 'Merchant desk' }
+    ? { href: '/merchant', label: 'Liquidity' }
     : showBuyer
-      ? { href: '/market', label: 'OTC market' }
+      ? { href: '/exchange', label: 'Exchange' }
       : null;
 
   return (
@@ -97,7 +97,7 @@ function UserDashboardInner() {
             <p className="mt-1 text-xs text-[var(--foreground-secondary)] text-pretty">
               {secondary.href === '/merchant'
                 ? 'Offers, spreads, and settlement.'
-                : 'Live desk quotes and escrow flow.'}
+                : 'Get a quote and complete an exchange.'}
             </p>
             <span className="mt-3 text-xs font-medium text-[var(--accent)] group-hover:text-[var(--accent-hover)]">
               Open →
