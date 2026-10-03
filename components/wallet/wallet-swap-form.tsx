@@ -1,21 +1,24 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SwapProvider, SwapQuote, SwapVenue } from '@pollar/core';
 import { usePollar } from '@pollar/react';
+import { WalletAssetIcon } from '@/components/wallet/wallet-asset-icon';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toaster';
 import {
   assetRefId,
   assetRefLabel,
-  balanceRowToAssetRef,
   NATIVE_XLM,
   swapTokenToAssetRef,
   type SwapAssetRef,
 } from '@/lib/pollar/swap-assets';
+
 type SellOption = {
   id: string;
   label: string;
+  shortLabel?: string;
   available: string | null;
   asset: SwapAssetRef;
 };
@@ -23,6 +26,7 @@ type SellOption = {
 type BuyOption = {
   id: string;
   label: string;
+  shortLabel?: string;
   asset: SwapAssetRef;
 };
 
@@ -30,10 +34,11 @@ type Props = {
   sellOptions: SellOption[];
   balanceAssetIds: Set<string>;
   onSwapped: () => void;
+  layout?: 'default' | 'dashboard';
 };
 
 const ROUTE_LABELS: Record<SwapProvider, string> = {
-  auto: 'Auto (best price)',
+  auto: 'Auto',
   aquarius: 'Aquarius',
   soroswap: 'Soroswap',
   sdex: 'Stellar DEX',
@@ -43,10 +48,18 @@ function formatVenue(venue: SwapVenue): string {
   return ROUTE_LABELS[venue] ?? venue;
 }
 
+function assetCode(label: string | undefined, asset: SwapAssetRef): string {
+  if (label) {
+    return label;
+  }
+  return assetRefLabel(asset);
+}
+
 export function WalletSwapForm({
   sellOptions,
   balanceAssetIds,
   onSwapped,
+  layout = 'default',
 }: Props) {
   const {
     verified,
@@ -136,6 +149,7 @@ export function WalletSwapForm({
           return {
             id: assetRefId(asset),
             label: name,
+            shortLabel: t.code,
             asset,
           };
         });
@@ -145,6 +159,7 @@ export function WalletSwapForm({
           options.push({
             id: 'native',
             label: 'XLM (native)',
+            shortLabel: 'XLM',
             asset: NATIVE_XLM,
           });
         }
@@ -165,7 +180,9 @@ export function WalletSwapForm({
       })
       .catch(() => {
         if (!cancelled) {
-          setBuyOptions([{ id: 'native', label: 'XLM (native)', asset: NATIVE_XLM }]);
+          setBuyOptions([
+            { id: 'native', label: 'XLM (native)', shortLabel: 'XLM', asset: NATIVE_XLM },
+          ]);
         }
       })
       .finally(() => {
@@ -213,7 +230,7 @@ export function WalletSwapForm({
       }
       if (quotes.length === 0) {
         setQuote(null);
-        setQuoteError('No route for this pair right now. Try another pair or amount.');
+        setQuoteError('No route for this pair. Try another amount or asset.');
         return;
       }
       setQuote(quotes[0]);
@@ -224,7 +241,7 @@ export function WalletSwapForm({
       const message = e instanceof Error ? e.message : 'Could not get a quote.';
       if (message === 'SDK_SWAP_NO_ROUTE') {
         setQuote(null);
-        setQuoteError('No route for this pair right now. Try another pair or amount.');
+        setQuoteError('No route for this pair. Try another amount or asset.');
       } else {
         setQuote(null);
         setQuoteError(message);
@@ -306,6 +323,12 @@ export function WalletSwapForm({
     }
   }
 
+  const setMaxAmount = () => {
+    if (selectedSell?.available != null) {
+      setAmount(selectedSell.available);
+    }
+  };
+
   if (wallet?.custody === 'smart') {
     return (
       <p className="text-sm text-[var(--foreground-secondary)] text-pretty">
@@ -349,169 +372,289 @@ export function WalletSwapForm({
     );
   }
 
-  const submitLabel = buyNeedsTrustline ? 'Create trustline & swap' : 'Swap';
+  const submitLabel = buyNeedsTrustline ? 'Create Trustline & Swap' : 'Confirm Swap';
+  const sellCode = selectedSell
+    ? assetCode(selectedSell.shortLabel, selectedSell.asset)
+    : '—';
+  const buyCode = selectedBuy ? assetCode(selectedBuy.shortLabel, selectedBuy.asset) : '—';
+
+  const formClass =
+    layout === 'dashboard'
+      ? 'wallet-form wallet-form--dashboard wallet-swap-form'
+      : 'flex flex-col gap-6';
+
+  const quotePanel = (
+    <aside className="wallet-ticket" aria-labelledby="wallet-swap-summary-title">
+      <h4 id="wallet-swap-summary-title" className="wallet-swap-aside-title">
+        Ticket
+      </h4>
+      <div className="wallet-quote-card wallet-quote-card--prominent" aria-live="polite">
+        {quote && !quoteLoading ? (
+          <>
+            <p className="wallet-quote-kicker">You receive</p>
+            <p className="wallet-quote-hero tabular-nums">
+              ~{quote.amountOut}
+              <span className="wallet-quote-hero-unit">{buyCode}</span>
+            </p>
+            <div className="wallet-ticket-perforation" aria-hidden="true" />
+            <dl className="wallet-quote-grid">
+              <div className="wallet-quote-row">
+                <dt>Minimum</dt>
+                <dd className="tabular-nums">{quote.minReceived}</dd>
+              </div>
+              {quote.priceImpactPct ? (
+                <div className="wallet-quote-row">
+                  <dt>Price impact</dt>
+                  <dd className="tabular-nums">{quote.priceImpactPct}%</dd>
+                </div>
+              ) : null}
+              <div className="wallet-quote-row">
+                <dt>Route</dt>
+                <dd>{formatVenue(quote.provider)}</dd>
+              </div>
+            </dl>
+          </>
+        ) : quoteError ? (
+          <p className="text-sm text-[var(--foreground-secondary)] text-pretty">{quoteError}</p>
+        ) : quoteLoading ? (
+          <p className="text-sm text-[var(--foreground-secondary)]">Updating quote…</p>
+        ) : (
+          <p className="text-sm text-[var(--foreground-secondary)] text-pretty">
+            Enter an amount to mint a quote ticket.
+          </p>
+        )}
+      </div>
+
+      {error ? (
+        <p className="text-sm text-red-800 dark:text-red-200" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <Button
+        type="submit"
+        form="wallet-swap-form"
+        disabled={busy || !verified || !quote || quoteLoading}
+        aria-busy={busy}
+        className="w-full"
+      >
+        {busy ? 'Swapping…' : submitLabel}
+      </Button>
+
+      <p className="text-xs text-[var(--foreground-tertiary)] text-pretty">
+        Not a P2P trade. Use the{' '}
+        <Link href="/market" className="font-medium text-[var(--accent)] hover:underline">
+          market
+        </Link>{' '}
+        to exchange with a person.
+      </p>
+    </aside>
+  );
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
+    <form
+      id="wallet-swap-form"
+      onSubmit={handleSubmit}
+      className={formClass}
+      noValidate
+    >
       {buyNeedsTrustline ? (
-        <p className="text-xs leading-relaxed text-amber-800 dark:text-amber-200 text-pretty">
+        <p className="wallet-callout wallet-callout--warn text-pretty">
           You do not hold {selectedBuy?.label ?? 'this asset'} yet. The swap will create
           a trustline first (about 0.5 XLM reserve unless your app sponsors trustlines).
         </p>
       ) : null}
 
-      <div className="grid gap-6 sm:grid-cols-2 sm:gap-4">
-        <div className="min-w-0">
-          <label htmlFor="wallet-swap-sell" className="field-label">Sell</label>
-          <select
-            id="wallet-swap-sell"
-            name="sellAsset"
-            className="field-input mt-2 max-w-full truncate"
-            value={selectedSell?.id ?? ''}
-            onChange={(e) => setSellId(e.target.value)}
-          >
-            {selectableSell.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-          {selectedSell?.available != null ? (
-            <p className="mt-2 text-xs tabular-nums text-[var(--foreground-secondary)]">
-              {selectedSell.available} available
-            </p>
-          ) : null}
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <label htmlFor="wallet-swap-buy" className="field-label">Buy</label>
-            <button
-              type="button"
-              className="text-xs font-medium text-[var(--accent)] hover:underline"
-              onClick={flipAssets}
-              aria-label="Flip sell and buy assets"
-            >
-              Flip
-            </button>
-          </div>
-          <select
-            id="wallet-swap-buy"
-            name="buyAsset"
-            className="field-input mt-2 max-w-full truncate"
-            value={selectedBuy?.id ?? ''}
-            onChange={(e) => setBuyId(e.target.value)}
-          >
-            {buyOptions.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label htmlFor="wallet-swap-amount" className="field-label">
-          Amount to sell
-        </label>
-        <input
-          id="wallet-swap-amount"
-          name="amount"
-          type="text"
-          inputMode="decimal"
-          autoComplete="off"
-          spellCheck={false}
-          className="field-input tabular-nums mt-2"
-          placeholder="0.00"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-        />
-        <p className="mt-2 text-xs text-[var(--foreground-tertiary)]">
-          Amount of {selectedSell ? assetRefLabel(selectedSell.asset) : 'sell asset'}.
-        </p>
-      </div>
-
-      <div>
-        <span className="field-label block">Route</span>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {routes.map((route) => (
-            <button
-              key={route}
-              type="button"
-              className={
-                provider === route
-                  ? 'nav-pill nav-pill--active min-h-9 px-3'
-                  : 'nav-pill min-h-9 px-3 text-[var(--foreground-secondary)]'
-              }
-              onClick={() => setProvider(route)}
-            >
-              {ROUTE_LABELS[route]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div
-        className="rounded-[var(--radius-ui)] border border-[var(--line)] bg-[var(--fill)] px-4 py-3 text-sm"
-        aria-live="polite"
-      >
-        {quoteLoading ? (
-          <p className="text-[var(--foreground-secondary)]">Fetching quote…</p>
-        ) : quote ? (
-          <dl className="space-y-1.5">
-            <div className="flex justify-between gap-3">
-              <dt className="text-[var(--foreground-secondary)]">You receive</dt>
-              <dd className="tabular-nums font-medium">
-                ~{quote.amountOut} {assetRefLabel(selectedBuy!.asset)}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-[var(--foreground-secondary)]">Minimum</dt>
-              <dd className="tabular-nums">{quote.minReceived}</dd>
-            </div>
-            {quote.priceImpactPct ? (
-              <div className="flex justify-between gap-3">
-                <dt className="text-[var(--foreground-secondary)]">Price impact</dt>
-                <dd className="tabular-nums">{quote.priceImpactPct}%</dd>
+      <div className={layout === 'dashboard' ? 'wallet-swap-workspace' : undefined}>
+        <div className="wallet-swap-editor">
+          <div className="wallet-swap-trade-grid">
+            <div className="wallet-trade-leg wallet-trade-leg--pay">
+              <div className="wallet-trade-leg-head">
+                <span className="wallet-leg-kicker">You pay</span>
+                {selectedSell?.available != null ? (
+                  <button type="button" className="wallet-max-btn" onClick={setMaxAmount}>
+                    Max
+                  </button>
+                ) : null}
               </div>
-            ) : null}
-            <div className="flex justify-between gap-3">
-              <dt className="text-[var(--foreground-secondary)]">Venue</dt>
-              <dd>{formatVenue(quote.provider)}</dd>
+              <div className="wallet-trade-amount-row">
+                <label htmlFor="wallet-swap-amount" className="sr-only">
+                  Amount to sell
+                </label>
+                <input
+                  id="wallet-swap-amount"
+                  name="amount"
+                  type="text"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="wallet-amount-input tabular-nums"
+                  placeholder="0"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+                <label htmlFor="wallet-swap-sell" className="sr-only">
+                  Sell asset
+                </label>
+                <div className="wallet-asset-pill">
+                  <WalletAssetIcon code={sellCode} className="wallet-asset-icon--sm" />
+                  <select
+                    id="wallet-swap-sell"
+                    name="sellAsset"
+                    className="wallet-asset-select"
+                    value={selectedSell?.id ?? ''}
+                    onChange={(e) => setSellId(e.target.value)}
+                  >
+                    {selectableSell.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.shortLabel ?? item.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {selectedSell?.available != null ? (
+                <p className="wallet-trade-hint tabular-nums">
+                  {selectedSell.available} {sellCode} available
+                </p>
+              ) : null}
             </div>
-          </dl>
-        ) : quoteError ? (
-          <p className="text-[var(--foreground-secondary)]">{quoteError}</p>
-        ) : (
-          <p className="text-[var(--foreground-secondary)]">
-            Enter an amount to see a live quote.
-          </p>
-        )}
+
+            <div className="wallet-trade-divider">
+              <button
+                type="button"
+                className="wallet-flip-btn"
+                onClick={flipAssets}
+                aria-label="Flip sell and buy assets"
+              >
+                <span aria-hidden="true">↕</span>
+              </button>
+            </div>
+
+            <div className="wallet-trade-leg wallet-trade-leg--receive">
+              <div className="wallet-trade-leg-head">
+                <span className="wallet-leg-kicker">You receive</span>
+              </div>
+              <div className="wallet-trade-amount-row">
+                <p className="wallet-amount-input wallet-amount-input--preview tabular-nums" aria-live="polite">
+                  {quote && !quoteLoading
+                    ? `~${quote.amountOut}`
+                    : quoteLoading
+                      ? '…'
+                      : '0'}
+                </p>
+                <label htmlFor="wallet-swap-buy" className="sr-only">
+                  Buy asset
+                </label>
+                <div className="wallet-asset-pill">
+                  <WalletAssetIcon code={buyCode} className="wallet-asset-icon--sm" />
+                  <select
+                    id="wallet-swap-buy"
+                    name="buyAsset"
+                    className="wallet-asset-select"
+                    value={selectedBuy?.id ?? ''}
+                    onChange={(e) => setBuyId(e.target.value)}
+                  >
+                    {buyOptions.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.shortLabel ?? item.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <p className="wallet-trade-hint">
+                {quoteLoading ? 'Fetching quote…' : 'Estimated after 0.5% slippage'}
+              </p>
+            </div>
+          </div>
+
+          <div className="wallet-route-block">
+            <span id="wallet-swap-route-label" className="field-label">Route</span>
+            <div
+              className="wallet-route-list"
+              role="radiogroup"
+              aria-labelledby="wallet-swap-route-label"
+            >
+              {routes.map((route) => (
+                <button
+                  key={route}
+                  type="button"
+                  role="radio"
+                  aria-checked={provider === route}
+                  className={
+                    provider === route
+                      ? 'wallet-route-pill wallet-route-pill--active'
+                      : 'wallet-route-pill'
+                  }
+                  onClick={() => setProvider(route)}
+                >
+                  {ROUTE_LABELS[route]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {layout === 'dashboard' ? quotePanel : null}
       </div>
 
-      <div className="flex flex-col gap-4 border-t border-[var(--line)] pt-6">
-        {error ? (
-          <p className="text-sm text-red-800 dark:text-red-200" role="alert">
-            {error}
+      {layout === 'dashboard' ? null : (
+        <>
+          <div className="wallet-quote-card" aria-live="polite">
+            {quote ? (
+              <dl className="wallet-quote-grid">
+                <div className="wallet-quote-row">
+                  <dt>Minimum received</dt>
+                  <dd className="tabular-nums">{quote.minReceived}</dd>
+                </div>
+                {quote.priceImpactPct ? (
+                  <div className="wallet-quote-row">
+                    <dt>Price impact</dt>
+                    <dd className="tabular-nums">{quote.priceImpactPct}%</dd>
+                  </div>
+                ) : null}
+                <div className="wallet-quote-row">
+                  <dt>Route</dt>
+                  <dd>{formatVenue(quote.provider)}</dd>
+                </div>
+              </dl>
+            ) : quoteError ? (
+              <p className="text-sm text-[var(--foreground-secondary)] text-pretty">
+                {quoteError}
+              </p>
+            ) : quoteLoading ? (
+              <p className="text-sm text-[var(--foreground-secondary)]">Updating quote…</p>
+            ) : (
+              <p className="text-sm text-[var(--foreground-secondary)]">
+                Quotes refresh as you type.
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-4 border-t border-[var(--line)] pt-6">
+            {error ? (
+              <p className="text-sm text-red-800 dark:text-red-200" role="alert">
+                {error}
+              </p>
+            ) : null}
+            <Button
+              type="submit"
+              disabled={busy || !verified || !quote || quoteLoading}
+              aria-busy={busy}
+              className="w-full sm:w-auto"
+            >
+              {busy ? 'Swapping…' : submitLabel}
+            </Button>
+          </div>
+          <p className="text-xs text-[var(--foreground-tertiary)] text-pretty">
+            Swapping is not a P2P trade. To exchange with a person, use the{' '}
+            <Link href="/market" className="font-medium text-[var(--accent)] hover:underline">
+              market
+            </Link>
+            .
           </p>
-        ) : null}
-        <Button
-          type="submit"
-          disabled={busy || !verified || !quote || quoteLoading}
-          aria-busy={busy}
-          className="w-full sm:w-auto"
-        >
-          {busy ? 'Swapping…' : submitLabel}
-        </Button>
-      </div>
-
-      <p className="text-xs text-[var(--foreground-tertiary)] text-pretty">
-        Swapping is not a P2P trade. To exchange with a person, use the{' '}
-        <a href="/market" className="font-medium text-[var(--accent)] hover:underline">
-          market
-        </a>
-        .
-      </p>
+        </>
+      )}
     </form>
   );
 }

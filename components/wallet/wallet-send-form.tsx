@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { usePollar } from '@pollar/react';
 import { Button } from '@/components/ui/button';
@@ -22,9 +23,10 @@ type BalanceOption = {
 type Props = {
   balances: BalanceOption[];
   onSent: () => void;
+  layout?: 'default' | 'dashboard';
 };
 
-export function WalletSendForm({ balances, onSent }: Props) {
+export function WalletSendForm({ balances, onSent, layout = 'default' }: Props) {
   const { sendPayment, verified } = usePollar();
   const toast = useToast();
 
@@ -111,9 +113,9 @@ export function WalletSendForm({ balances, onSent }: Props) {
     return (
       <p className="text-sm text-[var(--foreground-secondary)] text-pretty">
         No spendable balance found. Fund your wallet with XLM or USDC in{' '}
-        <a href="/wallet#swap" className="font-medium text-[var(--accent)] hover:underline">
+        <Link href="/wallet#swap" className="font-medium text-[var(--accent)] hover:underline">
           Swap
-        </a>
+        </Link>
         .
       </p>
     );
@@ -122,8 +124,13 @@ export function WalletSendForm({ balances, onSent }: Props) {
   const availableHint =
     selectedAsset?.available != null ? `${selectedAsset.available} available` : null;
 
+  const formClass =
+    layout === 'dashboard' ? 'wallet-form wallet-form--dashboard' : 'flex flex-col gap-6';
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
+    <form onSubmit={handleSubmit} className={formClass} noValidate>
+      <div className={layout === 'dashboard' ? 'wallet-send-workspace' : undefined}>
+        <div className={layout === 'dashboard' ? 'wallet-send-fields' : undefined}>
       <div>
         <label htmlFor="wallet-send-dest" className="field-label">
           Destination address
@@ -142,7 +149,13 @@ export function WalletSendForm({ balances, onSent }: Props) {
         />
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 sm:gap-4">
+      <div
+        className={
+          layout === 'dashboard'
+            ? 'wallet-send-amount-row'
+            : 'grid gap-6 sm:grid-cols-2 sm:gap-4'
+        }
+      >
         <div className="min-w-0">
           <label htmlFor="wallet-send-asset" className="field-label">Asset</label>
           <select
@@ -230,7 +243,45 @@ export function WalletSendForm({ balances, onSent }: Props) {
           </div>
         ) : null}
       </div>
+        </div>
 
+        {layout === 'dashboard' ? (
+          <aside className="wallet-send-aside">
+            <h4 className="wallet-swap-aside-title">Review</h4>
+            <div className="wallet-send-aside-card">
+              <dl className="wallet-quote-grid">
+                <div className="wallet-quote-row">
+                  <dt>Asset</dt>
+                  <dd>{selectedAsset?.label ?? '—'}</dd>
+                </div>
+                <div className="wallet-quote-row">
+                  <dt>Amount</dt>
+                  <dd className="tabular-nums">{amount.trim() || '—'}</dd>
+                </div>
+                <div className="wallet-quote-row">
+                  <dt>Memo</dt>
+                  <dd>{memoKind === 'none' ? 'None' : memoKind.toUpperCase()}</dd>
+                </div>
+              </dl>
+            </div>
+            {error ? (
+              <p className="text-sm text-red-800 dark:text-red-200" role="alert">
+                {error}
+              </p>
+            ) : null}
+            <Button
+              type="submit"
+              disabled={busy || !verified}
+              aria-busy={busy}
+              className="w-full"
+            >
+              {busy ? 'Sending…' : 'Send Payment'}
+            </Button>
+          </aside>
+        ) : null}
+      </div>
+
+      {layout === 'dashboard' ? null : (
       <div className="flex flex-col gap-4 border-t border-[var(--line)] pt-6">
         {error ? (
           <p className="text-sm text-red-800 dark:text-red-200" role="alert">
@@ -244,9 +295,10 @@ export function WalletSendForm({ balances, onSent }: Props) {
           aria-busy={busy}
           className="w-full sm:w-auto"
         >
-          {busy ? 'Sending…' : 'Send payment'}
+          {busy ? 'Sending…' : 'Send Payment'}
         </Button>
       </div>
+      )}
     </form>
   );
 }

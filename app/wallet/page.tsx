@@ -6,14 +6,9 @@ import { DirectionalTransition } from '@/components/transition/directional-trans
 export default function WalletPage() {
   return (
     <DirectionalTransition>
-      <AppPage width="content">
-        <ScreenHeader
-          title="Wallet"
-          description="Balances, receive details, send payments, and swap assets when you need to move or convert funds."
-        />
-        <div className="ui-card px-5 py-6 sm:px-6">
-          <WalletView />
-        </div>
+      <AppPage width="wide">
+        <ScreenHeader title="Wallet" />
+        <WalletView />
       </AppPage>
     </DirectionalTransition>
   );
