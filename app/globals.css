@@ -2911,12 +2911,190 @@ html.experience-lock body {
   padding: 0 0.15rem;
 }
 
+/* Account floor pass */
+.account-floor {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.account-pass {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 1.45rem 1.3rem 1.35rem 1.45rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--line));
+  border-radius: 1.5rem 0 1.5rem 1.5rem;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 1.7rem) 0,
+    100% 1.7rem,
+    100% 100%,
+    0 100%
+  );
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--ice) 7%, transparent) 0%,
+      transparent 38%
+    ),
+    linear-gradient(180deg, var(--surface-elevated), var(--surface));
+  box-shadow:
+    var(--shadow-elevated),
+    inset 0 1px 0 color-mix(in srgb, var(--ice) 10%, transparent);
+}
+
+.account-pass-spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0.38rem;
+  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--ice) 70%, var(--accent)));
+  pointer-events: none;
+}
+
+.account-pass-fold {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1.7rem;
+  height: 1.7rem;
+  background: linear-gradient(
+    225deg,
+    color-mix(in srgb, var(--accent) 45%, var(--surface-elevated)) 0%,
+    color-mix(in srgb, var(--ice) 18%, var(--surface)) 100%
+  );
+  pointer-events: none;
+}
+
+.account-pass-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 1.1rem;
+}
+
+.account-pass-name {
+  font-size: clamp(1.7rem, 5vw, 2.55rem);
+  font-weight: 560;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+}
+
+.account-pass-role {
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--foreground-secondary);
+}
+
+.account-pass-wallet {
+  margin-top: 0.2rem;
+  font-size: 0.8125rem;
+  color: var(--foreground-tertiary);
+}
+
+.account-pass-readiness {
+  position: relative;
+  z-index: 1;
+  margin-top: 1.15rem;
+  max-width: 28rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--foreground-secondary);
+}
+
+.account-pass-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1.15rem;
+}
+
+.account-pass-link {
+  text-decoration: none;
+}
+
+.account-corridors {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  background: var(--surface);
+}
+
+.account-corridor {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 11rem) minmax(0, 1fr);
+  gap: 0.75rem 1.15rem;
+  align-items: baseline;
+  padding: 1.05rem 1.2rem;
+  border-top: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.18s var(--ease-apple);
+}
+
+.account-corridor:first-child {
+  border-top: none;
+}
+
+.account-corridor:hover {
+  background: var(--fill);
+}
+
+.account-corridor:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.account-corridor-title {
+  font-size: 0.9375rem;
+  font-weight: 550;
+}
+
+.account-corridor-detail {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--foreground-secondary);
+}
+
+.account-corridor--open .account-corridor-detail {
+  color: var(--accent);
+}
+
+.account-desk {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.account-desk-title {
+  font-size: 0.95rem;
+  font-weight: 550;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 520px) {
+  .account-corridor {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+    padding: 0.95rem 1.05rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wallet-vault-rings span,
   .wallet-dock-item,
   .wallet-coin,
   .wallet-flip-btn,
-  .wallet-segment-btn {
+  .wallet-segment-btn,
+  .account-corridor {
     animation: none;
     transition: none;
   }

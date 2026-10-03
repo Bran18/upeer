@@ -3,34 +3,23 @@
 import Link from 'next/link';
 import { PollarRequired } from '@/components/pollar-required';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
-import { ScreenHeader } from '@/components/ui/screen-header';
+import { Avatar } from '@/components/ui/avatar';
+import {
+  accountCorridors,
+  accountPassCopy,
+} from '@/lib/account/pass';
 import { merchantNavItems } from '@/lib/nav/user-links';
+import { onboardingComplete } from '@/lib/profile/types';
+import { cn } from '@/lib/cn';
 
-const ACCOUNT_AREAS = [
-  {
-    href: '/settings?tab=profile',
-    title: 'Identity',
-    body: 'Name, photo, and how you appear to counterparties.',
-  },
-  {
-    href: '/settings?tab=fiat',
-    title: 'Payment methods',
-    body: 'How you send and receive local currency.',
-  },
-  {
-    href: '/wallet',
-    title: 'Wallet',
-    body: 'Balances, receive details, and send USDC or XLM.',
-  },
-  {
-    href: '/settings?tab=payout',
-    title: 'Payout address',
-    body: 'Where USDC should land when you sell.',
-  },
-] as const;
+const DESK_DETAIL: Record<string, string> = {
+  '/orders': 'Open and completed trades',
+  '/merchant': 'Verification and desk profile',
+  '/dashboard': 'Volume and fill stats',
+};
 
 function AccountInner() {
-  const { profile, status } = useUpeerSession();
+  const { profile, status, isOnboarded } = useUpeerSession();
 
   if (status === 'syncing') {
     return (
@@ -40,52 +29,88 @@ function AccountInner() {
     );
   }
 
+  const pass = accountPassCopy(profile);
+  const corridors = accountCorridors(profile);
   const merchant = merchantNavItems(profile);
+  const setupDone = profile ? onboardingComplete(profile) : isOnboarded;
 
   return (
-    <div className="space-y-8">
-      <ScreenHeader
-        title="Account"
-        description="Identity, payment methods, wallet, and preferences — kept together so exchange stays simple."
-      />
+    <div className="account-floor">
+      <section className="account-pass" aria-labelledby="account-pass-name">
+        <div className="account-pass-spine" aria-hidden="true" />
+        <div className="account-pass-fold" aria-hidden="true" />
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {ACCOUNT_AREAS.map((area) => (
+        <div className="account-pass-body">
+          <Avatar
+            label={pass.name}
+            src={profile?.avatarUrl}
+            size="pass"
+            shape="tile"
+          />
+          <div className="min-w-0 flex-1">
+            <h2 id="account-pass-name" className="account-pass-name text-balance">
+              {pass.name}
+            </h2>
+            <p className="account-pass-role">{pass.role}</p>
+            {pass.addressShort ? (
+              <p className="account-pass-wallet tabular-nums">{pass.addressShort}</p>
+            ) : null}
+          </div>
+        </div>
+
+        <p className="account-pass-readiness text-pretty">{pass.readiness}</p>
+
+        <div className="account-pass-actions">
+          {setupDone ? (
+            <Link href="/market" className="btn-primary account-pass-link">
+              Open market
+            </Link>
+          ) : (
+            <Link href="/onboarding" className="btn-primary account-pass-link">
+              Finish setup
+            </Link>
+          )}
+          <Link href="/settings?tab=profile" className="btn-secondary account-pass-link">
+            Edit identity
+          </Link>
+        </div>
+      </section>
+
+      <nav className="account-corridors" aria-label="Account sections">
+        {corridors.map((item) => (
           <Link
-            key={area.href}
-            href={area.href}
-            className="ui-card group flex min-h-[7rem] flex-col justify-between p-5 transition-[border-color] duration-200 hover:border-[var(--accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+            key={item.href}
+            href={item.href}
+            className={cn(
+              'account-corridor',
+              item.tone === 'open' && 'account-corridor--open',
+            )}
           >
-            <div>
-              <p className="text-sm font-medium">{area.title}</p>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-                {area.body}
-              </p>
-            </div>
-            <span className="mt-4 text-xs font-medium text-[var(--accent)]">
-              Open
-            </span>
+            <span className="account-corridor-title">{item.title}</span>
+            <span className="account-corridor-detail">{item.detail}</span>
           </Link>
         ))}
-      </div>
+      </nav>
 
       {merchant.length > 0 ? (
-        <section>
-          <h2 className="text-sm font-medium">Desk</h2>
-          <p className="mt-1 text-sm text-[var(--foreground-secondary)]">
-            Verification, live orders, and seller tools.
-          </p>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <section className="account-desk" aria-labelledby="account-desk-title">
+          <h2 id="account-desk-title" className="account-desk-title">
+            Seller tools
+          </h2>
+          <nav className="account-corridors" aria-label="Seller tools">
             {merchant.map((item) => (
               <Link
                 key={item.href + item.label}
                 href={item.href}
-                className="rounded-[var(--radius-ui)] border border-[var(--line)] px-4 py-3 text-sm hover:border-[var(--accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+                className="account-corridor"
               >
-                {item.label}
+                <span className="account-corridor-title">{item.label}</span>
+                <span className="account-corridor-detail">
+                  {DESK_DETAIL[item.href] ?? 'Seller tools'}
+                </span>
               </Link>
             ))}
-          </div>
+          </nav>
         </section>
       ) : null}
     </div>

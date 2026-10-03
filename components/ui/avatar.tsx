@@ -15,7 +15,8 @@ function initialsFromLabel(label: string): string {
 type AvatarProps = {
   label: string;
   src?: string | null;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'pass';
+  shape?: 'round' | 'tile';
   className?: string;
 };
 
@@ -24,6 +25,7 @@ const SIZE = {
   md: 'h-9 w-9 text-xs',
   lg: 'h-11 w-11 text-sm',
   xl: 'h-16 w-16 text-base',
+  pass: 'h-[5.5rem] w-[5.5rem] text-xl',
 };
 
 const PIXEL = {
@@ -31,9 +33,21 @@ const PIXEL = {
   md: 36,
   lg: 44,
   xl: 64,
+  pass: 88,
 };
 
-export function Avatar({ label, src, size = 'md', className }: AvatarProps) {
+const SHAPE = {
+  round: 'rounded-full',
+  tile: 'rounded-[1.15rem]',
+};
+
+export function Avatar({
+  label,
+  src,
+  size = 'md',
+  shape = 'round',
+  className,
+}: AvatarProps) {
   const trimmedSrc = src?.trim();
   if (trimmedSrc) {
     return (
@@ -45,7 +59,8 @@ export function Avatar({ label, src, size = 'md', className }: AvatarProps) {
         height={PIXEL[size]}
         unoptimized
         className={cn(
-          'inline-flex shrink-0 rounded-full object-cover',
+          'inline-flex shrink-0 object-cover',
+          SHAPE[shape],
           SIZE[size],
           className,
         )}
@@ -57,7 +72,8 @@ export function Avatar({ label, src, size = 'md', className }: AvatarProps) {
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-full bg-[var(--accent-muted)] font-semibold text-[var(--accent)]',
+        'inline-flex shrink-0 items-center justify-center bg-[var(--accent-muted)] font-semibold text-[var(--accent)]',
+        SHAPE[shape],
         SIZE[size],
         className,
       )}
