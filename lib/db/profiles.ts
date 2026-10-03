@@ -27,6 +27,7 @@ export async function upsertProfileFromPollar(
     throw new Error('Stellar wallet address is missing from the Pollar session');
   }
   const supabase = getSupabaseAdmin();
+  const pollarName = session.profile?.displayName?.trim();
   const { data, error } = await supabase
     .from('profiles')
     .upsert(
@@ -36,8 +37,8 @@ export async function upsertProfileFromPollar(
         stellar_address: session.wallet.publicKey,
         custody: session.wallet.custody,
         network: session.network,
-        display_name: session.profile?.displayName ?? null,
         updated_at: new Date().toISOString(),
+        ...(pollarName ? { display_name: pollarName } : {}),
       },
       { onConflict: 'pollar_user_id' },
     )
@@ -56,7 +57,7 @@ export async function getMeProfile(profileId: string): Promise<MeProfile | null>
   const profileResult = await supabase
     .from('profiles')
     .select(
-      'id, stellar_address, display_name, platform_intent, onboarding_completed_at, payout_address, payment_prefs, is_operator',
+      'id, stellar_address, display_name, avatar_url, platform_intent, onboarding_completed_at, payout_address, payment_prefs, is_operator',
     )
     .eq('id', profileId)
     .maybeSingle();
@@ -84,6 +85,7 @@ export async function getMeProfile(profileId: string): Promise<MeProfile | null>
     (merchantResult.data?.status as MerchantStatus | undefined) ?? 'none';
 
   const extended = row as ProfileRow & {
+    avatar_url?: string | null;
     payout_address?: string | null;
     payment_prefs?: unknown;
     is_operator?: boolean;
@@ -93,6 +95,7 @@ export async function getMeProfile(profileId: string): Promise<MeProfile | null>
     id: row.id,
     stellarAddress: row.stellar_address,
     displayName: row.display_name,
+    avatarUrl: extended.avatar_url ?? null,
     platformIntent: row.platform_intent,
     onboardingCompletedAt: row.onboarding_completed_at,
     merchantStatus,
@@ -216,11 +219,29 @@ async function ensureMerchantRow(
   }
 }
 
+export async function updateProfileAvatarUrl(
+  profileId: string,
+  avatarUrl: string | null,
+): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      avatar_url: avatarUrl,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', profileId);
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 export async function updateUserProfile(
   profileId: string,
   input: {
     platformIntent?: PlatformIntent;
     displayName?: string;
+    avatarUrl?: string | null;
   },
 ): Promise<MeProfile> {
   const supabase = getSupabaseAdmin();
@@ -233,6 +254,10 @@ export async function updateUserProfile(
       throw new Error('Display name must be at least 2 characters');
     }
     patch.display_name = trimmed;
+  }
+
+  if (input.avatarUrl !== undefined) {
+    patch.avatar_url = input.avatarUrl;
   }
 
   if (input.platformIntent !== undefined) {

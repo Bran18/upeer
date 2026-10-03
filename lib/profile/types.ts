@@ -13,6 +13,7 @@ export type MeProfile = {
   id: string;
   stellarAddress: string;
   displayName: string | null;
+  avatarUrl: string | null;
   platformIntent: PlatformIntent | null;
   onboardingCompletedAt: string | null;
   merchantStatus: MerchantStatus;

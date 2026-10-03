@@ -25,8 +25,8 @@ export function headerNavItems(
 export function accountMenuItems(profile: MeProfile | null | undefined): NavItem[] {
   const items: NavItem[] = [
     { href: '/dashboard', label: 'Dashboard' },
+    { href: '/wallet', label: 'Wallet & assets' },
     { href: '/settings', label: 'Settings' },
-    { href: '/app', label: 'Developer tools' },
   ];
   if (profile?.isOperator) {
     items.unshift({ href: '/admin', label: 'Admin' });

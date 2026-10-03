@@ -13,6 +13,7 @@ import { isSupabaseConfigured } from '@/lib/supabase/server';
 const patchSchema = z.object({
   platformIntent: z.enum(['buyer', 'merchant', 'both']).optional(),
   displayName: z.string().min(2).max(80).optional(),
+  avatarUrl: z.union([z.string().url().max(2048), z.null()]).optional(),
   payoutAddress: z.string().min(56).max(56).optional(),
   paymentPrefs: paymentPrefsSchema.optional(),
 });
@@ -68,13 +69,14 @@ export async function PATCH(request: Request) {
     if (
       !body.platformIntent &&
       !body.displayName &&
+      body.avatarUrl === undefined &&
       !body.payoutAddress &&
       !body.paymentPrefs
     ) {
       return NextResponse.json(
         {
           error:
-            'Send displayName, platformIntent, payoutAddress, or paymentPrefs to update',
+            'Send displayName, avatarUrl, platformIntent, payoutAddress, or paymentPrefs to update',
         },
         { status: 400 },
       );
@@ -89,7 +91,9 @@ export async function PATCH(request: Request) {
     }
 
     const profileFields =
-      body.platformIntent !== undefined || body.displayName !== undefined;
+      body.platformIntent !== undefined ||
+      body.displayName !== undefined ||
+      body.avatarUrl !== undefined;
 
     if (!profileFields && (body.payoutAddress || body.paymentPrefs)) {
       const profile = await getMeProfile(session.profileId);
@@ -121,6 +125,7 @@ export async function PATCH(request: Request) {
     const profile = await updateUserProfile(session.profileId, {
       platformIntent: body.platformIntent,
       displayName: body.displayName?.trim(),
+      avatarUrl: body.avatarUrl,
     });
 
     return NextResponse.json({ profile });

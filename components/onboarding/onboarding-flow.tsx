@@ -44,6 +44,7 @@ export function OnboardingFlow() {
   }, [sessionStatus, profile]);
 
   const needsMerchantName = intent === 'merchant' || intent === 'both';
+  const showDisplayName = intent != null;
   const selectIntent = useCallback((next: PlatformIntent) => {
     setIntent(next);
     setError(null);
@@ -87,9 +88,14 @@ export function OnboardingFlow() {
     setBusy(true);
     setError(null);
     try {
+      const trimmedName = displayName.trim();
       const { redirectTo } = await completeOnboarding({
         platformIntent: intent,
-        displayName: needsMerchantName ? displayName.trim() : undefined,
+        displayName: needsMerchantName
+          ? trimmedName
+          : trimmedName.length >= 2
+            ? trimmedName
+            : undefined,
       });
       await refreshProfile();
       router.replace(redirectTo);
@@ -202,30 +208,34 @@ export function OnboardingFlow() {
           </div>
         </fieldset>
 
-        {needsMerchantName ? (
+        {showDisplayName ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Step 2 — Merchant profile</CardTitle>
+              <CardTitle className="text-sm">Step 2 — Your name</CardTitle>
               <CardDescription>
-                Shown to buyers on offers and quotes.
+                {needsMerchantName
+                  ? 'Shown to buyers on offers and quotes.'
+                  : 'Optional. Shown in the header menu instead of your wallet address.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
               <label htmlFor={displayNameId} className="field-label">
-                Merchant display name
+                {needsMerchantName ? 'Merchant display name' : 'Display name'}
               </label>
               <input
                 ref={displayNameRef}
                 id={displayNameId}
                 name="displayName"
                 type="text"
-                autoComplete="organization"
+                autoComplete="nickname"
                 spellCheck={false}
                 maxLength={80}
-                required
+                required={needsMerchantName}
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="e.g. Andes Liquidity…"
+                placeholder={
+                  needsMerchantName ? 'e.g. Andes Liquidity…' : 'e.g. María'
+                }
                 aria-invalid={Boolean(error && needsMerchantName)}
                 className="field-input"
               />

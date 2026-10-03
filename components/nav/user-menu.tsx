@@ -3,20 +3,20 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { usePollar } from '@pollar/react';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { hasPollarPublishableKey } from '@/components/pollar-required';
+import { UserIdentitySummary } from '@/components/nav/user-identity-summary';
 import { useOptionalUpeerSession } from '@/components/session/upeer-session-provider';
 import { Avatar } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { IconChevronDown } from '@/components/ui/icons/chevron';
+import { useToast } from '@/components/ui/toaster';
 import { useDismissible } from '@/hooks/use-dismissible';
 import { cn } from '@/lib/cn';
 import {
   accountMenuLinks,
-  menuTriggerLabel,
+  resolveUserIdentity,
   roleLabel,
-  shortenWallet,
 } from '@/lib/nav/user-links';
 
 type UserMenuProps = {
@@ -36,14 +36,31 @@ function UserMenuInner({ overlay }: UserMenuProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
+  const toast = useToast();
 
-  const { isAuthenticated, wallet, openLoginModal, logout } = usePollar();
+  const {
+    isAuthenticated,
+    wallet,
+    openLoginModal,
+    logout,
+  } = usePollar();
   const session = useOptionalUpeerSession();
 
   const profile = session?.profile;
-  const isOnboarded = Boolean(session?.isOnboarded);
   const role = roleLabel(profile?.platformIntent);
-  const walletShort = wallet?.address ? shortenWallet(wallet.address) : null;
+
+  const identity = useMemo(
+    () =>
+      resolveUserIdentity({
+        profile,
+        sessionStatus: session?.status,
+        walletAddress: profile?.stellarAddress ?? wallet?.address ?? null,
+      }),
+    [profile, session?.status, wallet?.address],
+  );
+
+  const walletFull =
+    profile?.stellarAddress ?? wallet?.address ?? null;
 
   const close = useCallback(() => setOpen(false), []);
   useDismissible(open, close, [panelRef, triggerRef]);
@@ -69,7 +86,6 @@ function UserMenuInner({ overlay }: UserMenuProps) {
   }
 
   const menuLinks = accountMenuLinks(profile);
-  const label = menuTriggerLabel(profile?.displayName, wallet?.address);
 
   async function handleSignOut() {
     close();
@@ -77,6 +93,18 @@ function UserMenuInner({ overlay }: UserMenuProps) {
       await session.signOut();
     } else {
       logout();
+    }
+  }
+
+  async function handleCopyWallet() {
+    if (!walletFull) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(walletFull);
+      toast.success('Address copied', 'Stellar wallet is on your clipboard.');
+    } catch {
+      toast.error('Could not copy', 'Allow clipboard access or copy from Settings.');
     }
   }
 
@@ -95,11 +123,21 @@ function UserMenuInner({ overlay }: UserMenuProps) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
+        aria-busy={identity.loading}
         onClick={() => setOpen((value) => !value)}
       >
-        <Avatar label={label} size="sm" />
+        <Avatar label={identity.avatarLabel} src={profile?.avatarUrl} size="sm" />
         <span className="hidden min-w-0 flex-1 flex-col sm:flex">
-          <span className="truncate text-sm font-medium leading-tight">{label}</span>
+          <span
+            className={cn(
+              'truncate text-sm font-medium leading-tight',
+              identity.promptDisplayName &&
+                !overlay &&
+                'text-[var(--accent)]',
+            )}
+          >
+            {identity.primaryLabel}
+          </span>
           {role ? (
             <span
               className={cn(
@@ -108,6 +146,16 @@ function UserMenuInner({ overlay }: UserMenuProps) {
               )}
             >
               {role}
+            </span>
+          ) : identity.walletLine ? (
+            <span
+              className={cn(
+                'truncate font-mono text-[0.6875rem] text-[var(--foreground-tertiary)]',
+                overlay && 'text-white/65',
+              )}
+              translate="no"
+            >
+              {identity.walletLine}
             </span>
           ) : null}
         </span>
@@ -122,30 +170,12 @@ function UserMenuInner({ overlay }: UserMenuProps) {
           className="menu-panel absolute right-0 z-[80] mt-2 w-[min(17rem,calc(100vw-2rem))] overflow-hidden py-1.5"
         >
           <div className="border-b border-[var(--line)] px-3.5 py-3">
-            <div className="flex items-start gap-2.5">
-              <Avatar label={label} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{label}</p>
-                {walletShort ? (
-                  <p
-                    className="mt-0.5 truncate font-mono text-xs text-[var(--foreground-secondary)]"
-                    translate="no"
-                    title={wallet?.address}
-                  >
-                    {walletShort}
-                  </p>
-                ) : null}
-                {role ? (
-                  <Badge variant="accent" className="mt-2">
-                    {role}
-                  </Badge>
-                ) : (
-                  <Badge variant="muted" className="mt-2">
-                    Setup incomplete
-                  </Badge>
-                )}
-              </div>
-            </div>
+            <UserIdentitySummary
+              identity={identity}
+              platformIntent={profile?.platformIntent}
+              avatarUrl={profile?.avatarUrl}
+              walletTitle={walletFull}
+            />
           </div>
 
           <div className="p-1.5">
@@ -157,7 +187,10 @@ function UserMenuInner({ overlay }: UserMenuProps) {
                   key={link.href}
                   href={link.href}
                   role="menuitem"
-                  className={cn('menu-item rounded-[calc(var(--radius-ui)-2px)]', active && 'menu-item--active')}
+                  className={cn(
+                    'menu-item rounded-[calc(var(--radius-ui)-2px)]',
+                    active && 'menu-item--active',
+                  )}
                   onClick={close}
                 >
                   {link.label}
@@ -167,17 +200,16 @@ function UserMenuInner({ overlay }: UserMenuProps) {
           </div>
 
           <div className="border-t border-[var(--line)] p-1.5">
-            <button
-              type="button"
-              role="menuitem"
-              className="menu-item rounded-[calc(var(--radius-ui)-2px)]"
-              onClick={() => {
-                close();
-                openLoginModal();
-              }}
-            >
-              Wallet &amp; assets
-            </button>
+            {walletFull ? (
+              <button
+                type="button"
+                role="menuitem"
+                className="menu-item rounded-[calc(var(--radius-ui)-2px)]"
+                onClick={() => void handleCopyWallet()}
+              >
+                Copy wallet address
+              </button>
+            ) : null}
             <button
               type="button"
               role="menuitem"

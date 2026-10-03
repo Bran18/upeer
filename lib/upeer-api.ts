@@ -175,9 +175,45 @@ export async function completeOnboarding(
 export type UpdateMeProfileInput = {
   platformIntent?: PlatformIntent;
   displayName?: string;
+  avatarUrl?: string | null;
   payoutAddress?: string;
   paymentPrefs?: PaymentPrefs;
 };
+
+export async function uploadProfileAvatar(file: File): Promise<MeProfile> {
+  const formData = new FormData();
+  formData.set('file', file);
+  const res = await fetch('/api/me/avatar', {
+    method: 'POST',
+    headers: { ...getUpeerAuthHeaders() },
+    credentials: 'include',
+    body: formData,
+  });
+  const data = (await res.json()) as { profile?: MeProfile; error?: string };
+  if (!res.ok) {
+    throw new Error(data.error ?? 'Failed to upload photo');
+  }
+  if (!data.profile) {
+    throw new Error('Profile missing in response');
+  }
+  return data.profile;
+}
+
+export async function removeProfileAvatar(): Promise<MeProfile> {
+  const res = await fetch('/api/me/avatar', {
+    method: 'DELETE',
+    headers: { ...getUpeerAuthHeaders() },
+    credentials: 'include',
+  });
+  const data = (await res.json()) as { profile?: MeProfile; error?: string };
+  if (!res.ok) {
+    throw new Error(data.error ?? 'Failed to remove photo');
+  }
+  if (!data.profile) {
+    throw new Error('Profile missing in response');
+  }
+  return data.profile;
+}
 
 export async function updateMeProfile(
   input: UpdateMeProfileInput,

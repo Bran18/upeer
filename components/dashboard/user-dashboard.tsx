@@ -121,14 +121,6 @@ function UserDashboardInner() {
         >
           Settings
         </Link>
-        .{' '}
-        Protocol integrations (Reflector, Trustless Work, Soroswap) are in{' '}
-        <Link
-          href="/app"
-          className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
-        >
-          Developer tools
-        </Link>
         .
       </p>
     </div>

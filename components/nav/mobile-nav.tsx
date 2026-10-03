@@ -3,13 +3,18 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { usePollar } from '@pollar/react';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { UserIdentitySummary } from '@/components/nav/user-identity-summary';
 import { Button } from '@/components/ui/button';
 import { IconMenu } from '@/components/ui/icons/chevron';
 import { useOptionalUpeerSession } from '@/components/session/upeer-session-provider';
 import { useDismissible } from '@/hooks/use-dismissible';
 import { cn } from '@/lib/cn';
-import { accountMenuLinks, navLinksForSession } from '@/lib/nav/user-links';
+import {
+  accountMenuLinks,
+  navLinksForSession,
+  resolveUserIdentity,
+} from '@/lib/nav/user-links';
 
 type MobileNavProps = {
   overlay?: boolean;
@@ -22,8 +27,19 @@ export function MobileNav({ overlay = false }: MobileNavProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
 
-  const { isAuthenticated, openLoginModal } = usePollar();
+  const { isAuthenticated, openLoginModal, wallet } = usePollar();
   const session = useOptionalUpeerSession();
+  const profile = session?.profile;
+
+  const identity = useMemo(
+    () =>
+      resolveUserIdentity({
+        profile,
+        sessionStatus: session?.status,
+        walletAddress: profile?.stellarAddress ?? wallet?.address ?? null,
+      }),
+    [profile, session?.status, wallet?.address],
+  );
 
   const close = useCallback(() => setOpen(false), []);
   useDismissible(open, close, [panelRef, triggerRef]);
@@ -92,10 +108,22 @@ export function MobileNav({ overlay = false }: MobileNavProps) {
             className="menu-panel absolute right-[max(0.75rem,env(safe-area-inset-right))] top-[calc(var(--site-header-height)+0.5rem)] flex max-h-[min(32rem,calc(100dvh-var(--site-header-height)-1.5rem))] w-[min(20rem,calc(100vw-1.5rem))] flex-col overflow-hidden"
           >
             <div className="border-b border-[var(--line)] px-4 py-3">
-              <p className="text-sm font-semibold">Navigate</p>
-              <p className="text-xs text-[var(--foreground-secondary)]">
-                Buy, sell, and manage your account
-              </p>
+              {isAuthenticated ? (
+                <UserIdentitySummary
+                  identity={identity}
+                  platformIntent={profile?.platformIntent}
+                  avatarUrl={profile?.avatarUrl}
+                  walletTitle={profile?.stellarAddress ?? wallet?.address ?? null}
+                  avatarSize="sm"
+                />
+              ) : (
+                <>
+                  <p className="text-sm font-semibold">Navigate</p>
+                  <p className="text-xs text-[var(--foreground-secondary)] text-pretty">
+                    Buy, sell, and manage your account
+                  </p>
+                </>
+              )}
             </div>
             <nav className="flex-1 overflow-y-auto p-2" aria-label="Mobile">
               {mainLinks.map((link) => (

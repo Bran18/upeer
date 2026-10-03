@@ -54,7 +54,7 @@ export function PayoutSettingsForm() {
     profile.platformIntent === 'merchant' || profile.platformIntent === 'both';
 
   return (
-    <form onSubmit={handleSave} className="mx-auto max-w-lg space-y-5" noValidate>
+    <form onSubmit={handleSave} className="max-w-xl space-y-5" noValidate>
       <p className="text-sm text-[var(--foreground-secondary)] text-pretty">
         {showSellerCopy
           ? 'When you sell USDC, escrow releases to this Stellar address. Buyers see your fiat instructions separately.'

@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { cn } from '@/lib/cn';
 
 function initialsFromLabel(label: string): string {
@@ -13,7 +14,8 @@ function initialsFromLabel(label: string): string {
 
 type AvatarProps = {
   label: string;
-  size?: 'sm' | 'md' | 'lg';
+  src?: string | null;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 };
 
@@ -21,9 +23,36 @@ const SIZE = {
   sm: 'h-8 w-8 text-[0.6875rem]',
   md: 'h-9 w-9 text-xs',
   lg: 'h-11 w-11 text-sm',
+  xl: 'h-16 w-16 text-base',
 };
 
-export function Avatar({ label, size = 'md', className }: AvatarProps) {
+const PIXEL = {
+  sm: 32,
+  md: 36,
+  lg: 44,
+  xl: 64,
+};
+
+export function Avatar({ label, src, size = 'md', className }: AvatarProps) {
+  const trimmedSrc = src?.trim();
+  if (trimmedSrc) {
+    return (
+      <Image
+        src={trimmedSrc}
+        alt=""
+        aria-hidden="true"
+        width={PIXEL[size]}
+        height={PIXEL[size]}
+        unoptimized
+        className={cn(
+          'inline-flex shrink-0 rounded-full object-cover',
+          SIZE[size],
+          className,
+        )}
+      />
+    );
+  }
+
   return (
     <span
       aria-hidden="true"

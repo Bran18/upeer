@@ -1,8 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import { usePollar } from '@pollar/react';
+import { useMemo } from 'react';
 import { hasPollarPublishableKey } from '@/components/pollar-required';
 import { useOptionalUpeerSession } from '@/components/session/upeer-session-provider';
+import { Button } from '@/components/ui/button';
+import { resolveUserIdentity } from '@/lib/nav/user-links';
 
 export function PollarWalletControl() {
   if (!hasPollarPublishableKey()) {
@@ -17,26 +21,56 @@ export function PollarWalletControl() {
 }
 
 function PollarWalletControlInner() {
-  const { isAuthenticated, wallet, openLoginModal, logout } = usePollar();
+  const {
+    isAuthenticated,
+    wallet,
+    openLoginModal,
+    logout,
+  } = usePollar();
   const upeer = useOptionalUpeerSession();
-  const short =
-    wallet?.address != null
-      ? `${wallet.address.slice(0, 4)}…${wallet.address.slice(-4)}`
-      : null;
 
-  if (isAuthenticated && short) {
+  const identity = useMemo(
+    () =>
+      resolveUserIdentity({
+        profile: upeer?.profile,
+        sessionStatus: upeer?.status,
+        walletAddress:
+          upeer?.profile?.stellarAddress ?? wallet?.address ?? null,
+      }),
+    [upeer?.profile, upeer?.status, wallet?.address],
+  );
+
+  if (isAuthenticated) {
     return (
-      <div className="flex items-center gap-2">
-        <button
+      <div className="flex flex-wrap items-center gap-2">
+        {identity.promptDisplayName ? (
+          <Link
+            href="/settings?tab=profile"
+            className="text-sm font-medium text-[var(--accent)] hover:underline"
+          >
+            {identity.primaryLabel}
+          </Link>
+        ) : (
+          <Link
+            href="/wallet"
+            className="inline-flex min-h-9 max-w-[12rem] items-center truncate rounded-full bg-[var(--fill)] px-3 text-sm font-medium text-[var(--foreground)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+            aria-label={`Open wallet for ${identity.primaryLabel}`}
+          >
+            {identity.primaryLabel}
+          </Link>
+        )}
+        {identity.walletLine ? (
+          <span
+            className="font-mono text-[0.75rem] text-[var(--foreground-tertiary)]"
+            translate="no"
+          >
+            {identity.walletLine}
+          </span>
+        ) : null}
+        <Button
           type="button"
-          onClick={() => openLoginModal()}
-          className="inline-flex min-h-9 items-center rounded-full bg-[var(--fill)] px-3 font-mono text-[0.75rem] text-[var(--foreground)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
-          aria-label={`Wallet ${short}`}
-        >
-          {short}
-        </button>
-        <button
-          type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => {
             if (upeer) {
               void upeer.signOut();
@@ -44,22 +78,17 @@ function PollarWalletControlInner() {
               logout();
             }
           }}
-          className="inline-flex min-h-9 items-center px-1 text-[0.75rem] text-[var(--foreground-secondary)] hover:text-[var(--foreground)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] max-[380px]:sr-only"
         >
           Sign out
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => openLoginModal()}
-      className="inline-flex min-h-9 items-center rounded-full bg-[var(--accent)] px-3.5 text-[0.8125rem] font-medium text-white hover:bg-[var(--accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
-    >
+    <Button type="button" size="sm" onClick={() => openLoginModal()}>
       Sign in
-    </button>
+    </Button>
   );
 }
 
@@ -71,14 +100,33 @@ export function PollarSignInButton({
   label?: string;
 }) {
   const { isAuthenticated, wallet, openLoginModal } = usePollar();
+  const upeer = useOptionalUpeerSession();
 
-  if (isAuthenticated && wallet?.address) {
+  const identity = useMemo(
+    () =>
+      resolveUserIdentity({
+        profile: upeer?.profile,
+        sessionStatus: upeer?.status,
+        walletAddress:
+          upeer?.profile?.stellarAddress ?? wallet?.address ?? null,
+      }),
+    [upeer?.profile, upeer?.status, wallet?.address],
+  );
+
+  if (isAuthenticated) {
+    const name = identity.primaryLabel;
     return (
       <p className="text-sm text-[var(--foreground-secondary)]">
-        Wallet ready —{' '}
-        <code className="font-mono text-xs" translate="no">
-          {wallet.address.slice(0, 8)}…
-        </code>
+        Signed in as{' '}
+        <span className="font-medium text-[var(--foreground)]">{name}</span>
+        {identity.walletLine ? (
+          <>
+            {' '}
+            <span className="font-mono text-xs" translate="no">
+              ({identity.walletLine})
+            </span>
+          </>
+        ) : null}
       </p>
     );
   }

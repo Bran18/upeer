@@ -41,22 +41,9 @@ export function roleLabel(intent: PlatformIntent | null | undefined): string | n
   }
 }
 
-export function shortenWallet(address: string): string {
-  if (address.length < 12) {
-    return address;
-  }
-  return `${address.slice(0, 4)}…${address.slice(-4)}`;
-}
-
-export function menuTriggerLabel(
-  displayName: string | null | undefined,
-  walletAddress: string | null | undefined,
-): string {
-  if (displayName?.trim()) {
-    return displayName.trim();
-  }
-  if (walletAddress) {
-    return shortenWallet(walletAddress);
-  }
-  return 'Account';
-}
+export {
+  menuTriggerLabel,
+  resolveUserIdentity,
+  shortenWallet,
+} from '@/lib/nav/user-identity';
+export type { UserIdentity } from '@/lib/nav/user-identity';

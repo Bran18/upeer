@@ -157,9 +157,7 @@ export function SoroswapSection({ disabled = false }: Props) {
         {swapReady === false ? (
           <p className="rounded-[var(--radius-ui)] border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
             Soroswap is not configured on this server. Ask your operator to set{' '}
-            <code className="text-xs">SOROSWAP_API_KEY</code>, or use{' '}
-            <Link href="/app" className="font-medium underline">Developer tools</Link>{' '}
-            to diagnose.
+            <code className="text-xs">SOROSWAP_API_KEY</code> on the server.
           </p>
         ) : null}
 

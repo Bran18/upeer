@@ -8,7 +8,7 @@ import {
   primaryCtaForIntent,
   type SetupItem,
 } from '@/lib/dashboard/setup-progress';
-import { roleLabel } from '@/lib/nav/user-links';
+import { resolveUserIdentity, roleLabel } from '@/lib/nav/user-links';
 import { cn } from '@/lib/cn';
 
 type DashboardHeroProps = {
@@ -19,7 +19,16 @@ type DashboardHeroProps = {
 
 export function DashboardHero({ profile, progress, nextItem }: DashboardHeroProps) {
   const intent = profile.platformIntent!;
-  const name = profile.displayName?.trim() || 'there';
+  const identity = resolveUserIdentity({
+    profile,
+    sessionStatus: 'ready',
+    walletAddress: profile.stellarAddress,
+  });
+  const name = profile.displayName?.trim()
+    ? profile.displayName.trim()
+    : identity.promptDisplayName
+      ? 'friend'
+      : 'there';
   const primary = primaryCtaForIntent(intent);
   const role = roleLabel(intent);
 
@@ -31,7 +40,11 @@ export function DashboardHero({ profile, progress, nextItem }: DashboardHeroProp
       <div className="relative border-b border-[var(--line)] bg-[radial-gradient(ellipse_80%_120%_at_100%_0%,var(--accent-muted),transparent_55%)] px-5 py-6 sm:px-6 sm:py-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-3">
-            <Avatar label={profile.displayName ?? profile.stellarAddress} size="md" />
+            <Avatar
+              label={identity.avatarLabel}
+              src={profile.avatarUrl}
+              size="md"
+            />
             <div className="min-w-0">
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-[var(--foreground-tertiary)]">
                 Welcome back
