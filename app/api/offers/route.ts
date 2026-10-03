@@ -3,43 +3,45 @@ import { z } from 'zod';
 import {
   isSessionError,
   requireSession,
+  sessionProfileId,
 } from '@/lib/auth/require-session';
+import { updateProfilePayoutAddress } from '@/lib/db/profiles';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const createSchema = z.object({
   side: z.enum(['sell_usdc', 'buy_usdc']),
   fiatCurrency: z.string().min(3).max(8),
-  spreadBps: z.number().int().min(0).max(5000),
+  pricePerUsdc: z.union([z.string(), z.number()]),
   minUsdc: z.string(),
   maxUsdc: z.string(),
   availableUsdc: z.string(),
+  payoutAddress: z.string().optional(),
 });
 
-export async function GET(request: Request) {
+export async function GET() {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ offers: [] });
   }
 
-  const session = await requireSession(request);
-  if (isSessionError(session)) {
-    return session;
-  }
-
   const supabase = getSupabaseAdmin();
-  const merchant = await supabase
-    .from('merchants')
-    .select('id')
-    .eq('profile_id', session.profileId)
-    .maybeSingle();
-
-  if (!merchant.data) {
-    return NextResponse.json({ offers: [] });
-  }
-
   const { data, error } = await supabase
     .from('offers')
-    .select('*')
-    .eq('merchant_id', merchant.data.id)
+    .select(
+      `
+      id,
+      side,
+      fiat_currency,
+      price_per_usdc,
+      min_usdc,
+      max_usdc,
+      available_usdc,
+      status,
+      maker_profile_id,
+      profiles:maker_profile_id ( display_name )
+    `,
+    )
+    .eq('status', 'open')
+    .not('maker_profile_id', 'is', null)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -57,32 +59,36 @@ export async function POST(req: Request) {
   if (isSessionError(session)) {
     return session;
   }
+  const profileId = sessionProfileId(session);
 
   try {
     const body = createSchema.parse(await req.json());
+    const price = Number(body.pricePerUsdc);
+    if (!Number.isFinite(price) || price <= 0) {
+      return NextResponse.json({ error: 'Invalid price per USDC' }, { status: 400 });
+    }
+
     const supabase = getSupabaseAdmin();
 
-    const { data: merchant, error: merchantError } = await supabase
-      .from('merchants')
-      .select('id, status, payout_address')
-      .eq('profile_id', session.profileId)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, payout_address, display_name')
+      .eq('id', profileId)
       .single();
 
-    if (merchantError || !merchant) {
-      return NextResponse.json(
-        { error: 'Merchant profile not found — apply first' },
-        { status: 400 },
-      );
+    if (profileError || !profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 400 });
     }
-    if (merchant.status !== 'approved') {
-      return NextResponse.json(
-        { error: 'Only approved merchants can publish offers' },
-        { status: 403 },
-      );
+
+    let payout = profile.payout_address as string | null;
+    if (body.payoutAddress?.trim()) {
+      await updateProfilePayoutAddress(profileId, body.payoutAddress.trim());
+      payout = body.payoutAddress.trim();
     }
-    if (!merchant.payout_address) {
+
+    if (!payout) {
       return NextResponse.json(
-        { error: 'Set payout_address before publishing offers' },
+        { error: 'Set your Stellar payout address before posting an order' },
         { status: 400 },
       );
     }
@@ -90,10 +96,11 @@ export async function POST(req: Request) {
     const { data, error } = await supabase
       .from('offers')
       .insert({
-        merchant_id: merchant.id,
+        maker_profile_id: profileId,
         side: body.side,
         fiat_currency: body.fiatCurrency.toUpperCase(),
-        spread_bps: body.spreadBps,
+        price_per_usdc: price,
+        spread_bps: 0,
         min_usdc: body.minUsdc,
         max_usdc: body.maxUsdc,
         available_usdc: body.availableUsdc,

@@ -36,8 +36,8 @@ export default async function TradePage({ params }: Props) {
         </ViewTransition>
         <p className="text-body mt-3 text-[0.9375rem] text-pretty">
           {offer.side === 'sell_usdc'
-            ? 'You buy USDC and settle fiat with the merchant.'
-            : 'You sell USDC and receive fiat from the merchant.'}
+            ? 'Sell order — you buy USDC at their listed price and pay fiat P2P.'
+            : 'Buy order — you sell USDC at their listed price and receive fiat P2P.'}
         </p>
         <div className="panel-card mt-8 sm:mt-10">
           <TradeFlowClient offer={offer} />

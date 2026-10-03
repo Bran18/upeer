@@ -1,7 +1,7 @@
 import type { MarketOffer } from '@/lib/data/offers';
 
 export type MarketSideFilter = 'all' | 'sell_usdc' | 'buy_usdc';
-export type MarketSort = 'spread' | 'liquidity' | 'name';
+export type MarketSort = 'price' | 'liquidity' | 'name';
 
 export type MarketFilters = {
   side: MarketSideFilter;
@@ -12,7 +12,7 @@ export type MarketFilters = {
 export const DEFAULT_MARKET_FILTERS: MarketFilters = {
   side: 'all',
   fiat: 'all',
-  sort: 'spread',
+  sort: 'price',
 };
 
 export function parseMarketFilters(
@@ -20,18 +20,35 @@ export function parseMarketFilters(
 ): MarketFilters {
   const sideRaw = typeof params.side === 'string' ? params.side : 'all';
   const fiatRaw = typeof params.fiat === 'string' ? params.fiat : 'all';
-  const sortRaw = typeof params.sort === 'string' ? params.sort : 'spread';
+  const sortRaw = typeof params.sort === 'string' ? params.sort : 'price';
 
   const side: MarketSideFilter =
     sideRaw === 'sell_usdc' || sideRaw === 'buy_usdc' ? sideRaw : 'all';
   const sort: MarketSort =
-    sortRaw === 'liquidity' || sortRaw === 'name' ? sortRaw : 'spread';
+    sortRaw === 'liquidity' || sortRaw === 'name' ? sortRaw : 'price';
 
   return {
     side,
     fiat: fiatRaw.toUpperCase(),
     sort,
   };
+}
+
+function priceNumber(offer: MarketOffer): number {
+  return Number(offer.pricePerUsdc) || 0;
+}
+
+/** For sell orders (you buy USDC), lower price is better. For buy orders, higher is better. */
+function compareByPrice(a: MarketOffer, b: MarketOffer): number {
+  const aPrice = priceNumber(a);
+  const bPrice = priceNumber(b);
+  if (a.side === 'sell_usdc' && b.side === 'sell_usdc') {
+    return aPrice - bPrice;
+  }
+  if (a.side === 'buy_usdc' && b.side === 'buy_usdc') {
+    return bPrice - aPrice;
+  }
+  return aPrice - bPrice;
 }
 
 export function filterAndSortOffers(
@@ -56,16 +73,18 @@ export function filterAndSortOffers(
       sorted.sort(
         (a, b) =>
           Number(b.availableUsdc) - Number(a.availableUsdc) ||
-          a.spreadBps - b.spreadBps,
+          compareByPrice(a, b),
       );
       break;
     case 'name':
       sorted.sort((a, b) => a.merchantName.localeCompare(b.merchantName));
       break;
-    case 'spread':
+    case 'price':
     default:
       sorted.sort(
-        (a, b) => a.spreadBps - b.spreadBps || a.merchantName.localeCompare(b.merchantName),
+        (a, b) =>
+          compareByPrice(a, b) ||
+          a.merchantName.localeCompare(b.merchantName),
       );
   }
 
@@ -80,7 +99,7 @@ export function filtersToSearchParams(filters: MarketFilters): URLSearchParams {
   if (filters.fiat !== 'all') {
     params.set('fiat', filters.fiat);
   }
-  if (filters.sort !== 'spread') {
+  if (filters.sort !== 'price') {
     params.set('sort', filters.sort);
   }
   return params;

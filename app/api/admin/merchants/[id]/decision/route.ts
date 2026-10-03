@@ -1,18 +1,23 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import {
+  isSessionError,
+  requireSession,
+  sessionProfileId,
+} from '@/lib/auth/require-session';
+import { profileIsOperator } from '@/lib/db/profiles';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const bodySchema = z.object({
   decision: z.enum(['approved', 'rejected', 'suspended']),
 });
 
-function assertOperator(req: Request): boolean {
+function assertOperatorApiKey(req: Request): boolean {
   const expected = process.env.UPEER_OPERATOR_API_KEY;
   if (!expected) {
     return false;
   }
-  const provided = req.headers.get('x-upeer-operator-key');
-  return provided === expected;
+  return req.headers.get('x-upeer-operator-key') === expected;
 }
 
 type Params = { params: Promise<{ id: string }> };
@@ -21,7 +26,19 @@ export async function POST(req: Request, { params }: Params) {
   if (!isSupabaseConfigured()) {
     return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
   }
-  if (!assertOperator(req)) {
+
+  const apiKeyOk = assertOperatorApiKey(req);
+  const session = await requireSession(req);
+  let allowed = apiKeyOk;
+  if (!isSessionError(session)) {
+    if (await profileIsOperator(sessionProfileId(session))) {
+      allowed = true;
+    }
+  }
+  if (!allowed) {
+    if (isSessionError(session)) {
+      return session;
+    }
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

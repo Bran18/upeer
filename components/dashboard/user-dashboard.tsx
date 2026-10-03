@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { SwapPanel } from '@/components/app/swap-panel';
 import {
   buildSetupItems,
   primaryCtaForIntent,
@@ -106,6 +107,8 @@ function UserDashboardInner() {
           </Link>
         ) : null}
       </section>
+
+      <SwapPanel disabled={false} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
         <SetupChecklist items={setupItems} />

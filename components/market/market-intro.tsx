@@ -1,22 +1,22 @@
 import Link from 'next/link';
 import type { MarketSummary } from '@/lib/market/summary';
-import { formatUsdcAmount } from '@/lib/market/format';
+import { formatPricePerUsdc, formatUsdcAmount } from '@/lib/market/format';
 
 const FLOW = [
   {
     step: '01',
-    title: 'Choose a desk',
-    body: 'Compare spread, fiat rail, and verified merchant inventory.',
+    title: 'Post an order',
+    body: 'Set your price per USDC, size, and fiat rail. Your order shows on the market.',
   },
   {
     step: '02',
-    title: 'Lock the quote',
-    body: 'Reflector reference plus the desk spread—fixed before escrow.',
+    title: 'Take an order',
+    body: 'Pick a counterparty, enter how much USDC, and lock the fiat total at their price.',
   },
   {
     step: '03',
-    title: 'Settle with escrow',
-    body: 'USDC moves through Trustless Work; fiat with the desk off-chain.',
+    title: 'Escrow on Stellar',
+    body: 'USDC moves through Trustless Work. Fiat settles P2P with the other side.',
   },
 ] as const;
 
@@ -26,30 +26,38 @@ type Props = {
 };
 
 export function MarketIntro({ summary, className }: Props) {
+  const bestPrice =
+    summary.bestSellPrice != null && summary.bestSellPriceCurrency
+      ? formatPricePerUsdc(
+          summary.bestSellPriceCurrency,
+          summary.bestSellPrice,
+        )
+      : '—';
+
   return (
     <div className={className}>
       <div className="max-w-3xl">
         <p className="text-[0.6875rem] font-medium uppercase tracking-[0.28em] text-[var(--foreground-tertiary)]">
-          OTC marketplace
+          P2P market
         </p>
         <h2 className="mt-3 text-[clamp(2rem,6vw,3.5rem)] font-medium leading-[0.92] tracking-[-0.045em] text-balance">
-          Trade USDC desk-to-desk
+          Trade USDC peer to peer
         </h2>
         <p className="mt-5 max-w-xl text-[1.0625rem] leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-          Executable quotes from verified merchants. Lock the digital leg on
-          Stellar; settle fiat directly with the desk.
+          Create orders at your price or take someone else&apos;s. Simple
+          USDC↔fiat trades on Stellar with on-chain escrow.
         </p>
       </div>
 
       <dl className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="ui-card px-4 py-3">
-          <dt className="text-xs text-[var(--foreground-tertiary)]">Live desks</dt>
+          <dt className="text-xs text-[var(--foreground-tertiary)]">Open orders</dt>
           <dd className="mt-1 text-2xl font-semibold tabular-nums">
-            {summary.deskCount}
+            {summary.orderCount}
           </dd>
         </div>
         <div className="ui-card px-4 py-3">
-          <dt className="text-xs text-[var(--foreground-tertiary)]">Fiat rails</dt>
+          <dt className="text-xs text-[var(--foreground-tertiary)]">Fiat pairs</dt>
           <dd className="mt-1 text-2xl font-semibold tabular-nums">
             {summary.fiatCurrencies.length || '—'}
           </dd>
@@ -60,15 +68,11 @@ export function MarketIntro({ summary, className }: Props) {
           ) : null}
         </div>
         <div className="ui-card px-4 py-3">
-          <dt className="text-xs text-[var(--foreground-tertiary)]">Lowest spread</dt>
-          <dd className="mt-1 text-2xl font-semibold tabular-nums">
-            {summary.lowestSpreadBps != null
-              ? `${summary.lowestSpreadBps} bps`
-              : '—'}
-          </dd>
+          <dt className="text-xs text-[var(--foreground-tertiary)]">Best sell price</dt>
+          <dd className="mt-1 text-2xl font-semibold tabular-nums">{bestPrice}</dd>
         </div>
         <div className="ui-card px-4 py-3">
-          <dt className="text-xs text-[var(--foreground-tertiary)]">USDC available</dt>
+          <dt className="text-xs text-[var(--foreground-tertiary)]">USDC on book</dt>
           <dd className="mt-1 text-2xl font-semibold tabular-nums">
             {summary.totalAvailableUsdc > 0
               ? formatUsdcAmount(String(summary.totalAvailableUsdc))
@@ -90,12 +94,12 @@ export function MarketIntro({ summary, className }: Props) {
       </ol>
 
       <p className="mt-8 text-sm text-[var(--foreground-tertiary)]">
-        Selling USDC?{' '}
+        Want to list liquidity?{' '}
         <Link
           href="/merchant"
           className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
         >
-          Open your merchant desk
+          Create orders
         </Link>
         .
       </p>

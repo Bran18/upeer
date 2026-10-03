@@ -49,10 +49,7 @@ export function MobileNav({ overlay = false }: MobileNavProps) {
   );
 
   const accountLinks = isAuthenticated
-    ? accountMenuLinks(
-        Boolean(session?.isOnboarded),
-        session?.profile?.platformIntent,
-      )
+    ? accountMenuLinks(session?.profile)
     : [];
 
   const linkClass = (href: string) => {

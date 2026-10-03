@@ -31,8 +31,8 @@ export function buildSetupItems(profile: MeProfile): SetupItem[] {
   if (showBuyer) {
     items.push({
       id: 'market',
-      title: 'Browse the OTC market',
-      description: 'Compare verified merchants and lock an executable USDC quote.',
+      title: 'Browse open orders',
+      description: 'Find a price you like and request a P2P trade.',
       status: 'action',
       href: '/market',
       hrefLabel: 'Open market',
@@ -40,16 +40,13 @@ export function buildSetupItems(profile: MeProfile): SetupItem[] {
   }
 
   if (showMerchant) {
-    const approved = profile.merchantStatus === 'approved';
     items.push({
-      id: 'merchant',
-      title: 'Merchant desk verification',
-      description: approved
-        ? 'Your desk is approved on testnet.'
-        : 'Submit your merchant profile for desk review on testnet.',
-      status: approved ? 'done' : 'action',
-      href: '/merchant',
-      hrefLabel: approved ? 'View desk' : 'Complete merchant profile',
+      id: 'post-order',
+      title: 'Post an order',
+      description: 'Set your price per USDC and wait for takers.',
+      status: profile.payoutAddress ? 'done' : 'action',
+      href: '/orders/new',
+      hrefLabel: 'Post order',
     });
   }
 
@@ -89,15 +86,15 @@ export function primaryCtaForIntent(intent: PlatformIntent): {
       };
     case 'merchant':
       return {
-        href: '/merchant',
-        label: 'Open merchant desk',
-        description: 'Manage offers and settlement.',
+        href: '/orders/new',
+        label: 'Post order',
+        description: 'List USDC at your price.',
       };
     case 'both':
       return {
-        href: '/market',
-        label: 'Browse market',
-        description: 'Buy-side quotes and merchant tools are both available.',
+        href: '/orders',
+        label: 'Your trades',
+        description: 'Manage incoming requests and active escrows.',
       };
     default:
       return {

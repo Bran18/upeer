@@ -3,12 +3,41 @@ import { z } from 'zod';
 import {
   isSessionError,
   requireSession,
+  sessionProfileId,
 } from '@/lib/auth/require-session';
+import { createNotification } from '@/lib/db/notifications';
+import { listOrdersForProfile } from '@/lib/db/orders';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const bodySchema = z.object({
   quoteId: z.string().uuid(),
 });
+
+export async function GET(req: Request) {
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ orders: [] });
+  }
+
+  const session = await requireSession(req);
+  if (isSessionError(session)) {
+    return session;
+  }
+  const profileId = sessionProfileId(session);
+
+  const url = new URL(req.url);
+  const roleRaw = url.searchParams.get('role') ?? 'all';
+  const role =
+    roleRaw === 'incoming' || roleRaw === 'outgoing' ? roleRaw : 'all';
+
+  try {
+    const orders = await listOrdersForProfile(profileId, role);
+    return NextResponse.json({ orders });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to list orders';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
 
 export async function POST(req: Request) {
   if (!isSupabaseConfigured()) {
@@ -19,6 +48,7 @@ export async function POST(req: Request) {
   if (isSessionError(session)) {
     return session;
   }
+  const profileId = sessionProfileId(session);
 
   try {
     const { quoteId } = bodySchema.parse(await req.json());
@@ -26,9 +56,22 @@ export async function POST(req: Request) {
 
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
-      .select('*, offers!inner(id, available_usdc, merchant_id)')
+      .select(
+        `
+        id,
+        usdc_amount,
+        expires_at,
+        buyer_profile_id,
+        offers!inner (
+          id,
+          available_usdc,
+          maker_profile_id,
+          status
+        )
+      `,
+      )
       .eq('id', quoteId)
-      .eq('buyer_profile_id', session.profileId)
+      .eq('buyer_profile_id', profileId)
       .single();
 
     if (quoteError || !quote) {
@@ -39,11 +82,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Quote expired' }, { status: 400 });
     }
 
-    const offer = quote.offers as {
+    const rawOffer = quote.offers;
+    const offer = (Array.isArray(rawOffer) ? rawOffer[0] : rawOffer) as {
       id: string;
       available_usdc: string;
-      merchant_id: string;
+      maker_profile_id: string;
+      status: string;
     };
+
+    if (offer.status !== 'open') {
+      return NextResponse.json({ error: 'Offer is not open' }, { status: 400 });
+    }
+
+    if (offer.maker_profile_id === profileId) {
+      return NextResponse.json(
+        { error: 'You cannot take your own order' },
+        { status: 400 },
+      );
+    }
 
     const usdc = Number(quote.usdc_amount);
     const available = Number(offer.available_usdc);
@@ -55,8 +111,10 @@ export async function POST(req: Request) {
       .from('orders')
       .insert({
         quote_id: quoteId,
-        status: 'reserved',
+        status: 'pending_acceptance',
         engagement_id: crypto.randomUUID(),
+        maker_profile_id: offer.maker_profile_id,
+        taker_profile_id: profileId,
       })
       .select('*')
       .single();
@@ -65,36 +123,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: orderError.message }, { status: 400 });
     }
 
-    const newAvailable = (available - usdc).toFixed(7);
-    const { error: liquidityError } = await supabase
-      .from('offers')
-      .update({
-        available_usdc: newAvailable,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', offer.id)
-      .gte('available_usdc', quote.usdc_amount);
-
-    if (liquidityError) {
-      await supabase.from('orders').delete().eq('id', order.id);
-      return NextResponse.json({ error: 'Liquidity conflict' }, { status: 409 });
-    }
-
     await supabase.from('escrow_sessions').insert({
       order_id: order.id,
       milestone_state: 'idle',
     });
 
-    const { data: merchant } = await supabase
-      .from('merchants')
-      .select('payout_address, display_name')
-      .eq('id', offer.merchant_id)
-      .single();
-
-    return NextResponse.json({
-      order,
-      merchant,
+    await createNotification({
+      profileId: offer.maker_profile_id,
+      type: 'order_requested',
+      title: 'New trade request',
+      body: `Someone wants ${quote.usdc_amount} USDC on your order.`,
+      href: `/orders/${order.id}`,
+      metadata: { orderId: order.id, offerId: offer.id },
     });
+
+    return NextResponse.json({ order });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Order creation failed';

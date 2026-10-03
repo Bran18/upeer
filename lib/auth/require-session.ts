@@ -26,3 +26,11 @@ export function isSessionError(
 ): value is NextResponse {
   return value instanceof NextResponse;
 }
+
+/** Use after `requireSession` when `isSessionError` is false. */
+export function sessionProfileId(session: SessionPayload): string {
+  if (!session.profileId) {
+    throw new Error('Profile missing on session');
+  }
+  return session.profileId;
+}

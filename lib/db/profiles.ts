@@ -51,7 +51,7 @@ export async function getMeProfile(profileId: string): Promise<MeProfile | null>
   const profileResult = await supabase
     .from('profiles')
     .select(
-      'id, stellar_address, display_name, platform_intent, onboarding_completed_at',
+      'id, stellar_address, display_name, platform_intent, onboarding_completed_at, payout_address, is_operator',
     )
     .eq('id', profileId)
     .maybeSingle();
@@ -78,6 +78,11 @@ export async function getMeProfile(profileId: string): Promise<MeProfile | null>
   const merchantStatus: MerchantStatus =
     (merchantResult.data?.status as MerchantStatus | undefined) ?? 'none';
 
+  const extended = row as ProfileRow & {
+    payout_address?: string | null;
+    is_operator?: boolean;
+  };
+
   return {
     id: row.id,
     stellarAddress: row.stellar_address,
@@ -86,7 +91,42 @@ export async function getMeProfile(profileId: string): Promise<MeProfile | null>
     onboardingCompletedAt: row.onboarding_completed_at,
     merchantStatus,
     merchantId: (merchantResult.data?.id as string | undefined) ?? null,
+    payoutAddress: extended.payout_address ?? null,
+    isOperator: Boolean(extended.is_operator),
   };
+}
+
+export async function updateProfilePayoutAddress(
+  profileId: string,
+  payoutAddress: string,
+): Promise<void> {
+  if (!payoutAddress.startsWith('G') || payoutAddress.length !== 56) {
+    throw new Error('Payout address must be a Stellar G… public key');
+  }
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      payout_address: payoutAddress,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', profileId);
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function profileIsOperator(profileId: string): Promise<boolean> {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('is_operator')
+    .eq('id', profileId)
+    .maybeSingle();
+  if (error) {
+    throw new Error(error.message);
+  }
+  return Boolean(data?.is_operator);
 }
 
 export async function completeProfileOnboarding(

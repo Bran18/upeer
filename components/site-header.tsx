@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { NotificationBell } from '@/components/notification-bell';
 import { MobileNav } from '@/components/nav/mobile-nav';
 import { PrimaryNav } from '@/components/nav/primary-nav';
 import { UserMenu } from '@/components/nav/user-menu';
@@ -39,6 +40,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
         </div>
 
         <div className="pointer-events-auto ml-auto flex min-w-0 shrink-0 items-center gap-2">
+          <NotificationBell overlay={overlay} />
           <MobileNav overlay={overlay} />
           <UserMenu overlay={overlay} />
         </div>

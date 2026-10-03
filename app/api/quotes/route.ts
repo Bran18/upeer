@@ -33,12 +33,12 @@ export async function POST(req: Request) {
         id,
         side,
         fiat_currency,
-        spread_bps,
+        price_per_usdc,
         min_usdc,
         max_usdc,
         available_usdc,
         status,
-        merchants!inner (status)
+        maker_profile_id
       `,
       )
       .eq('id', offerId)
@@ -49,12 +49,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Offer not found' }, { status: 404 });
     }
 
-    const merchant = offer.merchants as { status: string } | { status: string }[];
-    const merchantStatus = Array.isArray(merchant)
-      ? merchant[0]?.status
-      : merchant.status;
-    if (merchantStatus !== 'approved') {
-      return NextResponse.json({ error: 'Merchant not approved' }, { status: 400 });
+    if (offer.maker_profile_id === session.profileId) {
+      return NextResponse.json(
+        { error: 'You cannot quote your own order' },
+        { status: 400 },
+      );
     }
 
     const usdc = Number(usdcAmount);
@@ -73,9 +72,17 @@ export async function POST(req: Request) {
       });
     }
 
+    const pricePerUsdc = String(offer.price_per_usdc ?? '');
+    if (!pricePerUsdc || Number(pricePerUsdc) <= 0) {
+      return NextResponse.json(
+        { error: 'Offer has no valid price' },
+        { status: 400 },
+      );
+    }
+
     const built = await buildExecutableQuote({
       fiatCurrency: offer.fiat_currency,
-      spreadBps: offer.spread_bps,
+      pricePerUsdc,
       usdcAmount,
     });
 
@@ -88,7 +95,7 @@ export async function POST(req: Request) {
         fiat_amount: built.fiatAmount,
         fiat_currency: built.fiatCurrency,
         reflector_snapshot: built.reflectorSnapshot,
-        spread_bps: built.spreadBps,
+        spread_bps: 0,
         expires_at: built.expiresAt,
       })
       .select('*')

@@ -11,7 +11,7 @@ export function LandingMarketPanel({ summary }: Props) {
     <div className="landing-market-panel">
       <MarketIntro summary={summary} />
       <NavLink href="/market" className="xp-cta xp-cta--overlay mt-8">
-        Browse live offers
+        View open orders
       </NavLink>
     </div>
   );

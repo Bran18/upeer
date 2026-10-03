@@ -42,15 +42,15 @@ export function MarketToolbar({
   onChange,
 }: Props) {
   const sideOptions: { id: MarketSideFilter; label: string }[] = [
-    { id: 'all', label: 'All desks' },
+    { id: 'all', label: 'All orders' },
     { id: 'sell_usdc', label: 'Buy USDC' },
     { id: 'buy_usdc', label: 'Sell USDC' },
   ];
 
   const sortOptions: { id: MarketSort; label: string }[] = [
-    { id: 'spread', label: 'Lowest spread' },
-    { id: 'liquidity', label: 'Most liquidity' },
-    { id: 'name', label: 'Merchant A–Z' },
+    { id: 'price', label: 'Best price' },
+    { id: 'liquidity', label: 'Most size' },
+    { id: 'name', label: 'Seller A–Z' },
   ];
 
   return (

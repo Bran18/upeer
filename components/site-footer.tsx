@@ -1,13 +1,9 @@
 import Link from 'next/link';
 import { SiteLogo } from '@/components/site-logo';
 import { NavLink } from '@/components/transition/nav-link';
+import { footerLinks } from '@/lib/nav/user-links';
 
-const LINKS = [
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/market', label: 'Market' },
-  { href: '/merchant', label: 'Merchants' },
-  { href: '/app', label: 'Developer tools' },
-] as const;
+const LINKS = footerLinks();
 
 const STACK = [
   { name: 'Pollar', role: 'Login & wallet' },

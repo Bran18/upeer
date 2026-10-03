@@ -20,7 +20,7 @@ type OfferRow = {
   id: string;
   side: string;
   fiat_currency: string;
-  spread_bps: number;
+  price_per_usdc: string | number;
   available_usdc: string;
   status: string;
 };
@@ -42,7 +42,7 @@ function MerchantDashboardInner() {
   const [offerForm, setOfferForm] = useState({
     side: 'sell_usdc' as 'sell_usdc' | 'buy_usdc',
     fiatCurrency: 'COP',
-    spreadBps: 50,
+    pricePerUsdc: '4100',
     minUsdc: '50.0000000',
     maxUsdc: '5000.0000000',
     availableUsdc: '1000.0000000',
@@ -117,7 +117,7 @@ function MerchantDashboardInner() {
         body: JSON.stringify({
           side: offerForm.side,
           fiatCurrency: offerForm.fiatCurrency,
-          spreadBps: offerForm.spreadBps,
+          pricePerUsdc: offerForm.pricePerUsdc,
           minUsdc: offerForm.minUsdc,
           maxUsdc: offerForm.maxUsdc,
           availableUsdc: offerForm.availableUsdc,
@@ -178,7 +178,10 @@ function MerchantDashboardInner() {
           </section>
 
           <section className="panel-card space-y-4">
-            <h3 className="text-headline text-sm">Publish Offer</h3>
+            <h3 className="text-headline text-sm">Create order</h3>
+            <p className="text-sm text-muted">
+              Set price as fiat per 1 USDC (e.g. 4100 COP, 17.5 MXN).
+            </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="field-label" htmlFor="offer-side">Side</label>
@@ -194,8 +197,8 @@ function MerchantDashboardInner() {
                     }))
                   }
                 >
-                  <option value="sell_usdc">Merchant sells USDC</option>
-                  <option value="buy_usdc">Merchant buys USDC</option>
+                  <option value="sell_usdc">I sell USDC</option>
+                  <option value="buy_usdc">I buy USDC</option>
                 </select>
               </div>
               <div>
@@ -212,13 +215,77 @@ function MerchantDashboardInner() {
                   autoComplete="off"
                 />
               </div>
+              <div>
+                <label className="field-label" htmlFor="offer-price">
+                  Price per USDC
+                </label>
+                <input
+                  id="offer-price"
+                  name="pricePerUsdc"
+                  className="field-input tabular-nums"
+                  value={offerForm.pricePerUsdc}
+                  onChange={(e) =>
+                    setOfferForm((f) => ({ ...f, pricePerUsdc: e.target.value }))
+                  }
+                  inputMode="decimal"
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label className="field-label" htmlFor="offer-available">
+                  Size (USDC available)
+                </label>
+                <input
+                  id="offer-available"
+                  name="availableUsdc"
+                  className="field-input tabular-nums"
+                  value={offerForm.availableUsdc}
+                  onChange={(e) =>
+                    setOfferForm((f) => ({
+                      ...f,
+                      availableUsdc: e.target.value,
+                    }))
+                  }
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label className="field-label" htmlFor="offer-min">Min USDC</label>
+                <input
+                  id="offer-min"
+                  name="minUsdc"
+                  className="field-input tabular-nums"
+                  value={offerForm.minUsdc}
+                  onChange={(e) =>
+                    setOfferForm((f) => ({ ...f, minUsdc: e.target.value }))
+                  }
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label className="field-label" htmlFor="offer-max">Max USDC</label>
+                <input
+                  id="offer-max"
+                  name="maxUsdc"
+                  className="field-input tabular-nums"
+                  value={offerForm.maxUsdc}
+                  onChange={(e) =>
+                    setOfferForm((f) => ({ ...f, maxUsdc: e.target.value }))
+                  }
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+              </div>
             </div>
             <button
               type="button"
               onClick={() => void publishOffer()}
               className="btn-primary"
             >
-              Publish to Market
+              Post order
             </button>
           </section>
 
@@ -236,7 +303,8 @@ function MerchantDashboardInner() {
                     </a>
                     {' '}
                     <span className="text-muted">
-                      {o.side} · {o.fiat_currency} · {o.available_usdc} USDC left
+                      {o.side} · {o.price_per_usdc} {o.fiat_currency}/USDC ·{' '}
+                      {o.available_usdc} left
                     </span>
                   </li>
                 ))}

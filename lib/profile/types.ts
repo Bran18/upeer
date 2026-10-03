@@ -15,6 +15,8 @@ export type MeProfile = {
   onboardingCompletedAt: string | null;
   merchantStatus: MerchantStatus;
   merchantId: string | null;
+  payoutAddress: string | null;
+  isOperator: boolean;
 };
 
 export function onboardingComplete(profile: MeProfile): boolean {

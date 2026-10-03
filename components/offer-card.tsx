@@ -7,9 +7,9 @@ import { NavLink } from '@/components/transition/nav-link';
 import { Avatar } from '@/components/ui/avatar';
 import {
   buyerActionLabel,
-  formatSpreadBps,
-  formatSpreadPercent,
+  formatPricePerUsdc,
   formatUsdcAmount,
+  orderSideLabel,
 } from '@/lib/market/format';
 
 type Props = {
@@ -19,9 +19,7 @@ type Props = {
 };
 
 function merchantSubtitle(offer: MarketOffer): string {
-  return offer.side === 'sell_usdc'
-    ? `Buy USDC · ${offer.fiatCurrency} fiat settlement`
-    : `Sell USDC · ${offer.fiatCurrency} payout`;
+  return `${orderSideLabel(offer.side)} · ${offer.fiatCurrency}`;
 }
 
 function OfferTag({
@@ -56,6 +54,7 @@ function CardArrowIcon() {
 export function OfferCard({ offer }: Props) {
   const action = buyerActionLabel(offer.side);
   const tagTone = offer.side === 'sell_usdc' ? 'buy' : 'sell';
+  const priceLabel = formatPricePerUsdc(offer.fiatCurrency, offer.pricePerUsdc);
   const available = formatUsdcAmount(offer.availableUsdc);
 
   return (
@@ -63,7 +62,7 @@ export function OfferCard({ offer }: Props) {
       href={`/trade/${offer.id}`}
       direction="forward"
       className="offer-card group text-left no-underline"
-      aria-label={`${action} with ${offer.merchantName}, ${formatSpreadPercent(offer.spreadBps)} spread`}
+      aria-label={`${action} with ${offer.merchantName} at ${priceLabel} per USDC`}
     >
       <div className="flex items-start gap-3">
         <Avatar
@@ -92,20 +91,16 @@ export function OfferCard({ offer }: Props) {
 
       <div className="mt-5 flex-1">
         <p className="text-[0.625rem] font-medium uppercase tracking-[0.14em] text-[var(--foreground-tertiary)]">
-          Desk spread
+          Price per USDC
         </p>
         <div className="mt-1 flex flex-wrap items-baseline gap-x-2.5 gap-y-0">
           <span className="text-[1.75rem] font-semibold leading-none tracking-tight tabular-nums text-[var(--foreground)]">
-            {formatSpreadPercent(offer.spreadBps)}
-          </span>
-          <span className="text-sm font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
-            {available} USDC
+            {priceLabel}
           </span>
         </div>
         <p className="mt-1 text-xs text-[var(--foreground-secondary)] tabular-nums">
-          {formatSpreadBps(offer.spreadBps)} over Reflector ·{' '}
-          {formatUsdcAmount(offer.minUsdc)}–{formatUsdcAmount(offer.maxUsdc)}{' '}
-          size
+          {available} USDC available · {formatUsdcAmount(offer.minUsdc)}–
+          {formatUsdcAmount(offer.maxUsdc)} per fill
         </p>
       </div>
 

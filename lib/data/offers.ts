@@ -3,43 +3,60 @@ import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 export type MarketOffer = {
   id: string;
   merchantName: string;
+  makerProfileId: string;
   side: 'sell_usdc' | 'buy_usdc';
   fiatCurrency: string;
-  spreadBps: number;
+  pricePerUsdc: string;
   minUsdc: string;
   maxUsdc: string;
   availableUsdc: string;
   verified: boolean;
 };
 
-export const MOCK_OFFERS: MarketOffer[] = [
-  {
-    id: 'demo-offer-1',
-    merchantName: 'Andes Liquidity',
-    side: 'sell_usdc',
-    fiatCurrency: 'COP',
-    spreadBps: 45,
-    minUsdc: '50.0000000',
-    maxUsdc: '5000.0000000',
-    availableUsdc: '12000.0000000',
-    verified: true,
-  },
-  {
-    id: 'demo-offer-2',
-    merchantName: 'MXN Desk',
-    side: 'buy_usdc',
-    fiatCurrency: 'MXN',
-    spreadBps: 30,
-    minUsdc: '100.0000000',
-    maxUsdc: '10000.0000000',
-    availableUsdc: '25000.0000000',
-    verified: true,
-  },
-];
+function mapOfferRow(row: {
+  id: string;
+  side: string;
+  fiat_currency: string;
+  price_per_usdc?: string | number | null;
+  min_usdc: string | number;
+  max_usdc: string | number;
+  available_usdc: string | number;
+  maker_profile_id: string;
+  profiles?:
+    | { display_name: string | null }
+    | { display_name: string | null }[];
+}): MarketOffer {
+  const rawProfile = row.profiles;
+  const profile = (Array.isArray(rawProfile)
+    ? rawProfile[0]
+    : rawProfile) as { display_name: string | null } | undefined;
+
+  const price =
+    row.price_per_usdc != null && row.price_per_usdc !== ''
+      ? String(row.price_per_usdc)
+      : '1';
+
+  const name =
+    profile?.display_name?.trim() ||
+    `Trader ${row.maker_profile_id.slice(0, 8)}`;
+
+  return {
+    id: row.id,
+    merchantName: name,
+    makerProfileId: row.maker_profile_id,
+    side: row.side as 'sell_usdc' | 'buy_usdc',
+    fiatCurrency: row.fiat_currency,
+    pricePerUsdc: price,
+    minUsdc: String(row.min_usdc),
+    maxUsdc: String(row.max_usdc),
+    availableUsdc: String(row.available_usdc),
+    verified: false,
+  };
+}
 
 export async function listMarketOffers(): Promise<MarketOffer[]> {
   if (!isSupabaseConfigured()) {
-    return MOCK_OFFERS;
+    return [];
   }
 
   const supabase = getSupabaseAdmin();
@@ -50,83 +67,57 @@ export async function listMarketOffers(): Promise<MarketOffer[]> {
       id,
       side,
       fiat_currency,
-      spread_bps,
+      price_per_usdc,
       min_usdc,
       max_usdc,
       available_usdc,
-      merchants!inner (
-        display_name,
-        status
-      )
+      maker_profile_id,
+      profiles:maker_profile_id ( display_name )
     `,
     )
     .eq('status', 'open')
-    .eq('merchants.status', 'approved');
+    .not('maker_profile_id', 'is', null);
 
-  if (error || !data?.length) {
-    return MOCK_OFFERS;
+  if (error) {
+    console.error('[listMarketOffers]', error.message);
+    return [];
+  }
+  if (!data?.length) {
+    return [];
   }
 
-  return data.map((row) => {
-    const rawMerchant = row.merchants;
-    const merchant = (Array.isArray(rawMerchant)
-      ? rawMerchant[0]
-      : rawMerchant) as { display_name: string; status: string };
-    return {
-      id: row.id,
-      merchantName: merchant.display_name,
-      side: row.side as 'sell_usdc' | 'buy_usdc',
-      fiatCurrency: row.fiat_currency,
-      spreadBps: row.spread_bps,
-      minUsdc: String(row.min_usdc),
-      maxUsdc: String(row.max_usdc),
-      availableUsdc: String(row.available_usdc),
-      verified: merchant.status === 'approved',
-    };
-  });
+  return data.map((row) => mapOfferRow(row as Parameters<typeof mapOfferRow>[0]));
 }
 
 export async function getOfferById(id: string): Promise<MarketOffer | null> {
-  if (isSupabaseConfigured() && id.includes('-')) {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
-      .from('offers')
-      .select(
-        `
-        id,
-        side,
-        fiat_currency,
-        spread_bps,
-        min_usdc,
-        max_usdc,
-        available_usdc,
-        status,
-        merchants!inner (display_name, status)
-      `,
-      )
-      .eq('id', id)
-      .eq('status', 'open')
-      .maybeSingle();
-
-    if (!error && data) {
-      const rawMerchant = data.merchants;
-      const merchant = (Array.isArray(rawMerchant)
-        ? rawMerchant[0]
-        : rawMerchant) as { display_name: string; status: string };
-      return {
-        id: data.id,
-        merchantName: merchant.display_name,
-        side: data.side as 'sell_usdc' | 'buy_usdc',
-        fiatCurrency: data.fiat_currency,
-        spreadBps: data.spread_bps,
-        minUsdc: String(data.min_usdc),
-        maxUsdc: String(data.max_usdc),
-        availableUsdc: String(data.available_usdc),
-        verified: merchant.status === 'approved',
-      };
-    }
+  if (!isSupabaseConfigured()) {
+    return null;
   }
 
-  const offers = await listMarketOffers();
-  return offers.find((o) => o.id === id) ?? null;
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('offers')
+    .select(
+      `
+      id,
+      side,
+      fiat_currency,
+      price_per_usdc,
+      min_usdc,
+      max_usdc,
+      available_usdc,
+      status,
+      maker_profile_id,
+      profiles:maker_profile_id ( display_name )
+    `,
+    )
+    .eq('id', id)
+    .eq('status', 'open')
+    .maybeSingle();
+
+  if (error || !data || !data.maker_profile_id) {
+    return null;
+  }
+
+  return mapOfferRow(data as Parameters<typeof mapOfferRow>[0]);
 }

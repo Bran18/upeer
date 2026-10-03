@@ -1,58 +1,28 @@
-import type { MeProfile, PlatformIntent } from '@/lib/profile/types';
+import type { PlatformIntent } from '@/lib/profile/types';
+import {
+  accountMenuItems,
+  footerNavItems,
+  headerNavItems,
+  type NavItem,
+} from '@/lib/nav/site-nav';
+import type { MeProfile } from '@/lib/profile/types';
 
-export type NavLinkItem = {
-  href: string;
-  label: string;
-};
+export type NavLinkItem = NavItem;
 
 export function navLinksForSession(
   isAuthenticated: boolean,
   isOnboarded: boolean,
-  platformIntent: PlatformIntent | null | undefined,
+  _platformIntent?: PlatformIntent | null,
 ): NavLinkItem[] {
-  if (!isAuthenticated) {
-    return [{ href: '/market', label: 'Market' }];
-  }
-
-  if (!isOnboarded) {
-    return [
-      { href: '/onboarding', label: 'Finish setup' },
-      { href: '/market', label: 'Market' },
-    ];
-  }
-
-  const links: NavLinkItem[] = [{ href: '/dashboard', label: 'Dashboard' }];
-
-  if (platformIntent === 'buyer' || platformIntent === 'both') {
-    links.push({ href: '/market', label: 'Market' });
-  }
-  if (platformIntent === 'merchant' || platformIntent === 'both') {
-    links.push({ href: '/merchant', label: 'Merchants' });
-  }
-
-  return links;
+  return headerNavItems(isAuthenticated, isOnboarded);
 }
 
-export function accountMenuLinks(
-  isOnboarded: boolean,
-  platformIntent: PlatformIntent | null | undefined,
-): NavLinkItem[] {
-  const items: NavLinkItem[] = [{ href: '/dashboard', label: 'Dashboard' }];
+export function accountMenuLinks(profile: MeProfile | null | undefined): NavLinkItem[] {
+  return accountMenuItems(profile);
+}
 
-  if (!isOnboarded) {
-    items.push({ href: '/onboarding', label: 'Finish setup' });
-  }
-
-  if (platformIntent === 'buyer' || platformIntent === 'both') {
-    items.push({ href: '/market', label: 'Market' });
-  }
-  if (platformIntent === 'merchant' || platformIntent === 'both') {
-    items.push({ href: '/merchant', label: 'Merchants' });
-  }
-
-  items.push({ href: '/app', label: 'Developer tools' });
-
-  return items;
+export function footerLinks(): NavLinkItem[] {
+  return footerNavItems;
 }
 
 export function roleLabel(intent: PlatformIntent | null | undefined): string | null {
@@ -63,9 +33,9 @@ export function roleLabel(intent: PlatformIntent | null | undefined): string | n
     case 'buyer':
       return 'Buyer';
     case 'merchant':
-      return 'Merchant';
+      return 'Seller';
     case 'both':
-      return 'Buyer & merchant';
+      return 'Buyer & seller';
     default:
       return null;
   }

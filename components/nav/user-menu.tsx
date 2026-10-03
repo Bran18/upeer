@@ -68,7 +68,7 @@ function UserMenuInner({ overlay }: UserMenuProps) {
     );
   }
 
-  const menuLinks = accountMenuLinks(isOnboarded, profile?.platformIntent);
+  const menuLinks = accountMenuLinks(profile);
   const label = menuTriggerLabel(profile?.displayName, wallet?.address);
 
   async function handleSignOut() {

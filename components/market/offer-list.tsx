@@ -100,9 +100,8 @@ export function OfferList({
       )}
 
       <p className="text-xs leading-relaxed text-[var(--foreground-tertiary)] text-pretty">
-        Testnet only. Quotes use Reflector references plus merchant spread.
-        Escrow is on-chain; fiat settlement happens off-chain with the desk. A
-        milestone approval is not a bank transfer.
+        Testnet only. Each order shows a fixed price per USDC. Escrow is
+        on-chain; fiat is settled P2P with your counterparty.
       </p>
     </div>
   );

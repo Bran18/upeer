@@ -1,15 +1,15 @@
 const ITEMS = [
   {
-    title: 'On-chain escrow',
-    body: 'USDC legs use Trustless Work milestones—not informal IOUs.',
+    title: 'Your price',
+    body: 'Orders list fiat per USDC—no hidden formulas on the book.',
   },
   {
-    title: 'Reflector quotes',
-    body: 'Reference price plus merchant spread, locked before you fund.',
+    title: 'Take or post',
+    body: 'Create an order as a merchant or take someone else’s open order.',
   },
   {
-    title: 'Verified desks',
-    body: 'Merchants pass review before inventory goes live.',
+    title: 'Escrow on Stellar',
+    body: 'USDC legs use Trustless Work; fiat stays peer-to-peer.',
   },
 ] as const;
 
@@ -17,7 +17,7 @@ export function MarketTrustStrip() {
   return (
     <section
       className="border-b border-[var(--line)] bg-[var(--fill)]"
-      aria-label="How Upeer market works"
+      aria-label="How the P2P market works"
     >
       <div className="page-shell py-6">
         <ul className="grid gap-4 sm:grid-cols-3">
