@@ -1,15 +1,13 @@
-import { ExchangeWidget } from '@/components/exchange/exchange-widget';
-import { NavLink } from '@/components/transition/nav-link';
-import { listMarketOffers } from '@/lib/data/offers';
+import { MarketHeroScene } from '@/components/visual/market-hero-scene';
+import { GlowButton } from '@/components/ui/glow-button';
 
-export async function LandingHome() {
-  const offers = await listMarketOffers();
-
+export function LandingHome() {
   return (
-    <div className="relative overflow-hidden">
-      <div className="apple-aurora pointer-events-none absolute inset-0" aria-hidden />
-      <div className="page-shell relative grid items-start gap-10 pb-16 pt-8 sm:gap-12 sm:pb-24 sm:pt-12 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)] lg:items-center lg:pt-16">
-        <div className="order-2 max-w-xl lg:order-1">
+    <div className="market-hero">
+      <MarketHeroScene />
+      <div className="market-hero-veil" aria-hidden />
+      <div className="page-shell market-hero-content">
+        <div className="market-hero-copy">
           <p className="text-[0.6875rem] font-medium uppercase tracking-[0.2em] text-[var(--accent)]">
             you + peer
           </p>
@@ -36,16 +34,9 @@ export async function LandingHome() {
               <dd className="mt-1 text-sm text-[var(--foreground)]">A quote you can take</dd>
             </div>
           </dl>
-        </div>
-
-        <div className="order-1 lg:order-2">
-          <ExchangeWidget offers={offers} />
-          <p className="mt-4 text-center text-xs text-[var(--foreground-tertiary)]">
-            Prefer to browse?{' '}
-            <NavLink href="/market" className="text-[var(--accent)] hover:underline">
-              Open offers
-            </NavLink>
-          </p>
+          <div className="mt-8">
+            <GlowButton href="/exchange">Start exchanging</GlowButton>
+          </div>
         </div>
       </div>
     </div>

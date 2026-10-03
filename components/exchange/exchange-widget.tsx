@@ -21,6 +21,7 @@ import {
   usdcFromFiat,
   type ExchangeSide,
 } from '@/lib/exchange/match';
+import { ExchangeDirection } from '@/components/exchange/exchange-direction';
 import { cn } from '@/lib/cn';
 
 type ExchangeWidgetProps = {
@@ -138,23 +139,14 @@ function ExchangeWidgetInner({
   return (
     <div className={cn('exchange-shell', className)}>
       <div className="exchange-card">
-        <div className="exchange-sides" role="radiogroup" aria-label="Exchange side">
-          {(['buy', 'sell'] as const).map((value) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={side === value}
-              className="exchange-side"
-              onClick={() => {
-                setSide(value);
-    setPayInput(value === 'buy' ? '150000' : '100');
-              }}
-            >
-              {value}
-            </button>
-          ))}
-        </div>
+        <ExchangeDirection
+          side={side}
+          fiatCurrency={fiatCurrency}
+          onChange={(value) => {
+            setSide(value);
+            setPayInput(value === 'buy' ? '150000' : '100');
+          }}
+        />
 
         <div className="exchange-legs">
           <div className="exchange-leg exchange-leg--pay">

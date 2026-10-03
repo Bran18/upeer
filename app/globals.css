@@ -479,6 +479,87 @@ select {
     linear-gradient(180deg, var(--background) 0%, var(--background-secondary) 100%);
 }
 
+.market-hero {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100svh - var(--site-header-height));
+  overflow: hidden;
+}
+
+.market-hero-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.market-hero-scene canvas {
+  display: block;
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.market-hero-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      var(--background) 0%,
+      color-mix(in srgb, var(--background) 78%, transparent) 28%,
+      transparent 58%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--background) 35%, transparent) 0%,
+      transparent 22%,
+      transparent 72%,
+      var(--background) 100%
+    );
+}
+
+.market-hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  padding-top: 2rem;
+  padding-bottom: 3.5rem;
+  min-height: calc(100svh - var(--site-header-height));
+}
+
+.market-hero-copy {
+  max-width: 36rem;
+}
+
+.market-hero-static {
+  position: relative;
+  height: 100%;
+  min-height: 22rem;
+}
+
+@media (max-width: 1023px) {
+  .market-hero-veil {
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--background) 20%, transparent) 0%,
+        transparent 28%,
+        color-mix(in srgb, var(--background) 55%, transparent) 62%,
+        var(--background) 100%
+      );
+  }
+}
+
+@media (min-width: 1024px) {
+  .market-hero-content {
+    align-items: center;
+    padding-top: 3.5rem;
+    padding-bottom: 4rem;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   .apple-aurora {
     background:
@@ -1575,28 +1656,122 @@ html.experience-lock body {
   );
 }
 
-.exchange-sides {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.25rem;
-  padding: 0.45rem;
-  background: var(--fill);
+.exchange-stage {
+  position: relative;
+  padding: 0.35rem 0.45rem 0.15rem;
 }
 
-.exchange-side {
-  min-height: 2.75rem;
-  border-radius: 1.15rem;
+.exchange-stage-canvas {
+  position: relative;
+  height: 13.5rem;
+  overflow: hidden;
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(
+      ellipse at 50% 70%,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      transparent 62%
+    ),
+    var(--background);
+}
+
+.exchange-stage-canvas canvas {
+  display: block;
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.exchange-stage-copy {
+  padding: 1rem 1.15rem 0.15rem;
+}
+
+.exchange-stage-headline {
+  margin-top: 0.2rem;
+  font-size: 1.35rem;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+
+.exchange-stage-headline span {
+  color: var(--foreground-secondary);
+  font-weight: 400;
+}
+
+.exchange-stage-hint {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--foreground-tertiary);
+}
+
+.exchange-stage-picks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  padding: 0.7rem 0.7rem 0.15rem;
+}
+
+.exchange-pick {
+  min-height: 2.5rem;
+  cursor: pointer;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
   font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--foreground-secondary);
 }
 
-.exchange-side[aria-checked='true'] {
-  background: var(--surface-elevated);
+.exchange-pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.exchange-pick[aria-checked='true'] {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: var(--accent-muted);
   color: var(--foreground);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.exchange-stage-static {
+  position: relative;
+  height: 100%;
+}
+
+.exchange-stage-static-core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2.4rem;
+  height: 2.4rem;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, var(--ice), var(--accent));
+  box-shadow: 0 0 28px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.exchange-stage-static-orbit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 999px;
+  transform: translate(-50%, -50%) rotate(-18deg);
+}
+
+.exchange-stage-static-orbit--mid {
+  width: 5.2rem;
+  height: 3.4rem;
+  transform: translate(-50%, -50%) rotate(28deg);
+  border-color: color-mix(in srgb, var(--ice) 55%, transparent);
+}
+
+.exchange-stage-static-orbit--outer {
+  width: 7.4rem;
+  height: 4.6rem;
+  opacity: 0.7;
 }
 
 .exchange-legs {
