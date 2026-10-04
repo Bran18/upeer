@@ -79,7 +79,7 @@ export function OfferList({ offers, initialFilters }: Props) {
       {visibleOffers.length === 0 ? (
         <MarketEmpty filtered onResetFilters={resetFilters} />
       ) : (
-        <ul className="grid list-none gap-3">
+        <ul className="grid list-none gap-3 sm:gap-3.5">
           {visibleOffers.map((offer) => (
             <li key={offer.id} className="offer-list-item">
               <ViewTransition>

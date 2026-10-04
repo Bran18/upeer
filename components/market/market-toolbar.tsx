@@ -51,9 +51,9 @@ function FilterChip({
       onClick={onClick}
       onKeyDown={onKeyDown}
       className={cn(
-        'nav-pill min-h-9 shrink-0 px-3 text-[var(--foreground-secondary)] touch-manipulation',
+        'filter-pill nav-pill min-h-9 shrink-0 px-3 touch-manipulation',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]',
-        active && 'nav-pill--active',
+        active && 'filter-pill--active',
       )}
     >
       {label}
@@ -102,7 +102,7 @@ export function MarketToolbar({
 
   return (
     <div
-      className="sticky top-[var(--site-header-height)] z-30 -mx-[var(--frame-inline-start)] border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--background)_92%,transparent)] px-[var(--frame-inline-start)] py-3 backdrop-blur-md sm:-mx-0 sm:rounded-[var(--radius-ui)] sm:border sm:px-4"
+      className="sticky top-[var(--site-header-height)] z-30 -mx-[var(--frame-inline-start)] border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--background)_94%,var(--surface-elevated))] px-[var(--frame-inline-start)] py-3 backdrop-blur-md sm:-mx-0 sm:rounded-[var(--radius-ui)] sm:border sm:bg-[var(--surface-elevated)] sm:px-4 sm:shadow-[0_1px_0_color-mix(in_srgb,var(--line)_80%,transparent)]"
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">

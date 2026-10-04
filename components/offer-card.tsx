@@ -85,7 +85,7 @@ export const OfferCard = memo(function OfferCard({ offer }: Props) {
               <CardArrowIcon />
             </span>
           </div>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <OfferTag tone={tagTone}>{action}</OfferTag>
             <OfferTag tone="fiat">{formatFiatBadge(offer.fiatCurrency)}</OfferTag>
             {offer.verified ? <OfferTag tone="verified">Verified</OfferTag> : null}

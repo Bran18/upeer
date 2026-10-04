@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { OfferList } from '@/components/market/offer-list';
+import { OfferListFallback } from '@/components/market/offer-list-fallback';
 import { MarketStats } from '@/components/market/market-stats';
 import { AppPage } from '@/components/ui/app-page';
 import { DirectionalTransition } from '@/components/transition/directional-transition';
@@ -43,8 +45,16 @@ export default async function MarketPage({ searchParams }: PageProps) {
             Post Order
           </Link>
         </header>
-        <MarketStats summary={summary} />
-        <OfferList offers={offers} initialFilters={initialFilters} />
+        <div className="market-book">
+          <MarketStats summary={summary} />
+          <Suspense
+            fallback={
+              <OfferListFallback offers={offers} filters={initialFilters} />
+            }
+          >
+            <OfferList offers={offers} initialFilters={initialFilters} />
+          </Suspense>
+        </div>
       </AppPage>
     </DirectionalTransition>
   );

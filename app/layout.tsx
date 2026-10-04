@@ -37,9 +37,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
-      style={{ colorScheme: 'dark' }}
+      suppressHydrationWarning
     >
-      <body className="flex min-h-[100dvh] flex-col bg-[var(--background)] text-[var(--foreground)]">
+      <body
+        className="flex min-h-[100dvh] flex-col bg-[var(--background)] text-[var(--foreground)]"
+        suppressHydrationWarning
+      >
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-[max(1rem,env(safe-area-inset-top))] focus:z-[100] focus:rounded-xl focus:bg-[var(--surface)] focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"

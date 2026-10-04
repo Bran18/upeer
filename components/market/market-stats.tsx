@@ -45,7 +45,7 @@ export function MarketStats({ summary }: Props) {
   }
 
   return (
-    <dl className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <dl className="market-stats-grid grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
       {items.map((item) => (
         <div
           key={item.label}
