@@ -2,7 +2,7 @@
 
 UPEER is a peer-to-peer (P2P) marketplace for buying and selling USDC against local currency on the Stellar network. You post or take an order at a posted fiat price per USDC. The USDC leg settles in Trustless Work single-release escrow. Fiat moves off-chain between you and your counterparty.
 
-This page is conceptual. For local setup and routes, see the [README](../README.md). For the click-by-click trade, see [How a trade works](./how-a-trade-works.md).
+This page is conceptual. For local setup and routes, see the [README](../README.md). For the click-by-click trade, see [How a trade works](./how-a-trade-works.md). For integrations and diagrams, see [Architecture](./architecture.md) and [User flows](./user-flows.md). Full list: [Documentation index](./README.md).
 
 ## Who it is for
 

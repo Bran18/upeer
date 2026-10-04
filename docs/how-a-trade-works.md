@@ -2,7 +2,7 @@
 
 This how-to walks two people through one P2P USDC trade on UPEER. Use two browsers (or two devices) and two Pollar wallets.
 
-You need a running app with Pollar, Supabase, Trustless Work, and `UPEER_PLATFORM_ADDRESS` configured. See the [README](../README.md).
+You need a running app with Pollar, Supabase, Trustless Work, and `UPEER_PLATFORM_ADDRESS` configured. See the [README](../README.md). For system diagrams see [Architecture](./architecture.md) and [User flows](./user-flows.md).
 
 ## Before you trade
 

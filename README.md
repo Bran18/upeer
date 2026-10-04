@@ -4,7 +4,15 @@ UPEER is a P2P USDC marketplace on Stellar. You post or take an order at a fiat 
 
 Coverage: Costa Rica (CRC), Argentina (ARS), Bolivia (BOB), Chile (CLP), Colombia (COP).
 
-Read [what UPEER does](docs/product.md) and [how a trade works](docs/how-a-trade-works.md).
+## Documentation
+
+| Doc | Description |
+| --- | --- |
+| [docs/](docs/README.md) | Documentation index |
+| [What UPEER does](docs/product.md) | Product model and coverage |
+| [How a trade works](docs/how-a-trade-works.md) | Two-wallet test walkthrough |
+| [Architecture](docs/architecture.md) | Integrations, BFF, APIs, Mermaid system diagram |
+| [User flows](docs/user-flows.md) | Onboarding, market, escrow journeys (Mermaid) |
 
 ## Stack
 
