@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { Suspense } from 'react';
 import { OfferList } from '@/components/market/offer-list';
+import { PostOrderPageAction } from '@/components/orders/post-order-page-action';
 import { OfferListFallback } from '@/components/market/offer-list-fallback';
 import { MarketStats } from '@/components/market/market-stats';
 import { AppPage } from '@/components/ui/app-page';
@@ -38,12 +38,7 @@ export default async function MarketPage({ searchParams }: PageProps) {
               fiat settles peer to peer.
             </p>
           </div>
-          <Link
-            href="/orders/new"
-            className="btn-primary shrink-0 self-start sm:self-auto"
-          >
-            Post Order
-          </Link>
+          <PostOrderPageAction />
         </header>
         <div className="market-book">
           <MarketStats summary={summary} />

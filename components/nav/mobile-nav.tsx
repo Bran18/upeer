@@ -125,7 +125,7 @@ export function MobileNav({ overlay = false }: MobileNavProps) {
                 <>
                   <p className="text-sm font-semibold">Navigate</p>
                   <p className="px-3 py-1 text-xs text-[var(--foreground-secondary)] text-pretty">
-                    Market, post orders, and your account
+                    Browse the market, then sign in to trade
                   </p>
                 </>
               )}

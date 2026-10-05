@@ -22,6 +22,7 @@ import {
   type PostOrderSide,
 } from '@/components/orders/post-order-side-pills';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toaster';
 import {
   DEFAULT_FIAT_CURRENCY,
@@ -76,7 +77,7 @@ function PostOrderStepPanel({
 export function PostOrderView() {
   const router = useRouter();
   const toast = useToast();
-  const { isAuthenticated, verified, getClient } = usePollar();
+  const { isAuthenticated, verified, getClient, openLoginModal } = usePollar();
   const { profile, status: sessionStatus } = useUpeerSession();
   const [isNavigating, startNavigation] = useTransition();
   const [busy, setBusy] = useState(false);
@@ -243,9 +244,20 @@ export function PostOrderView() {
 
   if (!isAuthenticated || !verified) {
     return (
-      <p className="text-sm text-[var(--foreground-secondary)]">
-        Sign in to post an order on the market.
-      </p>
+      <div className="ui-card px-6 py-12 text-center">
+        <p className="text-base font-medium text-balance">Sign in to post an order</p>
+        <p className="mx-auto mt-2 max-w-md text-sm text-[var(--foreground-secondary)] text-pretty">
+          Connect or create a Pollar wallet to list liquidity on the market.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Button type="button" onClick={() => openLoginModal()}>
+            Sign in
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => openLoginModal()}>
+            Create account
+          </Button>
+        </div>
+      </div>
     );
   }
 

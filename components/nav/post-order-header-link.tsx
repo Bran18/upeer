@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { usePollar } from '@pollar/react';
 import { cn } from '@/lib/cn';
 import { postOrderNavItem } from '@/lib/nav/site-nav';
 
@@ -9,9 +10,15 @@ type Props = {
   overlay?: boolean;
 };
 
-/** Always-visible post-order entry on small screens (main nav pills are in the menu). */
+/** Post-order entry on small screens when signed in (main nav pills are in the menu). */
 export function PostOrderHeaderLink({ overlay = false }: Props) {
+  const { isAuthenticated } = usePollar();
   const pathname = usePathname();
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
   const active =
     pathname === postOrderNavItem.href ||
     pathname.startsWith(`${postOrderNavItem.href}/`);

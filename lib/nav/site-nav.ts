@@ -18,10 +18,12 @@ export function headerNavItems(
   isAuthenticated: boolean,
   isOnboarded: boolean,
 ): NavItem[] {
-  const browse = [
+  const browse: NavItem[] = [
     { href: '/market', label: 'Market', match: ['/market'] },
-    postOrderNavItem,
   ];
+  if (isAuthenticated) {
+    browse.push(postOrderNavItem);
+  }
 
   if (!isAuthenticated) {
     return browse;

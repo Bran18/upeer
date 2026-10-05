@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { OrdersListClient } from '@/components/orders/orders-list-client';
+import { PostOrderPageAction } from '@/components/orders/post-order-page-action';
 import { AppPage } from '@/components/ui/app-page';
 import { DirectionalTransition } from '@/components/transition/directional-transition';
 import { parseOrderRole } from '@/lib/orders/filters';
@@ -34,12 +35,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
               or post liquidity from your desk.
             </p>
           </div>
-          <Link
-            href="/orders/new"
-            className="btn-primary shrink-0 self-start sm:self-auto"
-          >
-            Post Order
-          </Link>
+          <PostOrderPageAction guestAction="hide" />
         </header>
         <OrdersListClient initialRole={initialRole} />
       </AppPage>
