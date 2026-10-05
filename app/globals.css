@@ -1838,21 +1838,16 @@ select {
 }
 
 .wallet-workspace {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 0.9rem;
+  min-width: 0;
 }
 
-@media (min-width: 960px) {
-  .wallet-workspace {
-    grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
-    align-items: stretch;
-    min-height: 28rem;
-  }
-}
-
-.wallet-rail,
+.wallet-holdings,
 .wallet-stage {
   position: relative;
+  min-width: 0;
   border-radius: 1.5rem;
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
@@ -1861,7 +1856,7 @@ select {
   padding: 1.15rem 1.1rem 1.2rem;
 }
 
-.wallet-rail-header,
+.wallet-holdings-header,
 .wallet-stage-header {
   display: flex;
   flex-wrap: wrap;
@@ -1873,7 +1868,6 @@ select {
 
 .wallet-stage {
   display: flex;
-  min-width: 0;
   flex-direction: column;
 }
 
@@ -1902,15 +1896,25 @@ select {
 }
 
 .wallet-balance-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 0.45rem;
+  grid-template-columns: minmax(0, 1fr);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+@media (min-width: 640px) {
+  .wallet-balance-list {
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  }
 }
 
 .wallet-coin {
   display: flex;
   align-items: center;
   gap: 0.7rem;
+  min-width: 0;
   border-radius: 1.15rem;
   border: 1px solid transparent;
   background: color-mix(in srgb, var(--fill) 70%, transparent);
@@ -1942,8 +1946,14 @@ select {
 }
 
 .wallet-balance-amount {
+  flex-shrink: 0;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.875rem;
   font-weight: 550;
+  text-align: right;
 }
 
 .wallet-asset-icon {
@@ -2045,7 +2055,7 @@ select {
   gap: 1rem;
 }
 
-@media (min-width: 880px) {
+@media (min-width: 720px) {
   .wallet-swap-workspace,
   .wallet-send-workspace {
     flex-direction: row;
@@ -2066,12 +2076,22 @@ select {
   flex-direction: column;
   gap: 0.75rem;
   width: 100%;
+  min-width: 0;
 }
 
-@media (min-width: 880px) {
+@media (min-width: 720px) {
   .wallet-ticket,
   .wallet-send-aside {
-    flex: 0 0 min(18rem, 38%);
+    flex: 0 0 min(15.5rem, 34%);
+    max-width: 20rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .wallet-ticket,
+  .wallet-send-aside {
+    flex-basis: min(17rem, 30%);
+    max-width: 22rem;
   }
 }
 
@@ -2098,6 +2118,9 @@ select {
     var(--surface);
   padding: 1rem 1.05rem;
   font-size: 0.8125rem;
+  min-width: 0;
+  overflow: hidden;
+  container-type: inline-size;
 }
 
 .wallet-send-amount-row {
@@ -2111,17 +2134,44 @@ select {
   gap: 0.7rem;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 640px) {
   .wallet-swap-trade-grid {
     grid-template-columns: minmax(0, 1fr) 2.4rem minmax(0, 1fr);
     align-items: stretch;
   }
 }
 
+@media (max-width: 639px) {
+  .wallet-trade-amount-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .wallet-asset-pill {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .wallet-stage-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wallet-segment--inline {
+    width: 100%;
+  }
+
+  .wallet-segment--inline .wallet-segment-btn {
+    flex: 1;
+  }
+}
+
 .wallet-trade-leg {
   min-width: 0;
+  overflow: hidden;
   border-radius: 1.4rem;
   padding: 1rem 1.05rem 1.05rem;
+  container-type: inline-size;
 }
 
 .wallet-trade-leg--pay {
@@ -2150,7 +2200,8 @@ select {
 }
 
 .wallet-trade-amount-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.65rem;
   margin-top: 0.55rem;
@@ -2158,15 +2209,19 @@ select {
 
 .wallet-amount-input {
   min-width: 0;
-  flex: 1;
+  width: 100%;
+  max-width: 100%;
   border: 0;
   background: transparent;
   padding: 0;
-  font-size: clamp(1.65rem, 4vw, 2.15rem);
+  font-size: clamp(1rem, 9cqi, 2.15rem);
   font-weight: 550;
   letter-spacing: -0.045em;
   line-height: 1.1;
   color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .wallet-amount-input:focus {
@@ -2323,15 +2378,29 @@ select {
 }
 
 .wallet-quote-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.35rem;
   margin: 0.35rem 0 0;
-  font-size: 1.65rem;
+  max-width: 100%;
+  min-width: 0;
   font-weight: 600;
   letter-spacing: -0.04em;
   line-height: 1.05;
 }
 
+.wallet-quote-hero-value {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(1.05rem, 10cqi, 1.65rem);
+}
+
 .wallet-quote-hero-unit {
-  margin-left: 0.3rem;
+  flex-shrink: 0;
   font-size: 0.8rem;
   font-weight: 650;
   letter-spacing: 0.06em;
@@ -2367,6 +2436,11 @@ select {
 }
 
 .wallet-quote-row dd {
+  min-width: 0;
+  max-width: 65%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 550;
   text-align: right;
 }

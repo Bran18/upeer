@@ -393,7 +393,7 @@ export function WalletSwapForm({
           <>
             <p className="wallet-quote-kicker">You receive</p>
             <p className="wallet-quote-hero tabular-nums">
-              ~{quote.amountOut}
+              <span className="wallet-quote-hero-value">~{quote.amountOut}</span>
               <span className="wallet-quote-hero-unit">{buyCode}</span>
             </p>
             <div className="wallet-ticket-perforation" aria-hidden="true" />

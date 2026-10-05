@@ -220,52 +220,6 @@ function WalletViewInner() {
       <WalletRampTeaser />
 
       <div className="wallet-workspace">
-        <aside className="wallet-rail" aria-labelledby="wallet-assets-title">
-          <div className="wallet-rail-header">
-            <h3 id="wallet-assets-title" className="wallet-panel-title">Holdings</h3>
-            <p className="wallet-panel-desc">On-chain balances</p>
-          </div>
-
-          {walletBalance.step === 'loading' ? (
-            <p className="text-sm text-[var(--foreground-secondary)]" role="status">
-              Loading balances…
-            </p>
-          ) : null}
-          {walletBalance.step === 'error' ? (
-            <p className="text-sm text-red-800 dark:text-red-200" role="alert">
-              {walletBalance.message}
-            </p>
-          ) : null}
-          {walletBalance.step === 'loaded' ? (
-            <ul className="wallet-balance-list">
-              {stellarBalances.length === 0 ? (
-                <li className="wallet-balance-empty">
-                  Receive XLM, USDC, or USDT0 to seed this vault.
-                </li>
-              ) : (
-                stellarBalances.map((row) => {
-                  const option = balanceOptions.find((o) => o.id === balanceId(row));
-                  const code = option?.shortLabel ?? row.code;
-                  return (
-                    <li key={balanceId(row)} className="wallet-coin">
-                      <WalletAssetIcon code={code} />
-                      <div className="min-w-0 flex-1">
-                        <p className="wallet-balance-code">{code}</p>
-                        <p className="wallet-balance-meta truncate">
-                          {option?.label ?? code}
-                        </p>
-                      </div>
-                      <p className="wallet-balance-amount tabular-nums">
-                        {formatBalanceAmount(row.balance)}
-                      </p>
-                    </li>
-                  );
-                })
-              )}
-            </ul>
-          ) : null}
-        </aside>
-
         <section
           ref={stageRef}
           id="fund"
@@ -349,6 +303,54 @@ function WalletViewInner() {
           </div>
         </section>
       </div>
+
+      <section className="wallet-holdings" aria-labelledby="wallet-assets-title">
+        <div className="wallet-holdings-header">
+          <h3 id="wallet-assets-title" className="wallet-panel-title">
+            Holdings
+          </h3>
+          <p className="wallet-panel-desc">On-chain balances</p>
+        </div>
+
+        {walletBalance.step === 'loading' ? (
+          <p className="text-sm text-[var(--foreground-secondary)]" role="status">
+            Loading balances…
+          </p>
+        ) : null}
+        {walletBalance.step === 'error' ? (
+          <p className="text-sm text-red-800 dark:text-red-200" role="alert">
+            {walletBalance.message}
+          </p>
+        ) : null}
+        {walletBalance.step === 'loaded' ? (
+          <ul className="wallet-balance-list">
+            {stellarBalances.length === 0 ? (
+              <li className="wallet-balance-empty">
+                Receive XLM, USDC, or USDT0 to seed this vault.
+              </li>
+            ) : (
+              stellarBalances.map((row) => {
+                const option = balanceOptions.find((o) => o.id === balanceId(row));
+                const code = option?.shortLabel ?? row.code;
+                return (
+                  <li key={balanceId(row)} className="wallet-coin">
+                    <WalletAssetIcon code={code} />
+                    <div className="min-w-0 flex-1">
+                      <p className="wallet-balance-code">{code}</p>
+                      <p className="wallet-balance-meta truncate">
+                        {option?.label ?? code}
+                      </p>
+                    </div>
+                    <p className="wallet-balance-amount tabular-nums">
+                      {formatBalanceAmount(row.balance)}
+                    </p>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+        ) : null}
+      </section>
 
       <p className="wallet-footer-links text-sm text-[var(--foreground-tertiary)]">
         <Link
