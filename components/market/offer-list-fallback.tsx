@@ -16,6 +16,9 @@ type Props = {
 /** Static shell for Suspense while client search params hydrate. */
 export function OfferListFallback({ offers, filters }: Props) {
   const fiatOptions = [...new Set(offers.map((offer) => offer.fiatCurrency))].sort();
+  const assetOptions = [
+    ...new Set(offers.map((offer) => offer.settlementAsset)),
+  ].sort();
   const visibleOffers = filterAndSortOffers(offers, filters);
 
   return (
@@ -23,6 +26,7 @@ export function OfferListFallback({ offers, filters }: Props) {
       <MarketToolbar
         filters={filters}
         fiatOptions={fiatOptions}
+        assetOptions={assetOptions}
         resultCount={visibleOffers.length}
         totalCount={offers.length}
         onChange={() => {}}
@@ -35,7 +39,7 @@ export function OfferListFallback({ offers, filters }: Props) {
         ))}
       </ul>
       <p className="text-xs leading-relaxed text-[var(--foreground-tertiary)] text-pretty">
-        Testnet only. Each order shows a fixed price per USDC. Escrow is
+        Testnet only. Each order shows a fixed price per settlement asset. Escrow is
         on-chain; fiat is settled P2P with your counterparty.
       </p>
     </div>

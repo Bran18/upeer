@@ -1,18 +1,25 @@
 import type { MarketOffer } from '@/lib/data/offers';
 import { isSupportedFiatCurrency } from '@/lib/fiat/coverage';
+import {
+  isSettlementAsset,
+  type SettlementAsset,
+} from '@/lib/settlement/assets';
 
 export type MarketSideFilter = 'all' | 'sell_usdc' | 'buy_usdc';
+export type MarketAssetFilter = 'all' | SettlementAsset;
 export type MarketSort = 'price' | 'liquidity' | 'name';
 
 export type MarketFilters = {
   side: MarketSideFilter;
   fiat: string;
+  asset: MarketAssetFilter;
   sort: MarketSort;
 };
 
 export const DEFAULT_MARKET_FILTERS: MarketFilters = {
   side: 'all',
   fiat: 'all',
+  asset: 'all',
   sort: 'price',
 };
 
@@ -21,6 +28,7 @@ export function parseMarketFilters(
 ): MarketFilters {
   const sideRaw = typeof params.side === 'string' ? params.side : 'all';
   const fiatRaw = typeof params.fiat === 'string' ? params.fiat : 'all';
+  const assetRaw = typeof params.asset === 'string' ? params.asset : 'all';
   const sortRaw = typeof params.sort === 'string' ? params.sort : 'price';
 
   const side: MarketSideFilter =
@@ -34,9 +42,16 @@ export function parseMarketFilters(
       ? fiatUpper
       : 'all';
 
+  const assetUpper = assetRaw.toUpperCase();
+  const asset: MarketAssetFilter =
+    assetUpper === 'all' || isSettlementAsset(assetUpper)
+      ? (assetUpper as MarketAssetFilter)
+      : 'all';
+
   return {
     side,
     fiat,
+    asset,
     sort,
   };
 }
@@ -74,6 +89,12 @@ export function filterAndSortOffers(
     );
   }
 
+  if (filters.asset !== 'all') {
+    result = result.filter(
+      (offer) => offer.settlementAsset === filters.asset,
+    );
+  }
+
   const sorted = [...result];
   switch (filters.sort) {
     case 'liquidity':
@@ -105,6 +126,9 @@ export function filtersToSearchParams(filters: MarketFilters): URLSearchParams {
   }
   if (filters.fiat !== 'all') {
     params.set('fiat', filters.fiat);
+  }
+  if (filters.asset !== 'all') {
+    params.set('asset', filters.asset);
   }
   if (filters.sort !== 'price') {
     params.set('sort', filters.sort);

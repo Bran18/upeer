@@ -7,7 +7,7 @@ import {
   buyerActionLabel,
   formatPricePerUsdc,
   formatUsdcAmount,
-  formatUsdcLabel,
+  formatSettlementLabel,
 } from '@/lib/market/format';
 import { offerFillBounds } from '@/lib/market/take';
 
@@ -16,25 +16,30 @@ type Props = {
 };
 
 export function TradeOfferSummary({ offer }: Props) {
-  const action = buyerActionLabel(offer.side);
+  const asset = offer.settlementAsset;
+  const action = buyerActionLabel(offer.side, asset);
   const { min, max } = offerFillBounds(offer);
   const youPay =
     offer.side === 'sell_usdc'
-      ? 'You send local currency. USDC releases from escrow after the merchant confirms.'
-      : 'You send USDC into escrow. Fiat settles with this merchant.';
+      ? `You send local currency. ${asset} releases from escrow after the merchant confirms.`
+      : `You send ${asset} into escrow. Fiat settles with this merchant.`;
 
   const facts = [
     {
-      label: 'Price per USDC',
-      value: formatPricePerUsdc(offer.fiatCurrency, offer.pricePerUsdc),
+      label: `Price per ${asset}`,
+      value: formatPricePerUsdc(offer.fiatCurrency, offer.pricePerUsdc, asset),
     },
     {
       label: 'Available',
-      value: formatUsdcLabel(offer.availableUsdc),
+      value: formatSettlementLabel(offer.availableUsdc, asset),
     },
     {
       label: 'Fill range',
-      value: `${formatUsdcAmount(String(min))}–${formatUsdcAmount(String(max))}\u00a0USDC`,
+      value: `${formatUsdcAmount(String(min))}–${formatUsdcAmount(String(max))}\u00a0${asset}`,
+    },
+    {
+      label: 'Asset',
+      value: asset,
     },
     {
       label: 'Market',
@@ -64,7 +69,7 @@ export function TradeOfferSummary({ offer }: Props) {
             </p>
           </ViewTransition>
           <p className="mt-1 text-sm text-[var(--foreground-secondary)] text-pretty">
-            {buyerActionDescription(offer.side)}
+            {buyerActionDescription(offer.side, asset)}
           </p>
         </div>
       </div>

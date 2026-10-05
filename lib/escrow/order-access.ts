@@ -1,11 +1,16 @@
 import { getSupabaseAdmin } from '@/lib/supabase/server';
 import { p2pLegs } from '@/lib/escrow/p2p-legs';
+import {
+  normalizeSettlementAsset,
+  type SettlementAsset,
+} from '@/lib/settlement/assets';
 
 export type OrderEscrowContext = {
   orderId: string;
   status: string;
   engagementId: string;
   side: 'sell_usdc' | 'buy_usdc';
+  settlementAsset: SettlementAsset;
   usdcAmount: number;
   makerProfileId: string;
   takerProfileId: string;
@@ -29,6 +34,7 @@ export async function loadOrderEscrowContext(
       taker_profile_id,
       quotes!inner (
         usdc_amount,
+        settlement_asset,
         buyer_profile_id,
         offers!inner ( side, maker_profile_id )
       )
@@ -50,6 +56,7 @@ export async function loadOrderEscrowContext(
   const rawQuotes = order.quotes;
   const quote = (Array.isArray(rawQuotes) ? rawQuotes[0] : rawQuotes) as {
     usdc_amount: string;
+    settlement_asset?: string | null;
     offers: { side: string } | { side: string }[];
   };
   const offer = Array.isArray(quote.offers) ? quote.offers[0] : quote.offers;
@@ -72,6 +79,9 @@ export async function loadOrderEscrowContext(
     status: order.status,
     engagementId: order.engagement_id,
     side: offer.side as 'sell_usdc' | 'buy_usdc',
+    settlementAsset: quote.settlement_asset
+      ? normalizeSettlementAsset(String(quote.settlement_asset))
+      : 'USDC',
     usdcAmount: Number(quote.usdc_amount),
     makerProfileId: makerId,
     takerProfileId: takerId,

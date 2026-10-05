@@ -23,6 +23,8 @@ export type RailDetailKey =
   | 'wallet'
   | 'meetingPlace'
   | 'destination'
+  | 'pixKeyType'
+  | 'pixKey'
   | 'note';
 
 export type PaymentDetails = Partial<Record<RailDetailKey, string>>;
@@ -61,6 +63,14 @@ const CL_WALLETS = [
   { value: 'mach', label: 'MACH' },
   { value: 'tenpo', label: 'Tenpo' },
   { value: 'other', label: 'Other wallet' },
+] as const;
+
+const PIX_KEY_TYPES = [
+  { value: 'cpf', label: 'CPF' },
+  { value: 'cnpj', label: 'CNPJ' },
+  { value: 'email', label: 'E-mail' },
+  { value: 'phone', label: 'Phone (+55)' },
+  { value: 'evp', label: 'Random key (EVP)' },
 ] as const;
 
 function digitsOnly(value: string): string {
@@ -150,6 +160,25 @@ export function fieldsForRail(
           required: true,
           inputMode: 'numeric',
           maxLength: 10,
+        },
+      ];
+    case 'pix':
+      return [
+        {
+          key: 'pixKeyType',
+          label: 'PIX key type',
+          hint: 'How the payer finds you in their bank or wallet app.',
+          placeholder: '',
+          required: true,
+          options: PIX_KEY_TYPES,
+        },
+        {
+          key: 'pixKey',
+          label: 'PIX key',
+          hint: 'CPF/CNPJ digits only, email, +55 mobile, or EVP UUID.',
+          placeholder: '',
+          required: true,
+          maxLength: 80,
         },
       ];
     case 'yape':
@@ -305,6 +334,46 @@ function bankTransferFields(country: UpeerCountryCode | undefined): RailFieldSpe
           maxLength: 80,
         },
       ];
+    case 'BR':
+      return [
+        {
+          key: 'bankName',
+          label: 'Bank',
+          hint: 'Destination bank in Brazil (TED/DOC style transfer).',
+          placeholder: 'Nubank',
+          required: true,
+          maxLength: 80,
+        },
+        {
+          key: 'accountType',
+          label: 'Account type',
+          hint: 'Corrente or poupança.',
+          placeholder: '',
+          required: true,
+          options: [
+            { value: 'corrente', label: 'Conta corrente' },
+            { value: 'poupanca', label: 'Conta poupança' },
+          ],
+        },
+        {
+          key: 'accountNumber',
+          label: 'Account with branch',
+          hint: 'Agência + conta as your bank shows (digits only is fine).',
+          placeholder: '',
+          required: true,
+          inputMode: 'numeric',
+          maxLength: 24,
+        },
+        {
+          key: 'documentNumber',
+          label: 'CPF or CNPJ',
+          hint: 'Holder tax ID for the destination account.',
+          placeholder: '',
+          required: true,
+          inputMode: 'numeric',
+          maxLength: 18,
+        },
+      ];
     case 'CO':
       return [
         {
@@ -375,6 +444,9 @@ function bankTransferFields(country: UpeerCountryCode | undefined): RailFieldSpe
 const ARG_ALIAS = /^[a-zA-Z0-9][a-zA-Z0-9.-]{5,19}$/;
 const CR_IBAN = /^CR\d{20}$/i;
 const CL_RUT = /^\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]$/;
+const PIX_EVP =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const PIX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateRailDetails(
   rail: PaymentRail,
@@ -411,6 +483,52 @@ export function validateRailDetails(
     const phone = digitsOnly(details.phone ?? '');
     if (phone.length !== 8) {
       return 'Yape Bolivia uses an 8-digit Bolivian mobile number, not a name.';
+    }
+  }
+
+  if (rail === 'pix') {
+    const type = details.pixKeyType?.trim().toLowerCase() ?? '';
+    const key = details.pixKey?.trim() ?? '';
+    if (!type) {
+      return 'Choose a PIX key type.';
+    }
+    if (!key) {
+      return 'Add your PIX key.';
+    }
+    switch (type) {
+      case 'cpf': {
+        const cpf = digitsOnly(key);
+        if (cpf.length !== 11) {
+          return 'CPF PIX key is 11 digits.';
+        }
+        break;
+      }
+      case 'cnpj': {
+        const cnpj = digitsOnly(key);
+        if (cnpj.length !== 14) {
+          return 'CNPJ PIX key is 14 digits.';
+        }
+        break;
+      }
+      case 'email':
+        if (!PIX_EMAIL.test(key.toLowerCase())) {
+          return 'Enter a valid email PIX key.';
+        }
+        break;
+      case 'phone': {
+        const phone = digitsOnly(key);
+        if (phone.length < 10 || phone.length > 13) {
+          return 'Phone PIX key: use +55 and 10–11 digits (e.g. 5511999999999).';
+        }
+        break;
+      }
+      case 'evp':
+        if (!PIX_EVP.test(key)) {
+          return 'EVP PIX key must be a UUID (random key from your bank).';
+        }
+        break;
+      default:
+        return 'Unsupported PIX key type.';
     }
   }
 
@@ -488,6 +606,20 @@ export function sanitizeDetails(
     if (key === 'alias') {
       v = v.toLowerCase();
     }
+    if (key === 'pixKey' && details.pixKeyType === 'email') {
+      v = v.toLowerCase();
+    }
+    if (key === 'pixKey' && details.pixKeyType === 'evp') {
+      v = v.toLowerCase();
+    }
+    if (
+      key === 'pixKey' &&
+      (details.pixKeyType === 'cpf' ||
+        details.pixKeyType === 'cnpj' ||
+        details.pixKeyType === 'phone')
+    ) {
+      v = digitsOnly(v);
+    }
     next[key as RailDetailKey] = v;
   }
   return next;
@@ -507,6 +639,10 @@ export function destinationPreview(
     case 'daviplata':
     case 'yape':
       return details.phone?.trim() || 'Mobile number missing';
+    case 'pix':
+      return details.pixKey?.trim()
+        ? `${details.pixKeyType ?? 'pix'}: ${details.pixKey.trim()}`
+        : 'PIX key missing';
     case 'mercado_pago':
       return details.alias?.trim() || 'Alias missing';
     case 'cvu_cbu':

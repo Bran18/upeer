@@ -3,15 +3,18 @@
 import { useId } from 'react';
 import { formatFiatBadge } from '@/lib/fiat/coverage';
 import type {
+  MarketAssetFilter,
   MarketFilters,
   MarketSideFilter,
   MarketSort,
 } from '@/lib/market/filters';
+import type { SettlementAsset } from '@/lib/settlement/assets';
 import { cn } from '@/lib/cn';
 
 type Props = {
   filters: MarketFilters;
   fiatOptions: string[];
+  assetOptions: SettlementAsset[];
   resultCount: number;
   totalCount: number;
   onChange: (next: Partial<MarketFilters>) => void;
@@ -74,11 +77,13 @@ function moveSelection<T extends string>(
 export function MarketToolbar({
   filters,
   fiatOptions,
+  assetOptions,
   resultCount,
   totalCount,
   onChange,
 }: Props) {
   const fiatId = useId();
+  const assetId = useId();
   const sortId = useId();
 
   const handleSideKeyDown = (
@@ -131,6 +136,36 @@ export function MarketToolbar({
               />
             ))}
           </div>
+
+          {assetOptions.length > 1 ? (
+            <div className="flex min-w-0 items-center gap-2 text-sm">
+              <label
+                htmlFor={assetId}
+                className="shrink-0 text-[var(--foreground-tertiary)]"
+              >
+                Asset
+              </label>
+              <select
+                id={assetId}
+                name="asset"
+                autoComplete="off"
+                value={filters.asset}
+                onChange={(event) =>
+                  onChange({
+                    asset: event.target.value as MarketAssetFilter,
+                  })
+                }
+                className="field-input !mt-0 min-h-9 w-auto min-w-[7rem] py-1.5 text-sm"
+              >
+                <option value="all">All assets</option>
+                {assetOptions.map((asset) => (
+                  <option key={asset} value={asset}>
+                    {asset}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
 
           {fiatOptions.length > 1 ? (
             <div className="flex min-w-0 items-center gap-2 text-sm">

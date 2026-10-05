@@ -1,8 +1,8 @@
 /**
- * UPEER P2P coverage: Costa Rica, Argentina, Bolivia, Chile, Colombia.
+ * UPEER P2P coverage: Costa Rica, Argentina, Bolivia, Chile, Colombia, Brazil.
  */
 
-export type UpeerCountryCode = 'CR' | 'AR' | 'BO' | 'CL' | 'CO';
+export type UpeerCountryCode = 'CR' | 'AR' | 'BO' | 'CL' | 'CO' | 'BR';
 
 export type UpeerMarket = {
   code: UpeerCountryCode;
@@ -43,6 +43,12 @@ export const UPEER_MARKETS: readonly UpeerMarket[] = [
     currency: 'COP',
     examplePricePerUsdc: '4100',
   },
+  {
+    code: 'BR',
+    name: 'Brazil',
+    currency: 'BRL',
+    examplePricePerUsdc: '5.50',
+  },
 ] as const;
 
 export const UPEER_FIAT_CURRENCIES = UPEER_MARKETS.map((m) => m.currency);
@@ -72,6 +78,7 @@ export const PAYMENT_RAIL_VALUES = [
   'daviplata',
   'yape',
   'chile_wallet',
+  'pix',
   'cash',
   'other',
 ] as const;
@@ -127,6 +134,11 @@ export const PAYMENT_RAIL_OPTIONS: readonly PaymentRailOption[] = [
     countryCodes: ['CL'],
   },
   {
+    value: 'pix',
+    label: 'PIX',
+    countryCodes: ['BR'],
+  },
+  {
     value: 'cash',
     label: 'Cash in person',
     countryCodes: [],
@@ -139,7 +151,6 @@ export const PAYMENT_RAIL_OPTIONS: readonly PaymentRailOption[] = [
 ];
 
 const LEGACY_RAIL_MAP: Record<string, PaymentRail> = {
-  pix: 'other',
   spei: 'other',
   pse: 'bank_transfer',
   nequi_daviplata: 'nequi',
@@ -158,6 +169,8 @@ export function defaultRailForCurrency(currency: string): PaymentRail {
       return 'bank_transfer';
     case 'COP':
       return 'nequi';
+    case 'BRL':
+      return 'pix';
     default:
       return 'bank_transfer';
   }
@@ -198,4 +211,4 @@ export function formatFiatBadge(currency: string): string {
 }
 
 export const UPEER_COVERAGE_BLURB =
-  'Costa Rica, Argentina, Bolivia, Chile, and Colombia';
+  'Costa Rica, Argentina, Bolivia, Chile, Colombia, and Brazil';

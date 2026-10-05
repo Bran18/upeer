@@ -5,6 +5,10 @@ import {
   requireSession,
 } from '@/lib/auth/require-session';
 import { buildExecutableQuote } from '@/lib/quotes/build-quote';
+import {
+  normalizeSettlementAsset,
+  type SettlementAsset,
+} from '@/lib/settlement/assets';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const bodySchema = z.object({
@@ -37,6 +41,7 @@ export async function POST(req: Request) {
         min_usdc,
         max_usdc,
         available_usdc,
+        settlement_asset,
         status,
         maker_profile_id
       `,
@@ -60,9 +65,15 @@ export async function POST(req: Request) {
     const min = Number(offer.min_usdc);
     const max = Number(offer.max_usdc);
     const available = Number(offer.available_usdc);
+    const settlementAsset: SettlementAsset = offer.settlement_asset
+      ? normalizeSettlementAsset(String(offer.settlement_asset))
+      : 'USDC';
+
     if (usdc < min || usdc > max) {
       return NextResponse.json(
-        { error: `Amount must be between ${min} and ${max} USDC` },
+        {
+          error: `Amount must be between ${min} and ${max} ${settlementAsset}`,
+        },
         { status: 400 },
       );
     }
@@ -94,6 +105,7 @@ export async function POST(req: Request) {
         usdc_amount: built.usdcAmount,
         fiat_amount: built.fiatAmount,
         fiat_currency: built.fiatCurrency,
+        settlement_asset: settlementAsset,
         reflector_snapshot: built.reflectorSnapshot,
         spread_bps: 0,
         expires_at: built.expiresAt,

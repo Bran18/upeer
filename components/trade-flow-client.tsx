@@ -9,7 +9,7 @@ import {
   buyerActionLabel,
   formatFiatTotal,
   formatUsdcAmount,
-  formatUsdcLabel,
+  formatSettlementLabel,
 } from '@/lib/market/format';
 import {
   amountInFillRange,
@@ -86,10 +86,11 @@ function TradeFlowClientInner({ offer, initialUsdc }: Props) {
   const price = Number(offer.pricePerUsdc);
   const fiatTotal =
     amount > 0 && Number.isFinite(price) ? fiatFromUsdc(amount, price) : 0;
+  const asset = offer.settlementAsset;
   const buyingUsdc = offer.side === 'sell_usdc';
-  const action = buyerActionLabel(offer.side);
+  const action = buyerActionLabel(offer.side, asset);
 
-  const rangeHint = `Enter ${formatUsdcAmount(String(min))}–${formatUsdcAmount(String(max))}\u00a0USDC.`;
+  const rangeHint = `Enter ${formatUsdcAmount(String(min))}–${formatUsdcAmount(String(max))}\u00a0${asset}.`;
   const amountError =
     usdcAmount.trim() !== '' && amount > 0 && !inRange ? rangeHint : null;
 
@@ -184,7 +185,7 @@ function TradeFlowClientInner({ offer, initialUsdc }: Props) {
 
       <div className="mt-6">
         <label className="field-label" htmlFor="trade-usdc-amount">
-          USDC amount
+          {asset} amount
         </label>
         <input
           ref={amountRef}
@@ -209,7 +210,7 @@ function TradeFlowClientInner({ offer, initialUsdc }: Props) {
           id={hintId}
           className="mt-2 text-xs text-[var(--foreground-tertiary)] tabular-nums"
         >
-          {rangeHint} Available {formatUsdcLabel(offer.availableUsdc)}.
+          {rangeHint} Available {formatSettlementLabel(offer.availableUsdc, asset)}.
         </p>
         {amountError ? (
           <p id={errorId} className="mt-2 text-sm text-red-400" role="alert">
@@ -244,7 +245,7 @@ function TradeFlowClientInner({ offer, initialUsdc }: Props) {
             You {buyingUsdc ? 'receive' : 'send'}
           </dt>
           <dd className="text-sm font-medium tabular-nums">
-            {amount > 0 ? formatUsdcLabel(amount) : '—'}
+            {amount > 0 ? formatSettlementLabel(amount, asset) : '—'}
           </dd>
         </div>
         <div className="flex items-baseline justify-between gap-4">

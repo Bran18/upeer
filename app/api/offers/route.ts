@@ -7,16 +7,27 @@ import {
 } from '@/lib/auth/require-session';
 import { updateProfilePayoutAddress } from '@/lib/db/profiles';
 import { isSupportedFiatCurrency } from '@/lib/fiat/coverage';
+import {
+  getSettlementAssetMeta,
+  isSettlementAsset,
+  normalizeSettlementAsset,
+} from '@/lib/settlement/assets';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
 const createSchema = z.object({
   side: z.enum(['sell_usdc', 'buy_usdc']),
+  settlementAsset: z
+    .string()
+    .optional()
+    .refine((c) => !c || isSettlementAsset(c), {
+      message: 'settlementAsset must be USDC, XLM, or USDT0',
+    }),
   fiatCurrency: z
     .string()
     .min(3)
     .max(4)
     .refine((c) => isSupportedFiatCurrency(c), {
-      message: 'fiatCurrency must be CRC, ARS, BOB, CLP, or COP',
+      message: 'fiatCurrency must be CRC, ARS, BOB, CLP, COP, or BRL',
     }),
   pricePerUsdc: z.union([z.string(), z.number()]),
   minUsdc: z.string(),
@@ -100,11 +111,23 @@ export async function POST(req: Request) {
       );
     }
 
+    const settlementAsset = normalizeSettlementAsset(
+      body.settlementAsset ?? 'USDC',
+    );
+    try {
+      getSettlementAssetMeta(settlementAsset);
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : 'Settlement asset not available';
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+
     const { data, error } = await supabase
       .from('offers')
       .insert({
         maker_profile_id: profileId,
         side: body.side,
+        settlement_asset: settlementAsset,
         fiat_currency: body.fiatCurrency.toUpperCase(),
         price_per_usdc: price,
         spread_bps: 0,

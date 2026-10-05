@@ -23,8 +23,8 @@ export function LandingHome() {
             </h1>
           </header>
           <p className="market-hero-lead">
-            Buy or sell USDC with local currency. Escrow stays on Stellar; fiat
-            moves directly between you and your counterparty.
+            Buy or sell USDC, XLM, or USDT0 with local currency. Escrow stays on
+            Stellar; fiat moves directly between you and your counterparty.
           </p>
           <LandingHeroSteps />
           <LandingHeroActions />

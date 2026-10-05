@@ -14,7 +14,7 @@ export function MarketEmpty({ filtered, onResetFilters }: Props) {
           No Offers Match These Filters
         </p>
         <p className="mt-2 text-sm text-[var(--foreground-secondary)] text-pretty">
-          Try another market (CRC, ARS, BOB, CLP, COP) or show every desk.
+          Try another market, asset filter, or show every desk.
         </p>
         {onResetFilters ? (
           <Button

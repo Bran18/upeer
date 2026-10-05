@@ -26,6 +26,8 @@ const detailsSchema = z.object({
   nationalId: z.string().max(24).optional(),
   documentType: z.string().max(8).optional(),
   documentNumber: z.string().max(20).optional(),
+  pixKeyType: z.string().max(12).optional(),
+  pixKey: z.string().max(80).optional(),
   email: z.string().max(80).optional(),
   wallet: z.string().max(24).optional(),
   meetingPlace: z.string().max(200).optional(),
@@ -43,7 +45,7 @@ export const paymentMethodSchema = z
       .max(4)
       .toUpperCase()
       .refine((c) => UPEER_FIAT_CURRENCIES.includes(c), {
-        message: 'Currency must be CRC, ARS, BOB, CLP, or COP',
+        message: 'Currency must be CRC, ARS, BOB, CLP, COP, or BRL',
       }),
     holderName: z.string().min(2).max(80),
     details: detailsSchema.default({}),

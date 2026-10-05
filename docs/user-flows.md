@@ -26,7 +26,7 @@ flowchart TD
 flowchart TD
   M["/market"] --> N["Filter open offers"]
   N --> O["/orders/new"]
-  O --> P["Wizard: side, currency, price, size, payout"]
+  O --> P["Wizard: side, asset, currency, price, size, payout"]
   P --> Q["POST /api/offers"]
   Q --> R["Listing on /market"]
 ```
@@ -38,14 +38,14 @@ Verified merchants also use `/merchant` and `/dashboard` for desk tools. Any onb
 ```mermaid
 flowchart TD
   T1["/market → offer card"] --> T2["/trade/offerId"]
-  T2 --> T3["Enter USDC size in min/max"]
+  T2 --> T3["Enter size in listing asset (min/max)"]
   T3 --> T4["POST /api/quotes"]
   T4 --> T5["POST /api/orders"]
   T5 --> T6["Order: pending_acceptance"]
   T6 --> T7["Notification to maker"]
 ```
 
-On `buy_usdc` listings the taker may be the USDC seller and selects a fiat receive method before submit.
+On `buy_usdc` listings the taker may be the on-chain seller and selects a fiat receive method before submit.
 
 ## Maker accept and liquidity
 
@@ -63,12 +63,12 @@ flowchart TD
 
 Accept window: 24 hours from order creation or quote expiry, whichever is later (`lib/quotes/ttl.ts`).
 
-## USDC escrow and fiat (both parties)
+## Escrow asset and fiat (both parties)
 
 ```mermaid
 flowchart TD
-  subgraph onchain["On-chain (USDC seller)"]
-    E1["Deploy escrow"] --> E2["Fund USDC"]
+  subgraph onchain["On-chain (asset seller)"]
+    E1["Deploy escrow"] --> E2["Fund USDC / XLM / USDT0"]
     E2 --> E3["Escrow funded"]
   end
 
@@ -76,8 +76,8 @@ flowchart TD
     F1["Buyer: mark fiat sent"] --> F2["Seller: mark fiat received"]
   end
 
-  subgraph release["On-chain (USDC seller)"]
-    R1["Approve milestone"] --> R2["Release USDC to buyer"]
+  subgraph release["On-chain (asset seller)"]
+    R1["Approve milestone"] --> R2["Release asset to buyer"]
   end
 
   A7["After accept"] --> E1
@@ -95,12 +95,13 @@ flowchart LR
   W["/wallet"] --> B["Balances via Pollar"]
   W --> S["Send: Pollar transfer"]
   W --> X["Swap: Pollar venues"]
+  W --> R["Optional ramp teaser (ENABLE_RAMP_KIT)"]
   X --> V{"Swap venue enabled in Pollar dashboard?"}
   V -->|No| U["Swap tab unavailable"]
   V -->|Yes| OK["Headless swap UI"]
 ```
 
-Swap is client-side through `@pollar/react`; UPEER does not proxy swap quotes on the server.
+Swap is client-side through `@pollar/react`; UPEER does not proxy swap quotes on the server. Enable USDC, XLM, and USDT0 (mainnet) as app assets in Pollar so balances and swap buy tokens appear.
 
 ## Operator and admin
 

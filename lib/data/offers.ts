@@ -1,10 +1,15 @@
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
+import {
+  normalizeSettlementAsset,
+  type SettlementAsset,
+} from '@/lib/settlement/assets';
 
 export type MarketOffer = {
   id: string;
   merchantName: string;
   makerProfileId: string;
   side: 'sell_usdc' | 'buy_usdc';
+  settlementAsset: SettlementAsset;
   fiatCurrency: string;
   pricePerUsdc: string;
   minUsdc: string;
@@ -17,6 +22,7 @@ function mapOfferRow(row: {
   id: string;
   side: string;
   fiat_currency: string;
+  settlement_asset?: string | null;
   price_per_usdc?: string | number | null;
   min_usdc: string | number;
   max_usdc: string | number;
@@ -40,11 +46,21 @@ function mapOfferRow(row: {
     profile?.display_name?.trim() ||
     `Trader ${row.maker_profile_id.slice(0, 8)}`;
 
+  let settlementAsset: SettlementAsset = 'USDC';
+  if (row.settlement_asset) {
+    try {
+      settlementAsset = normalizeSettlementAsset(String(row.settlement_asset));
+    } catch {
+      settlementAsset = 'USDC';
+    }
+  }
+
   return {
     id: row.id,
     merchantName: name,
     makerProfileId: row.maker_profile_id,
     side: row.side as 'sell_usdc' | 'buy_usdc',
+    settlementAsset,
     fiatCurrency: row.fiat_currency,
     pricePerUsdc: price,
     minUsdc: String(row.min_usdc),
@@ -86,6 +102,7 @@ export async function listMarketOffers(): Promise<MarketOffer[]> {
       id,
       side,
       fiat_currency,
+      settlement_asset,
       price_per_usdc,
       min_usdc,
       max_usdc,
@@ -136,6 +153,7 @@ export async function getOfferById(id: string): Promise<MarketOffer | null> {
       id,
       side,
       fiat_currency,
+      settlement_asset,
       price_per_usdc,
       min_usdc,
       max_usdc,

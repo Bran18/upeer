@@ -54,10 +54,12 @@ The table lists where each product connects in this repo and which env vars gate
 | **Pollar** | Embedded wallet, login, balance, send, swap | `components/providers/app-providers.tsx`, `lib/pollar/*`, `components/wallet/*`, order detail signing | `NEXT_PUBLIC_POLLAR_PUBLISHABLE_KEY`, `POLLAR_SECRET_KEY`, optional `POLLAR_SERVER_URL` |
 | **Supabase** | Profiles, merchants, offers, quotes, orders, notifications, escrow rows | `lib/supabase/server.ts`, `lib/db/*`, most `app/api/*` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` |
 | **Trustless Work** | Single-release escrow deploy, fund, approve, release | `lib/trustless-work/client.ts`, `app/api/escrow/*`, `components/orders/order-detail/*` | `TRUSTLESS_WORK_API_KEY`, `UPEER_PLATFORM_ADDRESS`, optional `UPEER_PLATFORM_FEE_BPS` |
-| **Stellar** | USDC asset, contract execution, explorers | `lib/config/network.ts`, `lib/stellar/*`, `lib/escrow/on-chain.ts` | `STELLAR_NETWORK` / `NEXT_PUBLIC_STELLAR_NETWORK`, `STELLAR_MAINNET_RPC_URL` on mainnet |
+| **Stellar** | Settlement assets (USDC, XLM, USDT0), contract execution, explorers | `lib/config/network.ts`, `lib/settlement/assets.ts`, `lib/stellar/*`, `lib/escrow/on-chain.ts` | `STELLAR_NETWORK` / `NEXT_PUBLIC_STELLAR_NETWORK`, `STELLAR_MAINNET_RPC_URL` on mainnet |
 | **Reflector Pulse** | Optional LATAM FX reference for `/api/prices/reference` and quote snapshots | `lib/reflector/pulse.ts`, `app/api/prices/reference/route.ts` | `REFLECTOR_PULSE_CONTRACT_ID`, `REFLECTOR_RPC_URL`, `REFLECTOR_PUBLIC_KEY` |
 
-Fiat rails (SINPE, Nequi, Mercado Pago, and so on) are not integrated APIs. Users exchange payment details stored in `profiles.payment_prefs` and confirm in the app.
+Fiat rails (SINPE, PIX, Nequi, Mercado Pago, and so on) are not integrated bank APIs for the P2P book. Users exchange payment details stored in `profiles.payment_prefs` (`lib/fiat/coverage.ts`, `lib/fiat/rail-details.ts`) and confirm in the app.
+
+Optional **licensed ramps** (BRL → USDC in-wallet) are out of band: [LATAM Ramp Kit](https://github.com/armandocodecr/latam-ramp-kit) with server-side provider keys. UPEER only shows a wallet teaser when `NEXT_PUBLIC_ENABLE_RAMP_KIT=true`; it does not replace P2P settlement on orders.
 
 ## Request path (BFF)
 
@@ -104,7 +106,7 @@ stateDiagram-v2
   pending_acceptance --> cancelled: Quote TTL / cancel rules
   reserved --> escrow_pending: Liquidity locked
   escrow_pending --> fiat_pending: Escrow funded on-chain
-  fiat_pending --> released: Approve + release USDC
+  fiat_pending --> released: Approve + release escrow asset
   escrow_pending --> disputed: Operator path
   fiat_pending --> disputed: Operator path
   released --> [*]
@@ -114,13 +116,13 @@ stateDiagram-v2
 
 Milestone strings on `escrow_sessions` (for example `deploy_unsigned`, `funded`) refine UI progress while `orders.status` stays `escrow_pending` or `fiat_pending`. See `lib/orders/format.ts` (`formatOrderProgress`).
 
-USDC seller vs buyer follows offer side in `lib/escrow/p2p-legs.ts`, not “who posted first.”
+On-chain seller vs buyer follows offer side in `lib/escrow/p2p-legs.ts`, not “who posted first.” Escrow asset comes from `offers.settlement_asset`, snapshotted on `quotes.settlement_asset` at take time.
 
 ## Trustless Work escrow phases
 
 ```mermaid
 flowchart LR
-  A["Deploy contract"] --> B["Fund USDC"]
+  A["Deploy contract"] --> B["Fund settlement asset"]
   B --> C["Fiat confirmations (off-chain)"]
   C --> D["Approve milestone"]
   D --> E["Release to buyer G…"]
@@ -128,12 +130,14 @@ flowchart LR
 
 | Phase | API route | Who signs |
 | --- | --- | --- |
-| Deploy | `POST /api/escrow/deploy` | USDC seller |
-| Fund | `POST /api/escrow/fund` | USDC seller |
+| Deploy | `POST /api/escrow/deploy` | On-chain seller |
+| Fund | `POST /api/escrow/fund` | On-chain seller |
 | Submit signed tx | `POST /api/escrow/submit` | Same signer (or wallet-submitted hash) |
 | Status / on-chain poll | `GET /api/escrow/status` | — |
-| Approve | `POST /api/escrow/approve` | USDC seller |
-| Release | `POST /api/escrow/release` | USDC seller |
+| Approve | `POST /api/escrow/approve` | On-chain seller |
+| Release | `POST /api/escrow/release` | On-chain seller |
+
+Deploy builds `trustline` from `lib/settlement/assets.ts` (`trustlinePayloadForAsset`). Issued assets use Circle USDC or USDT0 mainnet issuer; XLM uses the native SAC contract id on the active network.
 
 Platform operator Stellar address `UPEER_PLATFORM_ADDRESS` is passed into Trustless Work deploy payloads as an escrow role, not as the end-user wallet.
 
@@ -146,7 +150,7 @@ All paths are under `/api`. Unless noted, routes require a UPEER session.
 | Health | `GET /health` | Public; integration flags only |
 | Auth | `POST /auth/pollar`, `POST /auth/logout` | Pollar token exchange |
 | Profile | `GET /me`, `POST /onboarding`, `POST /me/avatar` | Onboarding sets `platformIntent` |
-| Market | `GET /offers`, `POST /offers` | Open book + post order |
+| Market | `GET /offers`, `POST /offers` | Open book + post order (`settlementAsset` on POST) |
 | Quotes | `POST /quotes` | Locks price/size before order |
 | Orders | `GET/POST /orders`, `GET /orders/[id]`, `POST accept/decline/confirm` | P2P lifecycle |
 | Escrow | `deploy`, `fund`, `submit`, `approve`, `release`, `status`, `resolve`, `probe` | Trustless Work bridge |
@@ -164,8 +168,8 @@ Defined in `supabase/migrations/`.
 | --- | --- |
 | `profiles` | Pollar user, Stellar `G…`, intent, payout, payment prefs, operator flag |
 | `merchants` | Desk verification state |
-| `offers` | Maker listings (`sell_usdc` / `buy_usdc`) |
-| `quotes` | Executable snapshot for a take |
+| `offers` | Maker listings (`sell_usdc` / `buy_usdc`, `settlement_asset`, `fiat_currency`, `*_usdc` size fields) |
+| `quotes` | Executable snapshot for a take (`settlement_asset` copied from offer) |
 | `orders` | Trade state, maker/taker ids, `fiat_confirmation` JSON |
 | `escrow_sessions` | Trustless Work contract id + milestone |
 | `notifications` | In-app events |

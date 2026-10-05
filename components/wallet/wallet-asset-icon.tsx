@@ -6,6 +6,7 @@ type Props = {
 const TONES: Record<string, string> = {
   XLM: 'wallet-asset-icon--xlm',
   USDC: 'wallet-asset-icon--usdc',
+  USDT0: 'wallet-asset-icon--usdc',
 };
 
 export function WalletAssetIcon({ code, className = '' }: Props) {

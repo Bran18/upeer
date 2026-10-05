@@ -37,6 +37,11 @@ export function OfferList({ offers, initialFilters }: Props) {
     [offers],
   );
 
+  const assetOptions = useMemo(
+    () => [...new Set(offers.map((offer) => offer.settlementAsset))].sort(),
+    [offers],
+  );
+
   const visibleOffers = useMemo(
     () => filterAndSortOffers(offers, filters),
     [offers, filters],
@@ -71,6 +76,7 @@ export function OfferList({ offers, initialFilters }: Props) {
       <MarketToolbar
         filters={filters}
         fiatOptions={fiatOptions}
+        assetOptions={assetOptions}
         resultCount={visibleOffers.length}
         totalCount={offers.length}
         onChange={updateFilters}

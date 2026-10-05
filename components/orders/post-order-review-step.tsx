@@ -107,7 +107,11 @@ export function PostOrderReviewStep({
           <ReviewValueWithEdit
             value={
               <span className="tabular-nums">
-                {formatPricePerUsdc(form.fiatCurrency, form.pricePerUsdc)}
+                {formatPricePerUsdc(
+                  form.fiatCurrency,
+                  form.pricePerUsdc,
+                  form.settlementAsset,
+                )}
               </span>
             }
             onEdit={() => onEditStep(1)}
@@ -117,7 +121,7 @@ export function PostOrderReviewStep({
           <ReviewValueWithEdit
             value={
               <span className="tabular-nums">
-                {formatUsdcAmount(form.availableUsdc)} USDC
+                {formatUsdcAmount(form.availableUsdc)} {form.settlementAsset}
               </span>
             }
             onEdit={() => onEditStep(2)}

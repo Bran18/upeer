@@ -8,6 +8,7 @@ import { CopyWalletButton } from '@/components/dashboard/copy-wallet-button';
 import { WalletSendForm } from '@/components/wallet/wallet-send-form';
 import { WalletAssetIcon } from '@/components/wallet/wallet-asset-icon';
 import { WalletQuickActions } from '@/components/wallet/wallet-quick-actions';
+import { WalletRampTeaser } from '@/components/wallet/wallet-ramp-teaser';
 import { PollarRequired } from '@/components/pollar-required';
 import { useUpeerSession } from '@/components/session/upeer-session-provider';
 import { Button } from '@/components/ui/button';
@@ -216,6 +217,8 @@ function WalletViewInner() {
         />
       </section>
 
+      <WalletRampTeaser />
+
       <div className="wallet-workspace">
         <aside className="wallet-rail" aria-labelledby="wallet-assets-title">
           <div className="wallet-rail-header">
@@ -237,7 +240,7 @@ function WalletViewInner() {
             <ul className="wallet-balance-list">
               {stellarBalances.length === 0 ? (
                 <li className="wallet-balance-empty">
-                  Receive XLM or USDC to seed this vault.
+                  Receive XLM, USDC, or USDT0 to seed this vault.
                 </li>
               ) : (
                 stellarBalances.map((row) => {

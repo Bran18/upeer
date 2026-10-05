@@ -117,4 +117,5 @@ export const DEFAULT_LATAM_SYMBOLS = [
   'BOB',
   'CLP',
   'COP',
+  'BRL',
 ] as const;

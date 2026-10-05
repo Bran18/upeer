@@ -9,10 +9,12 @@ import {
 import { marketForCurrency } from '@/lib/fiat/coverage';
 import type { PostOrderSide } from '@/components/orders/post-order-side-pills';
 import type { PostOrderStep } from '@/components/orders/post-order-step-nav';
+import type { SettlementAsset } from '@/lib/settlement/assets';
 
 type Props = {
   step: PostOrderStep;
   side: PostOrderSide;
+  settlementAsset: SettlementAsset;
   fiatCurrency: string;
   pricePerUsdc: string;
   minUsdc: string;
@@ -44,6 +46,7 @@ function fiatAtPrice(pricePerUsdc: string, usdc: string): number | null {
 export function PostOrderPreview({
   step,
   side,
+  settlementAsset,
   fiatCurrency,
   pricePerUsdc,
   minUsdc,
@@ -53,7 +56,11 @@ export function PostOrderPreview({
   fiatReady,
 }: Props) {
   const market = marketForCurrency(fiatCurrency);
-  const priceLabel = formatPricePerUsdc(fiatCurrency, pricePerUsdc);
+  const priceLabel = formatPricePerUsdc(
+    fiatCurrency,
+    pricePerUsdc,
+    settlementAsset,
+  );
 
   const listingFiat = fiatAtPrice(pricePerUsdc, availableUsdc);
   const minTradeFiat = fiatAtPrice(pricePerUsdc, minUsdc);
@@ -82,7 +89,7 @@ export function PostOrderPreview({
           {orderSideLabel(side)}
         </p>
         <p className="mt-1 text-sm text-[var(--foreground-secondary)] text-pretty">
-          {buyerActionDescription(side)}
+          {buyerActionDescription(side, settlementAsset)}
         </p>
       </div>
 

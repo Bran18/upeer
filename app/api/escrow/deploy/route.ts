@@ -5,8 +5,8 @@ import {
   requireSession,
   sessionProfileId,
 } from '@/lib/auth/require-session';
-import { getNetworkConfig } from '@/lib/config/network';
 import { p2pLegs } from '@/lib/escrow/p2p-legs';
+import { trustlinePayloadForAsset } from '@/lib/settlement/assets';
 import {
   assertEscrowSigner,
   loadOrderEscrowContext,
@@ -74,20 +74,20 @@ export async function POST(req: Request) {
       );
     }
 
-    const network = getNetworkConfig();
     const platform = operatorRole('UPEER_PLATFORM_ADDRESS');
+    const trustline = trustlinePayloadForAsset(ctx.settlementAsset);
     const legs = p2pLegs(ctx);
     const sellerAddress = legs.usdcSellerAddress;
     const buyerAddress = legs.usdcBuyerAddress;
     if (!merchantAddressValid(sellerAddress)) {
       return NextResponse.json(
-        { error: 'USDC seller has no Stellar address on file for escrow' },
+        { error: 'Escrow seller has no Stellar address on file' },
         { status: 400 },
       );
     }
     if (!merchantAddressValid(buyerAddress)) {
       return NextResponse.json(
-        { error: 'USDC buyer wallet address missing' },
+        { error: 'Escrow buyer wallet address missing' },
         { status: 400 },
       );
     }
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
       signer: body.signer,
       engagementId: ctx.engagementId,
       title: `UPEER P2P ${ctx.engagementId.slice(0, 8)}`,
-      description: `USDC escrow (${ctx.side})`,
+      description: `${ctx.settlementAsset} escrow (${ctx.side})`,
       roles: {
         approver: sellerAddress!,
         serviceProvider: sellerAddress!,
@@ -108,10 +108,7 @@ export async function POST(req: Request) {
       amount: ctx.usdcAmount,
       platformFee: Number(process.env.UPEER_PLATFORM_FEE_BPS ?? '50'),
       milestones: [{ description: 'Fiat leg confirmed per UPEER policy' }],
-      trustline: {
-        address: network.usdcIssuer,
-        symbol: 'USDC',
-      },
+      trustline,
     };
 
     const tw = await twDeploySingleRelease(payload);

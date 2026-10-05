@@ -10,8 +10,8 @@ import { Avatar } from '@/components/ui/avatar';
 import {
   buyerActionLabel,
   formatPricePerUsdc,
+  formatSettlementLabel,
   formatUsdcAmount,
-  formatUsdcLabel,
 } from '@/lib/market/format';
 import { offerFillBounds } from '@/lib/market/take';
 
@@ -51,18 +51,23 @@ function CardArrowIcon() {
 }
 
 export const OfferCard = memo(function OfferCard({ offer }: Props) {
-  const action = buyerActionLabel(offer.side);
+  const asset = offer.settlementAsset;
+  const action = buyerActionLabel(offer.side, asset);
   const tagTone = offer.side === 'sell_usdc' ? 'buy' : 'sell';
-  const priceLabel = formatPricePerUsdc(offer.fiatCurrency, offer.pricePerUsdc);
+  const priceLabel = formatPricePerUsdc(
+    offer.fiatCurrency,
+    offer.pricePerUsdc,
+    asset,
+  );
   const { min, max } = offerFillBounds(offer);
-  const available = formatUsdcLabel(offer.availableUsdc);
+  const available = formatSettlementLabel(offer.availableUsdc, asset);
 
   return (
     <NavLink
       href={`/trade/${offer.id}`}
       direction="forward"
       className="offer-card group text-left no-underline"
-      aria-label={`${action} with ${offer.merchantName} at ${priceLabel} per USDC`}
+      aria-label={`${action} with ${offer.merchantName} at ${priceLabel}`}
     >
       <div className="flex min-w-0 items-start gap-3 md:max-w-[18rem] md:shrink-0 md:items-center">
         <Avatar
@@ -88,6 +93,7 @@ export const OfferCard = memo(function OfferCard({ offer }: Props) {
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <OfferTag tone={tagTone}>{action}</OfferTag>
             <OfferTag tone="fiat">{formatFiatBadge(offer.fiatCurrency)}</OfferTag>
+            <OfferTag tone="fiat">{asset}</OfferTag>
             {offer.verified ? <OfferTag tone="verified">Verified</OfferTag> : null}
           </div>
         </div>
@@ -96,7 +102,7 @@ export const OfferCard = memo(function OfferCard({ offer }: Props) {
       <div className="mt-4 grid min-w-0 flex-1 gap-3 md:mt-0 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto] md:items-center md:gap-6">
         <div className="min-w-0">
           <p className="text-[0.625rem] font-medium uppercase tracking-[0.14em] text-[var(--foreground-tertiary)]">
-            Price per USDC
+            Price per {asset}
           </p>
           <p className="mt-1 truncate text-[1.5rem] font-semibold leading-none tracking-tight tabular-nums text-[var(--foreground)]">
             {priceLabel}

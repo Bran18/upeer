@@ -16,6 +16,7 @@ import {
   PostOrderStepNav,
   type PostOrderStep,
 } from '@/components/orders/post-order-step-nav';
+import { PostOrderSettlementPills } from '@/components/orders/post-order-settlement-pills';
 import {
   PostOrderSidePills,
   type PostOrderSide,
@@ -34,6 +35,7 @@ import {
   minUsdcForApi,
   validatePostOrderStep,
 } from '@/lib/orders/post-order-validation';
+import { examplePriceForAsset } from '@/lib/settlement/assets';
 import {
   exchangePollarSessionFromClient,
   readStoredSession,
@@ -85,6 +87,7 @@ export function PostOrderView() {
 
   const [form, setForm] = useState<PostOrderFormState>(() => ({
     side: 'sell_usdc',
+    settlementAsset: 'USDC',
     fiatCurrency: DEFAULT_FIAT_CURRENCY,
     pricePerUsdc:
       marketForCurrency(DEFAULT_FIAT_CURRENCY)?.examplePricePerUsdc ?? '520',
@@ -110,7 +113,7 @@ export function PostOrderView() {
     if (step === 3 && !payoutReady) {
       alerts.push({
         id: 'payout',
-        message: 'Escrow needs a Stellar G-address to release USDC to you.',
+        message: `Escrow needs a Stellar G-address to release ${form.settlementAsset} to you.`,
         href: '/settings?tab=payout',
         label: 'Set payout in settings',
       });
@@ -118,13 +121,21 @@ export function PostOrderView() {
     if (step === 1 && form.side === 'sell_usdc' && profile && !fiatReady) {
       alerts.push({
         id: 'fiat',
-        message: `Add how buyers pay you in ${form.fiatCurrency} before you sell USDC.`,
+        message: `Add how buyers pay you in ${form.fiatCurrency} before you sell ${form.settlementAsset}.`,
         href: '/settings?tab=fiat',
         label: 'Add fiat payment method',
       });
     }
     return alerts;
-  }, [step, payoutReady, form.side, form.fiatCurrency, profile, fiatReady]);
+  }, [
+    step,
+    payoutReady,
+    form.side,
+    form.fiatCurrency,
+    form.settlementAsset,
+    profile,
+    fiatReady,
+  ]);
 
   const ensureSession = async () => {
     let session = readStoredSession();
@@ -203,6 +214,7 @@ export function PostOrderView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           side: form.side,
+          settlementAsset: form.settlementAsset,
           fiatCurrency: form.fiatCurrency,
           pricePerUsdc: form.pricePerUsdc,
           minUsdc: String(minUsdcForApi(form.minUsdc)),
@@ -248,9 +260,9 @@ export function PostOrderView() {
   const submitting = busy || isNavigating;
 
   const stepIntro: Record<PostOrderStep, string> = {
-    1: `Set side and price per USDC for ${UPEER_COVERAGE_BLURB}.`,
-    2: 'Choose how much USDC is on this listing and the size of each trade.',
-    3: 'Set where escrow sends USDC when you sell.',
+    1: `Set side, asset, and price for ${UPEER_COVERAGE_BLURB}.`,
+    2: 'Choose how much of your asset is on this listing and the size of each trade.',
+    3: 'Set where escrow sends your asset when you sell.',
     4: 'Review your listing. Nothing goes live until you confirm and post.',
   };
 
@@ -327,7 +339,7 @@ export function PostOrderView() {
                 <div className="space-y-5">
                   <PostOrderStepPanel
                     title="Trade direction"
-                    description="Sell USDC for fiat, or buy USDC with fiat."
+                    description="Sell crypto for fiat, or buy crypto with fiat."
                   >
                     <PostOrderSidePills
                       compact
@@ -336,8 +348,32 @@ export function PostOrderView() {
                     />
                   </PostOrderStepPanel>
                   <PostOrderStepPanel
+                    title="Settlement asset"
+                    description="What escrow holds on Stellar for this listing."
+                  >
+                    <PostOrderSettlementPills
+                      value={form.settlementAsset}
+                      onChange={(settlementAsset) =>
+                        setForm((f) => ({
+                          ...f,
+                          settlementAsset,
+                          pricePerUsdc: examplePriceForAsset(
+                            f.fiatCurrency,
+                            settlementAsset,
+                          ),
+                        }))
+                      }
+                    />
+                    {form.settlementAsset === 'USDT0' ? (
+                      <p className="text-xs text-[var(--foreground-tertiary)]">
+                        USDT0 is mainnet-only. Issuer can freeze or claw back
+                        balances.
+                      </p>
+                    ) : null}
+                  </PostOrderStepPanel>
+                  <PostOrderStepPanel
                     title="Pricing & market"
-                    description="Local currency per 1 USDC."
+                    description={`Local currency per 1 ${form.settlementAsset}.`}
                   >
                     <div className="space-y-4">
                       <FiatMarketSelect
@@ -349,14 +385,16 @@ export function PostOrderView() {
                           setForm((f) => ({
                             ...f,
                             fiatCurrency: currency,
-                            pricePerUsdc:
-                              market?.examplePricePerUsdc ?? f.pricePerUsdc,
+                            pricePerUsdc: examplePriceForAsset(
+                              currency,
+                              f.settlementAsset,
+                            ),
                           }));
                         }}
                       />
                       <div>
                         <label className="field-label" htmlFor="post-price">
-                          Price per 1 USDC ({form.fiatCurrency})
+                          Price per 1 {form.settlementAsset} ({form.fiatCurrency})
                         </label>
                         <input
                           id="post-price"
@@ -382,7 +420,7 @@ export function PostOrderView() {
 
               {step === 2 ? (
                 <PostOrderStepPanel
-                  title="How much USDC?"
+                  title={`How much ${form.settlementAsset}?`}
                   description="Set the total you want on the market, then the size of each individual trade."
                 >
                   <PostOrderSizeFields
@@ -398,8 +436,8 @@ export function PostOrderView() {
 
               {step === 3 ? (
                 <PostOrderStepPanel
-                  title="USDC payout"
-                  description="Escrow releases sold USDC to this Stellar address."
+                  title={`${form.settlementAsset} payout`}
+                  description={`Escrow releases sold ${form.settlementAsset} to this Stellar address.`}
                 >
                   {savedPayout && !showPayoutField ? (
                     <div className="space-y-2">
@@ -501,6 +539,7 @@ export function PostOrderView() {
             <PostOrderPreview
               step={step}
               side={form.side}
+              settlementAsset={form.settlementAsset}
               fiatCurrency={form.fiatCurrency}
               pricePerUsdc={form.pricePerUsdc}
               minUsdc={form.minUsdc}
