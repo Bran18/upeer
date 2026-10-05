@@ -207,7 +207,7 @@ async function ensureMerchantRow(
   const now = new Date().toISOString();
   const { data: existing, error: lookupError } = await supabase
     .from('merchants')
-    .select('id')
+    .select('id, status')
     .eq('profile_id', profileId)
     .maybeSingle();
 
@@ -216,10 +216,13 @@ async function ensureMerchantRow(
   }
 
   if (existing?.id) {
+    const status = existing.status as string | undefined;
+    const nextStatus = status === 'suspended' ? 'suspended' : 'approved';
     const { error } = await supabase
       .from('merchants')
       .update({
         display_name: displayName,
+        status: nextStatus,
         updated_at: now,
       })
       .eq('id', existing.id);
@@ -232,7 +235,7 @@ async function ensureMerchantRow(
   const { error } = await supabase.from('merchants').insert({
     profile_id: profileId,
     display_name: displayName,
-    status: 'pending',
+    status: 'approved',
     updated_at: now,
   });
   if (error) {

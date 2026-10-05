@@ -30,7 +30,7 @@ export async function PATCH(req: Request) {
         updated_at: new Date().toISOString(),
       })
       .eq('profile_id', session.profileId)
-      .eq('status', 'approved')
+      .neq('status', 'suspended')
       .select('id, payout_address')
       .single();
 

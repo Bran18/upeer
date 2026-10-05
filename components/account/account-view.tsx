@@ -14,7 +14,7 @@ import { cn } from '@/lib/cn';
 
 const DESK_DETAIL: Record<string, string> = {
   '/orders': 'Open and completed trades',
-  '/merchant': 'Verification and desk profile',
+  '/merchant': 'Desk profile and orders',
   '/dashboard': 'Volume and fill stats',
 };
 

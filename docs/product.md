@@ -14,7 +14,7 @@ You sign in with a Pollar embedded Stellar wallet. After onboarding you pick an 
 - **Sell**: post a price, receive local currency
 - **Buy and sell**: both directions on one account
 
-Merchant verification is a separate desk listing. Any onboarded profile can post an order. Verified desks get extra tools under `/merchant`.
+Listing a **merchant desk** (`/merchant`) sets your public name and readiness checklist; there is no operator approval step. Post orders from `/orders/new` once payout and payment methods are set.
 
 ## Settlement assets
 

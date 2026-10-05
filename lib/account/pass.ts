@@ -42,10 +42,8 @@ export function accountPassCopy(profile: MeProfile | null | undefined): {
     readiness = 'Add how you settle local currency.';
   } else if (sells && !profile.payoutAddress) {
     readiness = 'Set where USDC lands when you sell.';
-  } else if (sells && profile.merchantStatus === 'pending') {
-    readiness = 'Desk verification is in review.';
   } else if (sells && profile.merchantStatus === 'rejected') {
-    readiness = 'Desk verification needs another look.';
+    readiness = 'List your desk again to sell on the book.';
   } else if (sells && profile.merchantStatus === 'suspended') {
     readiness = 'This desk is suspended.';
   }

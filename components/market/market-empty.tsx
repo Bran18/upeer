@@ -34,8 +34,8 @@ export function MarketEmpty({ filtered, onResetFilters }: Props) {
     <div className="ui-card px-6 py-12 text-center">
       <p className="text-base font-medium text-balance">No Live Offers Yet</p>
       <p className="mx-auto mt-2 max-w-md text-sm text-[var(--foreground-secondary)] text-pretty">
-        Merchants publish USDC inventory on testnet after verification. Check
-        back soon—or list liquidity from your desk.
+        Desks publish inventory on testnet when they post orders. Check back
+        soon—or list liquidity from your desk.
       </p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <Link href="/merchant" className="btn-primary">

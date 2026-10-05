@@ -18,11 +18,10 @@ export const MERCHANT_PITCH_STEPS = [
 export function merchantStatusLabel(status: MerchantStatus | string): string {
   switch (status) {
     case 'approved':
-      return 'Verified';
     case 'pending':
-      return 'In review';
+      return 'Active';
     case 'rejected':
-      return 'Not approved';
+      return 'Inactive';
     case 'suspended':
       return 'Suspended';
     default:
@@ -33,13 +32,12 @@ export function merchantStatusLabel(status: MerchantStatus | string): string {
 export function merchantStatusBody(status: MerchantStatus | string): string {
   switch (status) {
     case 'approved':
-      return 'Your desk can post on the public book. Keep payout and payment methods current so takers can complete.';
     case 'pending':
-      return 'An operator is reviewing this desk. Set payout and fiat rails now so you can post as soon as you are verified.';
+      return 'Your desk can post on the public book. Keep payout and payment methods current so takers can complete.';
     case 'rejected':
-      return 'This desk was not approved. Update the public name if needed and submit again.';
+      return 'Update the public name if needed and list your desk again.';
     case 'suspended':
-      return 'This desk cannot post until an operator restores it.';
+      return 'This desk cannot post until support restores it.';
     default:
       return 'Apply with a public desk name. Buyers see that name on your orders.';
   }

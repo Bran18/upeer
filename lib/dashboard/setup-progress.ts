@@ -1,3 +1,4 @@
+import { merchantCanOperate } from '@/lib/merchant/status';
 import type { MeProfile, PlatformIntent } from '@/lib/profile/types';
 
 export type SetupItem = {
@@ -40,30 +41,30 @@ export function buildSetupItems(profile: MeProfile): SetupItem[] {
   }
 
   if (showMerchant) {
-    const verified = profile.merchantStatus === 'approved';
+    const deskReady = merchantCanOperate(profile.merchantStatus);
     items.push({
       id: 'desk',
       title: 'Merchant desk',
-      description: verified
-        ? 'Your desk is verified. Post and manage orders from Desk.'
-        : 'Verification, payout, and the public name buyers see.',
-      status: verified ? 'done' : 'action',
+      description: deskReady
+        ? 'Your desk is live. Post and manage orders from Desk.'
+        : 'List a public desk name and payout rails.',
+      status: deskReady ? 'done' : 'action',
       href: '/merchant',
-      hrefLabel: verified ? 'Open desk' : 'Finish desk',
+      hrefLabel: deskReady ? 'Open desk' : 'List desk',
     });
     items.push({
       id: 'post-order',
       title: 'Post an offer',
       description: 'Set your price per USDC and wait for takers.',
-      status: verified && profile.payoutAddress ? 'done' : 'action',
+      status: deskReady && profile.payoutAddress ? 'done' : 'action',
       href:
-        !verified
+        !deskReady
           ? '/merchant'
           : profile.payoutAddress
             ? '/orders/new'
             : '/settings?tab=payout',
-      hrefLabel: !verified
-        ? 'Finish desk'
+      hrefLabel: !deskReady
+        ? 'List desk'
         : profile.payoutAddress
           ? 'Post offer'
           : 'Set payout',

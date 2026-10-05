@@ -12,6 +12,7 @@ import {
   merchantStatusBody,
   merchantStatusLabel,
 } from '@/lib/merchant/copy';
+import { merchantCanOperate } from '@/lib/merchant/status';
 import type { MerchantOfferRow as OfferRow, MerchantRecord } from '@/lib/merchant/types';
 import type { MeProfile } from '@/lib/profile/types';
 
@@ -34,7 +35,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 export function MerchantDesk({ profile, merchant, offers, onApplied }: Props) {
   const status = merchant?.status ?? profile.merchantStatus;
   const canApply = !merchant || status === 'rejected' || status === 'none';
-  const approved = status === 'approved';
+  const canOperate = merchantCanOperate(status);
   const deskName =
     merchant?.display_name?.trim() ||
     profile.displayName?.trim() ||
@@ -48,23 +49,13 @@ export function MerchantDesk({ profile, merchant, offers, onApplied }: Props) {
   const payoutReady = Boolean(profile.payoutAddress);
   const railsReady = profile.paymentPrefs.methods.length > 0;
   const badgeVariant =
-    status === 'approved'
+    canOperate
       ? 'success'
-      : status === 'pending'
-        ? 'accent'
-        : status === 'rejected' || status === 'suspended'
-          ? 'muted'
-          : 'default';
+      : status === 'rejected' || status === 'suspended'
+        ? 'muted'
+        : 'default';
 
   const readiness = [
-    {
-      id: 'verify',
-      title: 'Desk verification',
-      done: approved,
-      href: undefined as string | undefined,
-      hrefLabel: undefined as string | undefined,
-      detail: merchantStatusBody(status),
-    },
     {
       id: 'payout',
       title: 'Payout address',
@@ -101,7 +92,7 @@ export function MerchantDesk({ profile, merchant, offers, onApplied }: Props) {
                 {merchantStatusBody(status)}
               </p>
             </div>
-            {approved ? (
+            {canOperate ? (
               <Link href="/orders/new" className="btn-primary shrink-0 self-start">
                 Post order
               </Link>
@@ -110,7 +101,7 @@ export function MerchantDesk({ profile, merchant, offers, onApplied }: Props) {
         </section>
       )}
 
-      {approved ? (
+      {canOperate ? (
         <section aria-labelledby="merchant-book-stats">
           <h2 id="merchant-book-stats" className="sr-only">
             Book summary
@@ -192,7 +183,7 @@ export function MerchantDesk({ profile, merchant, offers, onApplied }: Props) {
             </Link>
           </div>
           {offers.length === 0 ? (
-            <MerchantOffersEmpty canPost={approved && payoutReady} />
+            <MerchantOffersEmpty canPost={canOperate && payoutReady} />
           ) : (
             <ul className="grid list-none gap-2">
               {offers.map((offer) => (

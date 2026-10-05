@@ -10,6 +10,7 @@ import { useUpeerSession } from '@/components/session/upeer-session-provider';
 import { Button } from '@/components/ui/button';
 import { ScreenHeader } from '@/components/ui/screen-header';
 import type { MerchantOfferRow, MerchantRecord } from '@/lib/merchant/types';
+import { merchantCanOperate } from '@/lib/merchant/status';
 import { onboardingComplete } from '@/lib/profile/types';
 import {
   exchangePollarSessionFromClient,
@@ -111,11 +112,11 @@ function MerchantViewInner() {
         title={hasDesk ? 'Desk' : 'Become a merchant'}
         description={
           hasDesk
-            ? 'Verification, payout rails, and the orders you supply to the book.'
-            : 'List a public desk. Buyers take your price; escrow protects the USDC leg.'
+            ? 'Payout rails and the orders you supply to the book.'
+            : 'List a public desk. Buyers take your price; escrow protects the on-chain leg.'
         }
         action={
-          merchant?.status === 'approved' ? (
+          merchant && merchantCanOperate(merchant.status) ? (
             <Link href="/orders/new" className="btn-primary">
               Post order
             </Link>

@@ -80,7 +80,7 @@ async function approvedDeskIds(profileIds: string[]): Promise<Set<string>> {
     .from('merchants')
     .select('profile_id, status')
     .in('profile_id', profileIds)
-    .eq('status', 'approved');
+    .in('status', ['approved', 'pending']);
   for (const desk of desks ?? []) {
     if (desk.profile_id) {
       verifiedIds.add(desk.profile_id as string);

@@ -154,7 +154,7 @@ All paths are under `/api`. Unless noted, routes require a UPEER session.
 | Quotes | `POST /quotes` | Locks price/size before order |
 | Orders | `GET/POST /orders`, `GET /orders/[id]`, `POST accept/decline/confirm` | P2P lifecycle |
 | Escrow | `deploy`, `fund`, `submit`, `approve`, `release`, `status`, `resolve`, `probe` | Trustless Work bridge |
-| Merchants | `POST /merchants/apply`, `GET /merchants/me`, payout address | Desk verification |
+| Merchants | `POST /merchants/apply`, `GET /merchants/me`, payout address | Desk listing (auto-active) |
 | Notifications | `GET /notifications`, read endpoints | Maker alerts |
 | Prices | `GET /prices/reference` | Reflector Pulse read |
 | Admin | `/admin/*` | `is_operator` or API key |
@@ -167,7 +167,7 @@ Defined in `supabase/migrations/`.
 | Table | Purpose |
 | --- | --- |
 | `profiles` | Pollar user, Stellar `G…`, intent, payout, payment prefs, operator flag |
-| `merchants` | Desk verification state |
+| `merchants` | Desk listing state (`approved` by default; `suspended` for ops) |
 | `offers` | Maker listings (`sell_usdc` / `buy_usdc`, `settlement_asset`, `fiat_currency`, `*_usdc` size fields) |
 | `quotes` | Executable snapshot for a take (`settlement_asset` copied from offer) |
 | `orders` | Trade state, maker/taker ids, `fiat_confirmation` JSON |

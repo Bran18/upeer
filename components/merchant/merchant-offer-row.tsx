@@ -55,7 +55,7 @@ export function MerchantOffersEmpty({ canPost }: { canPost: boolean }) {
       <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-[var(--foreground-secondary)] text-pretty">
         {canPost
           ? 'Post a sell or buy order at your price. Takers find it on Market.'
-          : 'Once this desk is verified, post from here. Payment rails can be set now.'}
+          : 'Set your payout address, then post from here.'}
       </p>
       {canPost ? (
         <Link href="/orders/new" className="btn-primary mt-5 inline-flex">

@@ -54,12 +54,7 @@ export function MerchantApplyForm({ defaultName = '', onSubmitted }: Props) {
         throw new Error(data.error ?? 'Apply failed');
       }
       await refreshProfile();
-      toast.success(
-        'Application submitted',
-        data.status === 'pending'
-          ? 'An operator will review this desk.'
-          : `Desk status: ${data.status}.`,
-      );
+      toast.success('Desk listed', 'You can set payout rails and post orders.');
       onSubmitted?.();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Apply failed';
@@ -82,8 +77,8 @@ export function MerchantApplyForm({ defaultName = '', onSubmitted }: Props) {
           List your desk
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-[var(--foreground-secondary)] text-pretty">
-          Choose the public name buyers see on the market. Operator review
-          happens before you show as verified.
+          Choose the public name buyers see on the market. You can post as soon
+          as payout and payment methods are set.
         </p>
       </div>
       <div>
@@ -112,7 +107,7 @@ export function MerchantApplyForm({ defaultName = '', onSubmitted }: Props) {
         disabled={!isAuthenticated || !verified || busy || displayName.trim().length < 2}
         aria-busy={busy}
       >
-        {busy ? 'Submitting…' : 'Submit for review'}
+        {busy ? 'Listing…' : 'List desk'}
       </Button>
     </form>
   );

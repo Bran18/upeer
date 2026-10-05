@@ -47,9 +47,8 @@ export async function POST(req: Request) {
     }
 
     const now = new Date().toISOString();
-    const keepStatus =
-      merchant?.status === 'approved' || merchant?.status === 'suspended';
-    const nextStatus = keepStatus ? merchant.status : 'pending';
+    const nextStatus =
+      merchant?.status === 'suspended' ? 'suspended' : 'approved';
 
     const { data, error } = await supabase
       .from('merchants')
