@@ -94,3 +94,15 @@ export function isEscrowFundPending(
     milestoneState === 'fund_submitted' || milestoneState === 'fund_unsigned'
   );
 }
+
+/** Fiat must not move until USDC is locked in a live escrow contract. */
+export function escrowReadyForFiatSent(
+  contractId: string | null | undefined,
+  milestoneState: string,
+  onChain?: EscrowOnChainSnapshot | null,
+): boolean {
+  if (!contractId) {
+    return false;
+  }
+  return isEscrowFundedForDisplay(milestoneState, onChain);
+}

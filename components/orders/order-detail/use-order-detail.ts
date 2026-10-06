@@ -8,6 +8,7 @@ import { orderCanBeAccepted } from '@/lib/quotes/ttl';
 import { getStellarNetworkClient } from '@/lib/config/network-client';
 import type { EscrowOnChainSnapshot } from '@/lib/escrow/on-chain';
 import {
+  escrowReadyForFiatSent,
   isEscrowFundedForDisplay,
   isEscrowFundPending,
   preferMilestoneState,
@@ -365,6 +366,20 @@ export function useOrderDetail({ orderId, initial }: Props) {
 
   const confirm = (step: 'fiat_sent' | 'fiat_received') =>
     runAction(async () => {
+      if (step === 'fiat_sent') {
+        const ready = escrowReadyForFiatSent(
+          order?.escrow?.tw_contract_id,
+          order?.escrow?.milestone_state ?? 'idle',
+          escrowOnChain,
+        );
+        if (!ready) {
+          throw new Error(
+            order?.escrow?.tw_contract_id
+              ? 'Wait until USDC is in escrow before marking fiat sent.'
+              : 'Wait until escrow is created and funded before marking fiat sent.',
+          );
+        }
+      }
       await ensureSession();
       const res = await upeerAuthedFetch(`/api/orders/${orderId}/confirm`, {
         method: 'POST',
@@ -778,6 +793,11 @@ export function useOrderDetail({ orderId, initial }: Props) {
     escrowMilestone,
     escrowOnChain,
   );
+  const canMarkFiatSent = escrowReadyForFiatSent(
+    escrowContractId,
+    escrowMilestone,
+    escrowOnChain,
+  );
   const escrowFundPending = isEscrowFundPending(escrowMilestone, escrowOnChain);
   const showEscrowFund = Boolean(
     escrowSetupPhase &&
@@ -849,6 +869,7 @@ export function useOrderDetail({ orderId, initial }: Props) {
     canAccept,
     showDecline,
     showFiat,
+    canMarkFiatSent,
     escrowContractId,
     showEscrowDeploy,
     escrowMilestone,
@@ -861,7 +882,7 @@ export function useOrderDetail({ orderId, initial }: Props) {
     showUsdcRelease,
     acceptDisabled,
     nextStepMessage: order
-      ? nextStepCopy(order, profileId, isMaker, isTaker, canAccept)
+      ? nextStepCopy(order, profileId, isMaker, isTaker, canAccept, canMarkFiatSent)
       : '',
     accept,
     decline,

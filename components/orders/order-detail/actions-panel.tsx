@@ -23,6 +23,7 @@ export function OrderDetailActionsPanel() {
     canAccept,
     showDecline,
     showFiat,
+    canMarkFiatSent,
     isMaker,
     isUsdcBuyer,
     isUsdcSeller,
@@ -137,17 +138,30 @@ export function OrderDetailActionsPanel() {
           <div className="mt-6 space-y-3">
             <p className="text-sm font-medium">Fiat Confirmation</p>
             {isUsdcBuyer ? (
-              <Button
-                type="button"
-                variant="secondary"
-                fullWidth
-                disabled={busy || Boolean(order.fiat_confirmation.takerPaidAt)}
-                onClick={() => void confirm('fiat_sent')}
-              >
-                {order.fiat_confirmation.takerPaidAt
-                  ? 'Fiat Marked Sent'
-                  : 'Mark Fiat Sent'}
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  fullWidth
+                  disabled={
+                    busy ||
+                    Boolean(order.fiat_confirmation.takerPaidAt) ||
+                    !canMarkFiatSent
+                  }
+                  onClick={() => void confirm('fiat_sent')}
+                >
+                  {order.fiat_confirmation.takerPaidAt
+                    ? 'Fiat Marked Sent'
+                    : 'Mark Fiat Sent'}
+                </Button>
+                {!order.fiat_confirmation.takerPaidAt && !canMarkFiatSent ? (
+                  <p className="text-xs text-[var(--foreground-tertiary)] text-pretty">
+                    {escrowContractId
+                      ? 'Available after USDC is funded in escrow. Do not send fiat until then.'
+                      : 'Available after escrow is created and funded. Do not send fiat until then.'}
+                  </p>
+                ) : null}
+              </>
             ) : null}
             {isUsdcSeller ? (
               <>

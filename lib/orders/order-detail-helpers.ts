@@ -34,6 +34,7 @@ export function nextStepCopy(
   isMaker: boolean,
   isTaker: boolean,
   canAccept: boolean,
+  escrowFunded = false,
 ): string {
   const legs =
     profileId && order.maker_profile_id && order.taker_profile_id
@@ -68,7 +69,12 @@ export function nextStepCopy(
     return 'This trade is in dispute. USDC stays in escrow until UPEER resolves it.';
   }
   if (isBuyer) {
-    return 'Send fiat to your counterparty when ready, then mark it sent. USDC stays in escrow until the seller releases.';
+    if (!escrowFunded) {
+      return order.escrow?.tw_contract_id
+        ? 'Wait until USDC is in escrow before you send fiat and mark it sent.'
+        : 'Wait for the USDC seller to create and fund escrow before you send fiat.';
+    }
+    return 'USDC is in escrow. Send fiat to your counterparty, then mark it sent.';
   }
   if (isSeller) {
     if (!order.fiat_confirmation.takerPaidAt) {

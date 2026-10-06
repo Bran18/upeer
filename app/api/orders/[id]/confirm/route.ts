@@ -6,6 +6,8 @@ import {
 } from '@/lib/auth/require-session';
 import { createNotification } from '@/lib/db/notifications';
 import type { FiatConfirmation } from '@/lib/db/orders';
+import { fetchEscrowOnChainSnapshot } from '@/lib/escrow/fetch-on-chain';
+import { escrowReadyForFiatSent } from '@/lib/escrow/funding-state';
 import { p2pLegs } from '@/lib/escrow/p2p-legs';
 import { getSupabaseAdmin, isSupabaseConfigured } from '@/lib/supabase/server';
 
@@ -38,8 +40,15 @@ export async function POST(req: Request, { params }: Params) {
       taker_profile_id,
       fiat_confirmation,
       status,
+      engagement_id,
       quotes!inner (
+        usdc_amount,
         offers!inner ( side )
+      ),
+      escrow_sessions (
+        tw_contract_id,
+        milestone_state,
+        last_tx_hash
       )
     `,
     )
@@ -59,6 +68,7 @@ export async function POST(req: Request, { params }: Params) {
 
   const rawQuotes = order.quotes;
   const quote = (Array.isArray(rawQuotes) ? rawQuotes[0] : rawQuotes) as {
+    usdc_amount: string | number;
     offers: { side: string } | { side: string }[];
   };
   const offer = Array.isArray(quote.offers) ? quote.offers[0] : quote.offers;
@@ -69,6 +79,14 @@ export async function POST(req: Request, { params }: Params) {
     makerPayoutAddress: null,
     takerStellarAddress: null,
   });
+  const rawEscrow = order.escrow_sessions;
+  const escrow = (
+    Array.isArray(rawEscrow) ? rawEscrow[0] : rawEscrow
+  ) as {
+    tw_contract_id: string | null;
+    milestone_state: string | null;
+    last_tx_hash: string | null;
+  } | null;
 
   if (step === 'fiat_sent' && profileId !== legs.usdcBuyerProfileId) {
     return NextResponse.json(
@@ -86,6 +104,26 @@ export async function POST(req: Request, { params }: Params) {
   const confirmation = (order.fiat_confirmation ?? {}) as FiatConfirmation;
   const now = new Date().toISOString();
   if (step === 'fiat_sent') {
+    const contractId = escrow?.tw_contract_id ?? null;
+    const milestoneState = escrow?.milestone_state ?? 'idle';
+    let onChain = null;
+    if (contractId && !escrowReadyForFiatSent(contractId, milestoneState, null)) {
+      onChain = await fetchEscrowOnChainSnapshot(contractId, {
+        expectedAmount: Number(quote.usdc_amount),
+        engagementId: order.engagement_id as string,
+        syncTxHash: escrow?.last_tx_hash,
+      });
+    }
+    if (!escrowReadyForFiatSent(contractId, milestoneState, onChain)) {
+      return NextResponse.json(
+        {
+          error: contractId
+            ? 'Wait until USDC is in escrow before marking fiat sent'
+            : 'Wait until escrow is created and funded before marking fiat sent',
+        },
+        { status: 400 },
+      );
+    }
     if (confirmation.takerPaidAt) {
       return NextResponse.json(
         { error: 'Fiat sent was already confirmed for this order' },
