@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 :root {
   --background: #0c0f0e;
   --background-secondary: #111615;
@@ -51,8 +53,7 @@
   --site-header-height: calc(3.5rem + max(0.75rem, env(safe-area-inset-top)) + 0.75rem);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
+html[data-theme="light"] {
     --background: #f3f6f5;
     --background-secondary: #e7eeeb;
     --foreground: #121615;
@@ -86,7 +87,6 @@
     --material: rgba(243, 246, 245, 0.82);
     --shadow-elevated: 0 16px 40px rgba(18, 22, 21, 0.06);
     color-scheme: light;
-  }
 }
 
 @theme inline {
@@ -168,6 +168,18 @@ select {
   outline-offset: 2px;
 }
 
+.theme-toggle-icon--moon {
+  display: none;
+}
+
+html[data-theme="light"] .theme-toggle-icon--sun {
+  display: none;
+}
+
+html[data-theme="light"] .theme-toggle-icon--moon {
+  display: block;
+}
+
 .panel-card,
 .ui-card {
   border-radius: var(--radius-ui);
@@ -180,7 +192,7 @@ select {
   padding: 1.5rem;
 }
 
-@media (prefers-color-scheme: dark) {
+html[data-theme="dark"] {
   .ui-card {
     background: var(--surface-elevated);
   }
@@ -287,7 +299,7 @@ select {
   box-shadow: none;
 }
 
-@media (prefers-color-scheme: light) {
+html[data-theme="light"] {
   .nav-pill--active {
     border: 1px solid var(--line);
     box-shadow: 0 1px 2px rgba(18, 22, 21, 0.05);
@@ -345,7 +357,7 @@ select {
   color: rgb(220, 38, 38);
 }
 
-@media (prefers-color-scheme: dark) {
+html[data-theme="dark"] {
   .panel-card {
     background: var(--surface-elevated);
   }
@@ -847,7 +859,7 @@ select {
   color: transparent;
 }
 
-@media (prefers-color-scheme: light) {
+html[data-theme="light"] {
   .market-hero-title-accent {
     background: linear-gradient(
       108deg,
@@ -1033,7 +1045,7 @@ select {
   }
 }
 
-@media (prefers-color-scheme: dark) {
+html[data-theme="dark"] {
   .apple-aurora {
     background:
       radial-gradient(
@@ -1065,7 +1077,7 @@ select {
     radial-gradient(circle at 72% 50%, rgba(34, 211, 238, 0.4), transparent 42%);
 }
 
-@media (prefers-color-scheme: dark) {
+html[data-theme="dark"] {
   .hero-stage {
     background:
       radial-gradient(ellipse 70% 55% at 78% 42%, rgba(56, 189, 248, 0.2), transparent 55%),
@@ -1082,7 +1094,7 @@ select {
   box-shadow: var(--shadow-elevated);
 }
 
-@media (prefers-color-scheme: dark) {
+html[data-theme="dark"] {
   .glass-panel,
   .surface-card {
     background: var(--surface-elevated);
@@ -2638,7 +2650,7 @@ select {
   color: #fcd34d;
 }
 
-@media (prefers-color-scheme: light) {
+html[data-theme="light"] {
   .wallet-callout--warn {
     color: #92400e;
   }

@@ -7,6 +7,7 @@ import { PostOrderHeaderLink } from '@/components/nav/post-order-header-link';
 import { PrimaryNav } from '@/components/nav/primary-nav';
 import { UserMenu } from '@/components/nav/user-menu';
 import { SiteLogo } from '@/components/site-logo';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { cn } from '@/lib/cn';
 
 export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
@@ -41,6 +42,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
         </div>
 
         <div className="pointer-events-auto ml-auto flex min-w-0 shrink-0 items-center gap-2">
+          <ThemeToggle overlay={overlay} />
           <PostOrderHeaderLink overlay={overlay} />
           <NotificationBell overlay={overlay} />
           <MobileNav overlay={overlay} />

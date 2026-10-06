@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import '@pollar/react/styles.css';
 import { AppProviders } from '@/components/providers/app-providers';
 import { SiteShell } from '@/components/site-shell';
+import { THEME_BOOTSTRAP } from '@/lib/theme';
 import './globals.css';
 
 const geistSans = Geist({
@@ -39,6 +40,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
       suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+      </head>
       <body
         className="flex min-h-[100dvh] flex-col bg-[var(--background)] text-[var(--foreground)]"
         suppressHydrationWarning

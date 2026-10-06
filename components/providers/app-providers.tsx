@@ -3,6 +3,7 @@
 import { PollarProvider } from '@pollar/react';
 import type { ReactNode } from 'react';
 import { OnboardingGate } from '@/components/session/onboarding-gate';
+import { ThemeProvider } from '@/components/theme/theme-provider';
 import { UpeerSessionProvider } from '@/components/session/upeer-session-provider';
 import { ToasterProvider } from '@/components/ui/toaster';
 import { getStellarNetworkClient } from '@/lib/config/network-client';
@@ -24,27 +25,31 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
   if (!publishableKey) {
     return (
-      <ToasterProvider>
-        {banner}
-        {children}
-      </ToasterProvider>
+      <ThemeProvider>
+        <ToasterProvider>
+          {banner}
+          {children}
+        </ToasterProvider>
+      </ThemeProvider>
     );
   }
 
   return (
-    <PollarProvider
-      client={{
-        apiKey: publishableKey,
-        stellarNetwork,
-      }}
-    >
-      <UpeerSessionProvider>
-        <ToasterProvider>
-          <OnboardingGate />
-          {banner}
-          {children}
-        </ToasterProvider>
-      </UpeerSessionProvider>
-    </PollarProvider>
+    <ThemeProvider>
+      <PollarProvider
+        client={{
+          apiKey: publishableKey,
+          stellarNetwork,
+        }}
+      >
+        <UpeerSessionProvider>
+          <ToasterProvider>
+            <OnboardingGate />
+            {banner}
+            {children}
+          </ToasterProvider>
+        </UpeerSessionProvider>
+      </PollarProvider>
+    </ThemeProvider>
   );
 }
