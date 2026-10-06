@@ -58,6 +58,7 @@ export function useOrderDetail({ orderId, initial }: Props) {
   } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [confirmDecline, setConfirmDecline] = useState(false);
+  const [confirmDispute, setConfirmDispute] = useState(false);
   const [acceptPaymentMethodId, setAcceptPaymentMethodId] = useState<
     string | null
   >(null);
@@ -675,6 +676,77 @@ export function useOrderDetail({ orderId, initial }: Props) {
     );
   };
 
+  const openDispute = () => {
+    if (!wallet?.address || !order?.escrow?.tw_contract_id) {
+      setStatus('Escrow must be deployed before you can open a dispute.');
+      setStatusTone('error');
+      return;
+    }
+    void runAction(
+      async () => {
+        await ensureSession();
+        reportProgress('Preparing the dispute transaction…', 'Open dispute');
+        const res = await upeerAuthedFetch('/api/escrow/dispute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId,
+            signer: wallet.address,
+            escrowContractId: order.escrow?.tw_contract_id,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(
+            data.error ?? 'Could not open a dispute. Try again.',
+          );
+        }
+        const xdr = extractUnsignedXdr(data) ?? data.unsignedTransaction;
+        if (!xdr) {
+          throw new Error('No dispute transaction returned. Try again.');
+        }
+        reportProgress(
+          'Sign the dispute in Pollar',
+          'Open dispute',
+          true,
+        );
+        const outcome = await signAndSubmitTx(xdr);
+        if (outcome.status !== 'success') {
+          throw new Error(
+            'message' in outcome && typeof outcome.message === 'string'
+              ? outcome.message
+              : 'Dispute was not completed in your wallet.',
+          );
+        }
+        reportProgress('Recording dispute on UPEER…', 'Open dispute');
+        const ackRes = await upeerAuthedFetch('/api/escrow/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            submittedViaWallet: true,
+            txHash: outcome.hash,
+            signer: wallet.address,
+            orderId,
+            phase: 'dispute',
+          }),
+        });
+        const ackData = await ackRes.json();
+        if (!ackRes.ok) {
+          throw new Error(
+            ackData.error ??
+              'Dispute tx sent but order state did not update.',
+          );
+        }
+        setConfirmDispute(false);
+        setStatus('Dispute submitted. USDC stays in escrow until it is resolved.');
+        setStatusTone('info');
+        return outcome.hash;
+      },
+      'Could not open a dispute. Try again.',
+      { headline: 'Open dispute', initialDetail: 'Starting…' },
+    );
+  };
+
 
   const action = order ? buyerActionLabel(order.offer.side) : '';
   const canAccept = Boolean(
@@ -717,7 +789,9 @@ export function useOrderDetail({ orderId, initial }: Props) {
     isUsdcSeller &&
       Boolean(escrowContractId) &&
       Boolean(order?.fiat_confirmation.makerReceivedAt) &&
-      (order?.status === 'escrow_pending' || order?.status === 'fiat_pending'),
+      (order?.status === 'escrow_pending' || order?.status === 'fiat_pending') &&
+      !escrowOnChain?.disputed &&
+      !escrowOnChain?.released,
   );
   const showEscrowWaiting = Boolean(
     order &&
@@ -725,6 +799,14 @@ export function useOrderDetail({ orderId, initial }: Props) {
         order.status === 'escrow_pending' ||
         order.status === 'fiat_pending') &&
       !isUsdcSeller,
+  );
+  const showOpenDispute = Boolean(
+    order &&
+      (isUsdcSeller || isUsdcBuyer) &&
+      Boolean(escrowContractId) &&
+      (order.status === 'escrow_pending' || order.status === 'fiat_pending') &&
+      !escrowOnChain?.released &&
+      !escrowOnChain?.disputed,
   );
   const showUsdcRelease = Boolean(
     order &&
@@ -750,6 +832,8 @@ export function useOrderDetail({ orderId, initial }: Props) {
     statusTone,
     confirmDecline,
     setConfirmDecline,
+    confirmDispute,
+    setConfirmDispute,
     acceptPaymentMethodId,
     setAcceptPaymentMethodId,
     deployExplorer,
@@ -773,6 +857,7 @@ export function useOrderDetail({ orderId, initial }: Props) {
     showEscrowFund,
     showEscrowRelease,
     showEscrowWaiting,
+    showOpenDispute,
     showUsdcRelease,
     acceptDisabled,
     nextStepMessage: order
@@ -784,5 +869,6 @@ export function useOrderDetail({ orderId, initial }: Props) {
     deployEscrow,
     fundEscrow,
     approveRelease,
+    openDispute,
   };
 }

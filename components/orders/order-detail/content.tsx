@@ -2,7 +2,7 @@
 
 import { OrderDetailActionsPanel } from '@/components/orders/order-detail/actions-panel';
 import { useOrderDetailContext } from '@/components/orders/order-detail/context';
-import { OrderSettlementDetails } from '@/components/orders/order-settlement-details';
+import { OrderProgressSteps } from '@/components/orders/order-progress-steps';
 import { OrderSummary } from '@/components/orders/order-summary';
 import { Button } from '@/components/ui/button';
 
@@ -62,27 +62,22 @@ export function OrderDetailContent() {
       </p>
 
       <div className="mt-8 grid gap-4 lg:mt-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)] lg:items-start">
-        <div className="flex flex-col gap-4">
-          <OrderSummary
-            order={order}
-            isMaker={isMaker}
-            escrowOnChain={escrowOnChain}
-            escrowStatusError={escrowStatusError}
-          />
-          {order.fiatSettlement || showUsdcRelease ? (
-            <div className="ui-card px-5 py-5 sm:px-6 sm:py-6">
-              <OrderSettlementDetails
-                fiatSettlement={order.fiatSettlement}
-                usdcReleaseAddress={order.usdcReleaseAddress}
-                showUsdcRelease={showUsdcRelease}
-                viewerIsUsdcBuyer={isUsdcBuyer}
-                viewerIsUsdcSeller={isUsdcSeller}
-              />
-            </div>
-          ) : null}
-        </div>
+        <OrderSummary
+          order={order}
+          isMaker={isMaker}
+          isUsdcBuyer={isUsdcBuyer}
+          isUsdcSeller={isUsdcSeller}
+          showUsdcRelease={showUsdcRelease}
+          escrowOnChain={escrowOnChain}
+          escrowStatusError={escrowStatusError}
+        />
 
-        <OrderDetailActionsPanel />
+        <div className="flex flex-col gap-4 lg:col-start-2 lg:row-start-1">
+          <OrderProgressSteps order={order} className="order-2 lg:order-1" />
+          <div className="order-1 lg:order-2">
+            <OrderDetailActionsPanel />
+          </div>
+        </div>
       </div>
     </div>
   );

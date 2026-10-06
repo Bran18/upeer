@@ -3,7 +3,9 @@ import { z } from 'zod';
 import {
   isSessionError,
   requireSession,
+  sessionProfileId,
 } from '@/lib/auth/require-session';
+import { createNotification } from '@/lib/db/notifications';
 import {
   extractSendTransactionContractId,
   pickEscrowContractByEngagement,
@@ -21,7 +23,7 @@ const bodySchema = z
     signer: z.string().optional(),
     orderId: z.string().uuid().optional(),
     contractId: z.string().optional(),
-    phase: z.enum(['deploy', 'fund', 'approve', 'release']).optional(),
+    phase: z.enum(['deploy', 'fund', 'approve', 'release', 'dispute']).optional(),
   })
   .superRefine((data, ctx) => {
     if (!data.submittedViaWallet && !data.signedXdr) {
@@ -37,6 +39,7 @@ export async function POST(req: Request) {
   if (isSessionError(session)) {
     return session;
   }
+  const profileId = sessionProfileId(session);
 
   try {
     const body = bodySchema.parse(await req.json());
@@ -109,6 +112,46 @@ export async function POST(req: Request) {
           .from('orders')
           .update({ status: 'released', updated_at: new Date().toISOString() })
           .eq('id', body.orderId);
+      }
+
+      if (body.phase === 'dispute') {
+        const { data: order } = await supabase
+          .from('orders')
+          .select('id, maker_profile_id, taker_profile_id, status')
+          .eq('id', body.orderId)
+          .maybeSingle();
+
+        if (
+          order &&
+          (order.status === 'reserved' ||
+            order.status === 'escrow_pending' ||
+            order.status === 'fiat_pending')
+        ) {
+          await supabase
+            .from('orders')
+            .update({
+              status: 'disputed',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', body.orderId);
+
+          const counterpartyId =
+            order.maker_profile_id === profileId
+              ? order.taker_profile_id
+              : order.taker_profile_id === profileId
+                ? order.maker_profile_id
+                : null;
+          if (counterpartyId) {
+            await createNotification({
+              profileId: counterpartyId,
+              type: 'order_disputed',
+              title: 'Trade disputed',
+              body: 'Your counterparty opened a dispute. USDC stays in escrow until it is resolved.',
+              href: `/orders/${body.orderId}`,
+              metadata: { orderId: body.orderId },
+            });
+          }
+        }
       }
     }
 

@@ -90,13 +90,38 @@ export async function loadOrderEscrowContext(
   };
 }
 
+export type EscrowSignerPhase =
+  | 'deploy'
+  | 'fund'
+  | 'approve'
+  | 'release'
+  | 'dispute';
+
 export function assertEscrowSigner(
   ctx: OrderEscrowContext,
   profileId: string,
   signerAddress: string,
-  _phase: 'deploy' | 'fund' | 'approve' | 'release',
+  phase: EscrowSignerPhase,
 ): void {
   const legs = p2pLegs(ctx);
+
+  if (phase === 'dispute') {
+    const isSeller = profileId === legs.usdcSellerProfileId;
+    const isBuyer = profileId === legs.usdcBuyerProfileId;
+    if (!isSeller && !isBuyer) {
+      throw new Error('Only trade participants can open a dispute');
+    }
+    const expectedSigner = isSeller
+      ? legs.usdcSellerAddress
+      : legs.usdcBuyerAddress;
+    if (!expectedSigner) {
+      throw new Error('Your Stellar address is missing for this order');
+    }
+    if (signerAddress !== expectedSigner) {
+      throw new Error('Signer must be your wallet for this order');
+    }
+    return;
+  }
 
   if (profileId !== legs.usdcSellerProfileId) {
     throw new Error('Only the USDC seller can perform escrow operations');

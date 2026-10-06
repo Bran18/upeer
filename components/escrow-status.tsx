@@ -19,6 +19,9 @@ function fundingLabel(escrow: EscrowStatusSnapshot): string {
   if (onChain?.released) {
     return 'Released';
   }
+  if (onChain?.disputed) {
+    return 'In dispute';
+  }
   if (isEscrowFundedForDisplay(milestoneState ?? 'idle', onChain)) {
     if (
       onChain &&

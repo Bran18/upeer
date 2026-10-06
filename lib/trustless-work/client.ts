@@ -192,6 +192,20 @@ export async function twReleaseFunds(
   return data;
 }
 
+export async function twDisputeEscrow(
+  body: Record<string, unknown>,
+): Promise<TwUnsignedResponse> {
+  const res = await twFetch('/escrow/single-release/dispute-escrow', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  const data = (await res.json()) as TwUnsignedResponse;
+  if (!res.ok) {
+    throw new Error(twErrorMessage(data, `Dispute failed (${res.status})`));
+  }
+  return data;
+}
+
 export async function twSendTransaction(signedXdr: string): Promise<unknown> {
   const res = await twFetch('/helper/send-transaction', {
     method: 'POST',

@@ -1,43 +1,93 @@
+const STAGES = [
+  { id: 'prepare', label: 'Prepare' },
+  { id: 'sign', label: 'Sign' },
+  { id: 'confirm', label: 'Confirm' },
+  { id: 'finish', label: 'Finish' },
+] as const;
+
+type StageId = (typeof STAGES)[number]['id'];
+
 type Props = {
   headline: string;
   detail: string;
   walletHint?: boolean;
 };
 
+function progressStage(detail: string, walletHint: boolean): StageId {
+  if (walletHint) {
+    return 'sign';
+  }
+  const text = detail.toLowerCase();
+  if (
+    text.includes('stellar') ||
+    text.includes('confirming') ||
+    text.includes('confirm approval')
+  ) {
+    return 'confirm';
+  }
+  if (
+    text.includes('recording') ||
+    text.includes('updating') ||
+    text.includes('finishing')
+  ) {
+    return 'finish';
+  }
+  return 'prepare';
+}
+
 export function WalletActionProgress({
   headline,
   detail,
   walletHint = false,
 }: Props) {
+  const stage = progressStage(detail, walletHint);
+  const stageIndex = STAGES.findIndex((item) => item.id === stage);
+
   return (
     <div
-      className="mx-auto w-full max-w-sm rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-4 shadow-lg"
+      className="tx-progress"
       role="status"
       aria-live="polite"
       aria-busy="true"
     >
-      <div className="flex gap-3">
-        <span
-          className="mt-0.5 inline-block size-4 shrink-0 animate-spin rounded-full border-2 border-[var(--foreground-tertiary)] border-t-[var(--accent)]"
-          aria-hidden
-        />
-        <div className="min-w-0">
-          <p className="text-sm font-semibold tracking-tight">{headline}</p>
-          <p className="mt-1 text-sm text-[var(--foreground-secondary)] text-pretty">
-            {detail}
-          </p>
-          {walletHint ? (
-            <p className="mt-2 text-xs text-[var(--foreground-tertiary)] text-pretty">
-              Complete any Pollar wallet prompts. Keep this tab open until this
-              finishes — do not refresh or leave the page.
-            </p>
-          ) : (
-            <p className="mt-2 text-xs text-[var(--foreground-tertiary)] text-pretty">
-              Please wait until this step completes.
-            </p>
-          )}
-        </div>
+      <div
+        className={
+          walletHint ? 'tx-progress-mark tx-progress-mark--sign' : 'tx-progress-mark'
+        }
+        aria-hidden
+      >
+        <span className="tx-progress-ring" />
+        <span className="tx-progress-ring" />
+        <span className="tx-progress-ring" />
+        <span className="tx-progress-core" />
       </div>
+
+      <div className="tx-progress-copy">
+        <p className="tx-progress-headline">{headline}</p>
+        <p className="tx-progress-detail">{detail}</p>
+        <p className="tx-progress-hint">
+          {walletHint
+            ? 'Approve the Pollar prompt. Stay on this page until it finishes.'
+            : 'Keep this tab open. Do not refresh until the step completes.'}
+        </p>
+      </div>
+
+      <ol className="tx-progress-stages" aria-label="Transaction progress">
+        {STAGES.map((item, index) => {
+          const state =
+            index < stageIndex ? 'done' : index === stageIndex ? 'now' : 'wait';
+          return (
+            <li
+              key={item.id}
+              className={`tx-progress-stage tx-progress-stage--${state}`}
+              aria-current={state === 'now' ? 'step' : undefined}
+            >
+              <span className="tx-progress-stage-bar" />
+              <span className="tx-progress-stage-label">{item.label}</span>
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }

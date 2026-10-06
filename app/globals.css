@@ -1687,6 +1687,189 @@ select {
   }
 }
 
+.tx-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-block: 0.35rem 0.15rem;
+}
+
+.tx-progress-mark {
+  position: relative;
+  width: 6.75rem;
+  height: 6.75rem;
+}
+
+.tx-progress-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  pointer-events: none;
+}
+
+.tx-progress-ring:nth-child(1) {
+  inset: 0;
+  animation: tx-progress-breathe 3.2s var(--ease-apple) infinite;
+}
+
+.tx-progress-ring:nth-child(2) {
+  inset: 0.7rem;
+  border-color: color-mix(in srgb, var(--ice) 42%, transparent);
+  animation: tx-progress-spin 18s linear infinite;
+  border-top-color: color-mix(in srgb, var(--accent) 78%, transparent);
+  border-right-color: transparent;
+}
+
+.tx-progress-ring:nth-child(3) {
+  inset: 1.35rem;
+  opacity: 0.7;
+  animation: tx-progress-breathe 2.4s var(--ease-apple) infinite reverse;
+}
+
+.tx-progress-core {
+  position: absolute;
+  inset: 2.05rem;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 38% 32%,
+      color-mix(in srgb, var(--ice) 90%, white),
+      var(--accent) 58%,
+      color-mix(in srgb, var(--accent) 35%, transparent) 100%
+    );
+  box-shadow: 0 0 28px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.tx-progress-mark--sign .tx-progress-core {
+  background:
+    radial-gradient(
+      circle at 38% 32%,
+      var(--ice),
+      color-mix(in srgb, var(--ice) 55%, var(--accent)) 62%,
+      transparent 100%
+    );
+  box-shadow: 0 0 28px color-mix(in srgb, var(--ice) 35%, transparent);
+}
+
+.tx-progress-copy {
+  margin-top: 1.15rem;
+  width: 100%;
+  max-width: 20rem;
+}
+
+.tx-progress-headline {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+}
+
+.tx-progress-detail {
+  margin-top: 0.4rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--foreground-secondary);
+  text-wrap: pretty;
+}
+
+.tx-progress-hint {
+  margin-top: 0.7rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--foreground-tertiary);
+  text-wrap: pretty;
+}
+
+.tx-progress-stages {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+  width: 100%;
+  margin-top: 1.35rem;
+}
+
+.tx-progress-stage {
+  min-width: 0;
+  text-align: left;
+}
+
+.tx-progress-stage-bar {
+  display: block;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.tx-progress-stage-bar::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--foreground-tertiary) 55%, transparent);
+}
+
+.tx-progress-stage--done .tx-progress-stage-bar::after {
+  width: 100%;
+  background: var(--accent);
+}
+
+.tx-progress-stage--now .tx-progress-stage-bar::after {
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 45%, transparent),
+    var(--accent),
+    color-mix(in srgb, var(--ice) 80%, var(--accent))
+  );
+  background-size: 160% 100%;
+  animation: tx-progress-flow 1.6s linear infinite;
+}
+
+.tx-progress-stage-label {
+  margin-top: 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 550;
+  color: var(--foreground-tertiary);
+}
+
+.tx-progress-stage--done .tx-progress-stage-label {
+  color: var(--foreground-secondary);
+}
+
+.tx-progress-stage--now .tx-progress-stage-label {
+  color: var(--foreground);
+}
+
+@keyframes tx-progress-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes tx-progress-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.035);
+    opacity: 1;
+  }
+}
+
+@keyframes tx-progress-flow {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
 .wallet-vault-core {
   position: relative;
   z-index: 1;
@@ -2648,7 +2831,9 @@ select {
   .wallet-coin,
   .wallet-flip-btn,
   .wallet-segment-btn,
-  .account-corridor {
+  .account-corridor,
+  .tx-progress-ring,
+  .tx-progress-stage--now .tx-progress-stage-bar::after {
     animation: none;
     transition: none;
   }

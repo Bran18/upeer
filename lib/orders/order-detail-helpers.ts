@@ -64,6 +64,9 @@ export function nextStepCopy(
   if (order.status === 'cancelled') {
     return 'This take expired. Ask the taker to request the trade again.';
   }
+  if (order.status === 'disputed') {
+    return 'This trade is in dispute. USDC stays in escrow until UPEER resolves it.';
+  }
   if (isBuyer) {
     return 'Send fiat to your counterparty when ready, then mark it sent. USDC stays in escrow until the seller releases.';
   }

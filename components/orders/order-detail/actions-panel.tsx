@@ -32,6 +32,8 @@ export function OrderDetailActionsPanel() {
     acceptDisabled,
     confirmDecline,
     setConfirmDecline,
+    confirmDispute,
+    setConfirmDispute,
     showEscrowDeploy,
     showEscrowFund,
     escrowFundPending,
@@ -39,6 +41,7 @@ export function OrderDetailActionsPanel() {
     escrowFullyFunded,
     showEscrowRelease,
     showEscrowWaiting,
+    showOpenDispute,
     escrowOnChain,
     status,
     statusTone,
@@ -51,26 +54,19 @@ export function OrderDetailActionsPanel() {
     deployEscrow,
     fundEscrow,
     approveRelease,
+    openDispute,
   } = ctx;
 
   return (
     <section className="relative ui-card flex flex-col px-5 py-5 sm:px-6 sm:py-6">
       {busy && actionProgress ? (
-        <div
-          className="absolute inset-0 z-20 flex items-center justify-center rounded-[inherit] bg-[var(--background)]/75 px-4 backdrop-blur-[2px]"
-          aria-hidden={false}
-        >
-          <WalletActionProgress
-            headline={actionProgress.headline}
-            detail={actionProgress.detail}
-            walletHint={actionProgress.walletHint}
-          />
-        </div>
-      ) : null}
-      <div
-        className={busy ? 'pointer-events-none select-none opacity-40' : undefined}
-        aria-hidden={busy ? true : undefined}
-      >
+        <WalletActionProgress
+          headline={actionProgress.headline}
+          detail={actionProgress.detail}
+          walletHint={actionProgress.walletHint}
+        />
+      ) : (
+      <div>
         <h2 className="text-base font-semibold tracking-tight">Next Step</h2>
         <p className="mt-1 text-sm text-[var(--foreground-secondary)] text-pretty">
           {nextStepMessage}
@@ -249,12 +245,55 @@ export function OrderDetailActionsPanel() {
           </p>
         ) : null}
 
+        {showOpenDispute ? (
+          <div className="mt-6">
+            {confirmDispute ? (
+              <div className="rounded-[var(--radius-ui)] border border-[var(--line)] bg-[var(--fill)] p-3">
+                <p className="text-sm text-[var(--foreground-secondary)] text-pretty">
+                  Open a dispute? USDC stays in escrow until UPEER resolves it.
+                  Use this if fiat or release is stuck.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => openDispute()}
+                  >
+                    Open Dispute
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => setConfirmDispute(false)}
+                  >
+                    Keep Trade Open
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                fullWidth
+                disabled={busy}
+                onClick={() => setConfirmDispute(true)}
+              >
+                Open Dispute
+              </Button>
+            )}
+          </div>
+        ) : null}
+
         {status ? (
           <p
-            className={`mt-4 text-sm ${
+            className={`mt-4 rounded-[var(--radius-ui)] border px-3 py-2.5 text-sm text-pretty ${
               statusTone === 'error'
-                ? 'text-red-400'
-                : 'text-[var(--foreground-secondary)]'
+                ? 'border-[color-mix(in_srgb,var(--tag-danger-fg)_35%,transparent)] bg-[var(--tag-danger-bg)] text-[var(--tag-danger-fg)]'
+                : 'border-[color-mix(in_srgb,var(--accent)_28%,transparent)] bg-[var(--accent-muted)] text-[var(--foreground-secondary)]'
             }`}
             role="status"
             aria-live="polite"
@@ -305,6 +344,7 @@ export function OrderDetailActionsPanel() {
           </p>
         ) : null}
       </div>
+      )}
     </section>
   );
 }

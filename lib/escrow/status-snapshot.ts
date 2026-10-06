@@ -30,11 +30,13 @@ export function escrowSnapshotFromOrder(
 ): EscrowStatusSnapshot {
   const contractId = order.escrow?.tw_contract_id;
   const state =
-    order.status === 'released'
+    order.status === 'released' || options.onChain?.released
       ? 'released'
-      : contractId
-        ? (order.escrow?.milestone_state ?? 'escrow_pending')
-        : 'idle';
+      : order.status === 'disputed' || options.onChain?.disputed
+        ? 'disputed'
+        : contractId
+          ? (order.escrow?.milestone_state ?? 'escrow_pending')
+          : 'idle';
 
   return {
     state,
